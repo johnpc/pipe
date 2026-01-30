@@ -76,8 +76,8 @@ class PlayerState: ObservableObject {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
     
-    func addToQueue(videoId: String, url: String, title: String, artist: String, thumbnail: String, duration: Int = 0) {
-        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, duration: duration)
+    func addToQueue(videoId: String, url: String, title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, duration: duration, uploadedDate: uploadedDate)
         queue.append(item)
         if currentIndex == -1 { playIndex(0) }
     }
@@ -167,7 +167,7 @@ class PlayerState: ObservableObject {
         let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
         
         // Add to recents
-        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration)
+        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
         
         if savedPos > 10 {
             player?.seek(to: CMTime(seconds: savedPos, preferredTimescale: 1))
@@ -178,8 +178,8 @@ class PlayerState: ObservableObject {
         updateNowPlaying()
     }
     
-    func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?, duration: Int = 0) {
-        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, duration: duration)
+    func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
+        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, duration: duration, uploadedDate: uploadedDate)
         queue.insert(item, at: 0)
         playIndex(0)
     }

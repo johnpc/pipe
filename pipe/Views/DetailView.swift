@@ -32,7 +32,10 @@ struct DetailView: View {
                             }
                         }
                     }
-                    if let d = s.description { Text(d).font(.body) }
+                    if let d = s.description { 
+                        Text(htmlToAttributedString(d))
+                            .font(.body)
+                    }
                 }.padding()
             } else { ProgressView().padding() }
         }

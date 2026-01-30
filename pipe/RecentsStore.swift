@@ -10,8 +10,9 @@ struct RecentItem: Codable, Identifiable, Equatable {
     var timestamp: Double
     var lastWatched: Date
     var duration: Int
+    var uploadedDate: String?
     
-    init(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, lastWatched: Date, duration: Int = 0) {
+    init(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, lastWatched: Date, duration: Int = 0, uploadedDate: String? = nil) {
         self.videoId = videoId
         self.title = title
         self.artist = artist
@@ -19,6 +20,7 @@ struct RecentItem: Codable, Identifiable, Equatable {
         self.timestamp = timestamp
         self.lastWatched = lastWatched
         self.duration = duration
+        self.uploadedDate = uploadedDate
     }
 }
 
@@ -42,9 +44,9 @@ class RecentsStore: ObservableObject {
         }
     }
     
-    func add(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, duration: Int = 0) {
+    func add(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, duration: Int = 0, uploadedDate: String? = nil) {
         items.removeAll { $0.videoId == videoId }
-        let item = RecentItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, timestamp: timestamp, lastWatched: Date(), duration: duration)
+        let item = RecentItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, timestamp: timestamp, lastWatched: Date(), duration: duration, uploadedDate: uploadedDate)
         items.insert(item, at: 0)
         if items.count > maxItems { items = Array(items.prefix(maxItems)) }
         save()

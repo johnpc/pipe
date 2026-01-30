@@ -22,7 +22,12 @@ struct AudioRow: View {
                     }
                 }
                 
-                Text(item.displayUploader).font(.caption).foregroundStyle(.secondary).lineLimit(2).truncationMode(.tail)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.displayUploader).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                    if let date = item.uploadedDate {
+                        Text(formatUploadDate(date)).font(.caption2).foregroundStyle(.tertiary)
+                    }
+                }
                 
                 Spacer()
                 

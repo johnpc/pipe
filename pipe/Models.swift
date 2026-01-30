@@ -8,6 +8,7 @@ struct QueueItem: Identifiable, Equatable {
     let thumbnail: String
     let url: String
     let duration: Int
+    let uploadedDate: String?
 }
 
 struct FollowedChannel: Codable, Identifiable, Equatable, Hashable {
