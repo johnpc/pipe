@@ -6,23 +6,31 @@ struct MiniPlayerBar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            ProgressView(value: player.currentTime, total: max(player.duration, 1)).tint(.accentColor)
+            ProgressView(value: player.currentTime, total: max(player.duration, 1))
+                .tint(.accentColor)
+                .scaleEffect(x: 1, y: 0.5, anchor: .center)
             
             HStack {
                 AsyncImage(url: URL(string: player.currentThumbnail ?? "")) { $0.resizable() } placeholder: { Color.gray }
-                    .frame(width: 44, height: 44).cornerRadius(4)
+                    .frame(width: 40, height: 40).cornerRadius(4)
                 
-                VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(player.currentTitle ?? "").font(.footnote).lineLimit(1)
                     Text(player.currentArtist ?? "").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
                 Button { player.togglePlayPause() } label: {
-                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.title3)
+                    Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
                 }
-            }.padding(10)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            
+            Divider()
         }
-        .background(.thinMaterial)
+        .contentShape(Rectangle())
         .onTapGesture { showFull = true }
         .sheet(isPresented: $showFull) { FullPlayerSheet(player: player) }
     }

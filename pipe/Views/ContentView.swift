@@ -4,29 +4,66 @@ struct ContentView: View {
     @StateObject private var player = PlayerState()
     @StateObject private var following = FollowingStore()
     @StateObject private var recents = RecentsStore()
+    @State private var selectedTab = 0
     
     var body: some View {
-        TabView {
-            NavigationStack {
-                SearchView(player: player, following: following)
+        VStack(spacing: 0) {
+            Group {
+                switch selectedTab {
+                case 0:
+                    NavigationStack {
+                        SearchView(player: player, following: following)
+                    }
+                case 1:
+                    NavigationStack {
+                        RecentsView(player: player, recents: recents)
+                    }
+                case 2:
+                    NavigationStack {
+                        FollowingView(player: player, following: following)
+                    }
+                default:
+                    EmptyView()
+                }
             }
-            .tabItem { Label("Search", systemImage: "magnifyingglass") }
             
-            NavigationStack {
-                RecentsView(player: player, recents: recents)
+            // Unified bottom bar
+            VStack(spacing: 0) {
+                if player.currentTitle != nil {
+                    MiniPlayerBar(player: player)
+                }
+                
+                // Custom tab bar
+                HStack {
+                    TabButton(icon: "magnifyingglass", label: "Search", isSelected: selectedTab == 0) { selectedTab = 0 }
+                    TabButton(icon: "clock", label: "Recents", isSelected: selectedTab == 1) { selectedTab = 1 }
+                    TabButton(icon: "heart.fill", label: "Following", isSelected: selectedTab == 2) { selectedTab = 2 }
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 2)
             }
-            .tabItem { Label("Recents", systemImage: "clock") }
-            
-            NavigationStack {
-                FollowingView(player: player, following: following)
-            }
-            .tabItem { Label("Following", systemImage: "heart.fill") }
-        }
-        .safeAreaInset(edge: .bottom) {
-            if player.currentTitle != nil {
-                MiniPlayerBar(player: player).padding(.bottom, 49)
-            }
+            .background(.bar)
         }
         .onAppear { player.recents = recents }
+    }
+}
+
+struct TabButton: View {
+    let icon: String
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                Text(label)
+                    .font(.caption2)
+            }
+            .foregroundColor(isSelected ? .accentColor : .secondary)
+            .frame(maxWidth: .infinity)
+        }
     }
 }

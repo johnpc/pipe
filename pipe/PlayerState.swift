@@ -76,8 +76,8 @@ class PlayerState: ObservableObject {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
     
-    func addToQueue(videoId: String, url: String, title: String, artist: String, thumbnail: String) {
-        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url)
+    func addToQueue(videoId: String, url: String, title: String, artist: String, thumbnail: String, duration: Int = 0) {
+        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, duration: duration)
         queue.append(item)
         if currentIndex == -1 { playIndex(0) }
     }
@@ -178,8 +178,8 @@ class PlayerState: ObservableObject {
         updateNowPlaying()
     }
     
-    func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?) {
-        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString)
+    func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?, duration: Int = 0) {
+        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, duration: duration)
         queue.insert(item, at: 0)
         playIndex(0)
     }

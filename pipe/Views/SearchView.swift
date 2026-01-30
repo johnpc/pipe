@@ -99,7 +99,7 @@ struct SearchView: View {
             guard let stream = try? await PipedAPI.streams(item.videoId) else { return }
             let url = getStreamUrl(stream)
             await MainActor.run {
-                player.play(videoId: item.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl)
+                player.play(videoId: item.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration)
             }
         }
     }
@@ -109,7 +109,7 @@ struct SearchView: View {
             guard let stream = try? await PipedAPI.streams(item.videoId) else { return }
             let url = getStreamUrl(stream)
             await MainActor.run {
-                player.addToQueue(videoId: item.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl)
+                player.addToQueue(videoId: item.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration)
             }
         }
     }

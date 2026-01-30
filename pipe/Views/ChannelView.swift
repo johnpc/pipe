@@ -13,8 +13,19 @@ struct ChannelView: View {
                     NavigationLink(value: v) {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 12) {
-                                AsyncImage(url: URL(string: v.thumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
-                                    .frame(width: 100, height: 56).clipped().cornerRadius(6)
+                                ZStack(alignment: .bottomTrailing) {
+                                    AsyncImage(url: URL(string: v.thumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
+                                        .frame(width: 100, height: 56).clipped().cornerRadius(6)
+                                    if v.duration > 0 {
+                                        Text(formatDuration(v.duration))
+                                            .font(.caption2).bold()
+                                            .padding(.horizontal, 4).padding(.vertical, 2)
+                                            .background(.black.opacity(0.7))
+                                            .foregroundColor(.white)
+                                            .cornerRadius(4)
+                                            .padding(4)
+                                    }
+                                }
                                 
                                 if let uploader = v.uploaderName {
                                     Text(uploader).font(.caption).foregroundStyle(.secondary).lineLimit(2).truncationMode(.tail)
@@ -59,7 +70,7 @@ struct ChannelView: View {
             guard let stream = try? await PipedAPI.streams(v.videoId) else { return }
             let url = getStreamUrl(stream)
             await MainActor.run {
-                player.play(videoId: v.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl)
+                player.play(videoId: v.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration)
             }
         }
     }
@@ -69,7 +80,7 @@ struct ChannelView: View {
             guard let stream = try? await PipedAPI.streams(v.videoId) else { return }
             let url = getStreamUrl(stream)
             await MainActor.run {
-                player.addToQueue(videoId: v.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl)
+                player.addToQueue(videoId: v.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration)
             }
         }
     }

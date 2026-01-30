@@ -124,7 +124,13 @@ struct QueueRow: View {
             VStack(alignment: .leading) {
                 Text(item.title).font(.subheadline).lineLimit(1)
                     .fontWeight(index == player.currentIndex ? .semibold : .regular)
-                Text(item.artist).font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Text(item.artist).font(.caption).foregroundStyle(.secondary)
+                    if item.duration > 0 {
+                        Text("•").font(.caption).foregroundStyle(.secondary)
+                        Text(formatDuration(item.duration)).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
             }
             Spacer()
             if index != player.currentIndex {

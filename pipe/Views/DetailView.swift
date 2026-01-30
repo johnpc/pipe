@@ -41,10 +41,10 @@ struct DetailView: View {
     }
     
     private func playNow(_ s: StreamResponse) {
-        player.play(videoId: videoId, urlString: getStreamUrl(s), title: s.title, artist: s.uploader, thumbnail: s.thumbnailUrl)
+        player.play(videoId: videoId, urlString: getStreamUrl(s), title: s.title, artist: s.uploader, thumbnail: s.thumbnailUrl, duration: s.duration)
     }
     
     private func addToQueue(_ s: StreamResponse) {
-        player.addToQueue(videoId: videoId, url: getStreamUrl(s), title: s.title, artist: s.uploader, thumbnail: s.thumbnailUrl)
+        player.addToQueue(videoId: videoId, url: getStreamUrl(s), title: s.title, artist: s.uploader, thumbnail: s.thumbnailUrl, duration: s.duration)
     }
 }

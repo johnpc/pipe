@@ -8,8 +8,19 @@ struct AudioRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
-                AsyncImage(url: URL(string: item.displayThumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
-                    .frame(width: 100, height: 56).clipped().cornerRadius(6)
+                ZStack(alignment: .bottomTrailing) {
+                    AsyncImage(url: URL(string: item.displayThumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
+                        .frame(width: 100, height: 56).clipped().cornerRadius(6)
+                    if let d = item.duration, d > 0 {
+                        Text(formatDuration(d))
+                            .font(.caption2).bold()
+                            .padding(.horizontal, 4).padding(.vertical, 2)
+                            .background(.black.opacity(0.7))
+                            .foregroundColor(.white)
+                            .cornerRadius(4)
+                            .padding(4)
+                    }
+                }
                 
                 Text(item.displayUploader).font(.caption).foregroundStyle(.secondary).lineLimit(2).truncationMode(.tail)
                 
