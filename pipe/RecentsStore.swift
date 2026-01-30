@@ -9,6 +9,17 @@ struct RecentItem: Codable, Identifiable, Equatable {
     let thumbnail: String
     var timestamp: Double
     var lastWatched: Date
+    var duration: Int
+    
+    init(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, lastWatched: Date, duration: Int = 0) {
+        self.videoId = videoId
+        self.title = title
+        self.artist = artist
+        self.thumbnail = thumbnail
+        self.timestamp = timestamp
+        self.lastWatched = lastWatched
+        self.duration = duration
+    }
 }
 
 class RecentsStore: ObservableObject {
@@ -31,9 +42,9 @@ class RecentsStore: ObservableObject {
         }
     }
     
-    func add(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double) {
+    func add(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, duration: Int = 0) {
         items.removeAll { $0.videoId == videoId }
-        let item = RecentItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, timestamp: timestamp, lastWatched: Date())
+        let item = RecentItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, timestamp: timestamp, lastWatched: Date(), duration: duration)
         items.insert(item, at: 0)
         if items.count > maxItems { items = Array(items.prefix(maxItems)) }
         save()
@@ -49,5 +60,9 @@ class RecentsStore: ObservableObject {
     
     func getTimestamp(videoId: String) -> Double? {
         items.first { $0.videoId == videoId }?.timestamp
+    }
+    
+    func getDuration(videoId: String) -> Int {
+        items.first { $0.videoId == videoId }?.duration ?? 0
     }
 }

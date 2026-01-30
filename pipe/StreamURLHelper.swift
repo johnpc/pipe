@@ -10,8 +10,14 @@ func getStreamUrl(_ s: StreamResponse) -> String {
 }
 
 func formatDuration(_ seconds: Int) -> String {
-    let m = seconds / 60, s = seconds % 60
-    return String(format: "%d:%02d", m, s)
+    let h = seconds / 3600
+    let m = (seconds % 3600) / 60
+    let s = seconds % 60
+    if h > 0 {
+        return "\(h)h\(m)m"
+    } else {
+        return "\(m)m\(s)s"
+    }
 }
 
 func formatTime(_ s: Double) -> String {

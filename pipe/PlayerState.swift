@@ -167,7 +167,7 @@ class PlayerState: ObservableObject {
         let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
         
         // Add to recents
-        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos)
+        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration)
         
         if savedPos > 10 {
             player?.seek(to: CMTime(seconds: savedPos, preferredTimescale: 1))
