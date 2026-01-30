@@ -13,9 +13,11 @@ class PlayerState: ObservableObject {
     @Published var playbackSpeed: Float = 1.0
     @Published var queue: [QueueItem] = []
     @Published var currentIndex: Int = -1
+    @Published var videoMode = false
     
-    private var player: AVPlayer?
-    private var positions: [String: Double] = [:]
+    var player: AVPlayer?
+    var recents: RecentsStore?
+    private var currentVideoId: String?
     private var timeObserver: Any?
     private var endObserver: Any?
     
@@ -131,6 +133,7 @@ class PlayerState: ObservableObject {
         
         guard let url = URL(string: item.url) else { error = "Invalid URL"; return }
         
+        currentVideoId = item.videoId
         currentTitle = item.title
         currentArtist = item.artist
         currentThumbnail = item.thumbnail
@@ -142,24 +145,42 @@ class PlayerState: ObservableObject {
         
         player = AVPlayer(url: url)
         
-        timeObserver = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 1, preferredTimescale: 1), queue: .main) { [weak self] time in
+        timeObserver = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 5, preferredTimescale: 1), queue: .main) { [weak self] time in
             guard let self else { return }
             self.currentTime = time.seconds
             if let d = self.player?.currentItem?.duration.seconds, d.isFinite, d > 0 { self.duration = d }
+            // Save progress to recents
+            if let vid = self.currentVideoId {
+                self.recents?.updateTimestamp(videoId: vid, timestamp: time.seconds)
+            }
         }
         
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player?.currentItem, queue: .main) { [weak self] _ in
+            // Mark as complete (timestamp 0)
+            if let vid = self?.currentVideoId {
+                self?.recents?.updateTimestamp(videoId: vid, timestamp: 0)
+            }
             self?.playNext()
         }
         
-        if let pos = positions[item.videoId] { player?.seek(to: CMTime(seconds: pos, preferredTimescale: 1)) }
+        // Resume from saved position
+        let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
+        
+        // Add to recents
+        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos)
+        
+        if savedPos > 10 {
+            player?.seek(to: CMTime(seconds: savedPos, preferredTimescale: 1))
+        }
+        
         player?.play()
         isPlaying = true
         updateNowPlaying()
     }
     
     func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?) {
-        queue.removeAll()
-        addToQueue(videoId: videoId, url: urlString, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "")
+        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString)
+        queue.insert(item, at: 0)
+        playIndex(0)
     }
 }

@@ -1,0 +1,53 @@
+import Foundation
+import Combine
+
+struct RecentItem: Codable, Identifiable, Equatable {
+    var id: String { videoId }
+    let videoId: String
+    let title: String
+    let artist: String
+    let thumbnail: String
+    var timestamp: Double
+    var lastWatched: Date
+}
+
+class RecentsStore: ObservableObject {
+    @Published var items: [RecentItem] = []
+    private let key = "recentItems"
+    private let maxItems = 50
+    
+    init() { load() }
+    
+    func load() {
+        if let data = UserDefaults.standard.data(forKey: key),
+           let decoded = try? JSONDecoder().decode([RecentItem].self, from: data) {
+            items = decoded
+        }
+    }
+    
+    func save() {
+        if let data = try? JSONEncoder().encode(items) {
+            UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+    
+    func add(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double) {
+        items.removeAll { $0.videoId == videoId }
+        let item = RecentItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, timestamp: timestamp, lastWatched: Date())
+        items.insert(item, at: 0)
+        if items.count > maxItems { items = Array(items.prefix(maxItems)) }
+        save()
+    }
+    
+    func updateTimestamp(videoId: String, timestamp: Double) {
+        if let idx = items.firstIndex(where: { $0.videoId == videoId }) {
+            items[idx].timestamp = timestamp
+            items[idx].lastWatched = Date()
+            save()
+        }
+    }
+    
+    func getTimestamp(videoId: String) -> Double? {
+        items.first { $0.videoId == videoId }?.timestamp
+    }
+}

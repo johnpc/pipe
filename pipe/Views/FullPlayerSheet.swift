@@ -1,4 +1,5 @@
 import SwiftUI
+import AVKit
 
 struct FullPlayerSheet: View {
     @ObservedObject var player: PlayerState
@@ -8,11 +9,29 @@ struct FullPlayerSheet: View {
             VStack(spacing: 20) {
                 Capsule().fill(.secondary).frame(width: 40, height: 5).padding(.top)
                 
-                AsyncImage(url: URL(string: player.currentThumbnail ?? "")) { $0.resizable().scaledToFit() } placeholder: { Color.gray }
-                    .frame(maxWidth: 260, maxHeight: 260).cornerRadius(8)
+                if player.videoMode, let avPlayer = player.player {
+                    VideoPlayer(player: avPlayer)
+                        .frame(height: 200)
+                        .cornerRadius(8)
+                        .padding(.horizontal)
+                } else {
+                    AsyncImage(url: URL(string: player.currentThumbnail ?? "")) { $0.resizable().scaledToFit() } placeholder: { Color.gray }
+                        .frame(maxWidth: 260, maxHeight: 260).cornerRadius(8)
+                }
                 
                 Text(player.currentTitle ?? "").font(.title3).bold().lineLimit(2).multilineTextAlignment(.center).padding(.horizontal)
                 Text(player.currentArtist ?? "").foregroundStyle(.secondary)
+                
+                // Video/Audio toggle
+                Button {
+                    player.videoMode.toggle()
+                } label: {
+                    Label(player.videoMode ? "Audio Only" : "Show Video", systemImage: player.videoMode ? "waveform" : "video")
+                        .font(.subheadline)
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .background(Color.secondary.opacity(0.2))
+                        .cornerRadius(20)
+                }
                 
                 VStack {
                     Slider(value: Binding(
