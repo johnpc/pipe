@@ -1,0 +1,15 @@
+{
+  "originHash" : "edde2781e0f51079e21935e2990fc2b01b778025e8055ce753c2b9d5e04df804",
+  "pins" : [
+    {
+      "identity" : "mobilevlckit-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/cfap/MobileVLCKit-SPM.git",
+      "state" : {
+        "revision" : "e3928f35ebfe5eb9249d4fedb155b50377063dab",
+        "version" : "3.7.2"
+      }
+    }
+  ],
+  "version" : 3
+}

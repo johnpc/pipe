@@ -1,14 +1,13 @@
-//
-//  pipeApp.swift
-//  pipe
-//
-//  Created by John Corser on 1/29/26.
-//
-
 import SwiftUI
+import AVFoundation
 
 @main
 struct pipeApp: App {
+    init() {
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+        try? AVAudioSession.sharedInstance().setActive(true)
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
