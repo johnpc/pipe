@@ -67,4 +67,22 @@ class RecentsStore: ObservableObject {
     func getDuration(videoId: String) -> Int {
         items.first { $0.videoId == videoId }?.duration ?? 0
     }
+    
+    func hasPlayed(videoId: String) -> Bool {
+        items.contains { $0.videoId == videoId }
+    }
+    
+    func isCompleted(videoId: String) -> Bool {
+        guard let item = items.first(where: { $0.videoId == videoId }),
+              item.duration > 0 else { return false }
+        return item.timestamp / Double(item.duration) >= 0.9
+    }
+    
+    func resumeTime(videoId: String) -> Double? {
+        guard let item = items.first(where: { $0.videoId == videoId }),
+              item.duration > 0,
+              item.timestamp / Double(item.duration) < 0.9,
+              item.timestamp > 5 else { return nil }
+        return item.timestamp
+    }
 }

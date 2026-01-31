@@ -3,6 +3,7 @@ import SwiftUI
 struct SearchView: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var following: FollowingStore
+    @ObservedObject var recents: RecentsStore
     @State private var query = ""
     @State private var results: [SearchItem] = []
     @State private var loading = false
@@ -79,7 +80,7 @@ struct SearchView: View {
                         }
                     } else {
                         NavigationLink(value: item) {
-                            AudioRow(item: item, onPlay: { playItem(item) }, onQueue: { queueItem(item) })
+                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) })
                         }
                     }
                 }
@@ -88,7 +89,7 @@ struct SearchView: View {
         }
         .navigationTitle("Search")
         .navigationDestination(for: SearchItem.self) { item in
-            if item.isChannel { ChannelView(channelId: item.channelId, player: player, following: following) }
+            if item.isChannel { ChannelView(channelId: item.channelId, player: player, following: following, recents: recents) }
             else { DetailView(videoId: item.videoId, player: player) }
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search")

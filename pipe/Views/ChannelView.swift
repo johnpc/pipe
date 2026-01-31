@@ -4,6 +4,7 @@ struct ChannelView: View {
     let channelId: String
     @ObservedObject var player: PlayerState
     @ObservedObject var following: FollowingStore
+    @ObservedObject var recents: RecentsStore
     @State private var channel: ChannelResponse?
     @State private var selectedTab = "videos"
     @State private var tabContent: [RelatedStream] = []
@@ -43,7 +44,7 @@ struct ChannelView: View {
                     } else {
                         List(videos) { v in
                             NavigationLink(value: v) {
-                                VideoRow(v: v, onPlay: { playVideo(v) }, onQueue: { queueVideo(v) })
+                                VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { playVideo(v) }, onQueue: { queueVideo(v) })
                             }
                         }
                         .listStyle(.plain)
@@ -131,6 +132,8 @@ struct TabPill: View {
 
 struct VideoRow: View {
     let v: RelatedStream
+    var isCompleted: Bool = false
+    var resumeTime: Double? = nil
     let onPlay: () -> Void
     let onQueue: () -> Void
     
@@ -140,15 +143,23 @@ struct VideoRow: View {
                 ZStack(alignment: .bottomTrailing) {
                     AsyncImage(url: URL(string: v.thumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
                         .frame(width: 100, height: 56).clipped().cornerRadius(6)
-                    if v.duration > 0 {
-                        Text(formatDuration(v.duration))
-                            .font(.caption2).bold()
-                            .padding(.horizontal, 4).padding(.vertical, 2)
-                            .background(.black.opacity(0.7))
-                            .foregroundColor(.white)
-                            .cornerRadius(4)
-                            .padding(4)
+                        .overlay(isCompleted ? Color.black.opacity(0.4).cornerRadius(6) : nil)
+                    HStack(spacing: 4) {
+                        if isCompleted {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.white)
+                        }
+                        if v.duration > 0 {
+                            Text(formatDuration(v.duration))
+                                .font(.caption2).bold()
+                                .foregroundColor(.white)
+                        }
                     }
+                    .padding(.horizontal, 4).padding(.vertical, 2)
+                    .background(.black.opacity(0.7))
+                    .cornerRadius(4)
+                    .padding(4)
                 }
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -157,6 +168,9 @@ struct VideoRow: View {
                     }
                     if let date = v.uploadedDate {
                         Text(formatUploadDate(date)).font(.caption2).foregroundStyle(.tertiary)
+                    }
+                    if let time = resumeTime {
+                        Label(formatTime(time), systemImage: "play.circle").font(.caption2).foregroundColor(.orange)
                     }
                 }
                 

@@ -89,13 +89,21 @@ struct QueueSection: View {
                     if player.queue.count > 1 {
                         Text("\(player.queue.count) items").font(.caption).foregroundStyle(.secondary)
                     }
+                    EditButton().font(.caption)
                 }.padding(.horizontal)
                 
                 Divider()
                 
-                ForEach(Array(player.queue.enumerated()), id: \.element.id) { index, item in
-                    QueueRow(player: player, item: item, index: index)
+                List {
+                    ForEach(Array(player.queue.enumerated()), id: \.element.id) { index, item in
+                        QueueRow(player: player, item: item, index: index)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                    }
+                    .onMove { player.moveQueueItem(from: $0, to: $1) }
+                    .onDelete { player.removeFromQueue(at: $0) }
                 }
+                .listStyle(.plain)
+                .frame(minHeight: CGFloat(player.queue.count * 60))
             }
             .padding(.top, 20)
         }

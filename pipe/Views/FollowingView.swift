@@ -3,6 +3,7 @@ import SwiftUI
 struct FollowingView: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var following: FollowingStore
+    @ObservedObject var recents: RecentsStore
     
     var body: some View {
         List {
@@ -23,7 +24,7 @@ struct FollowingView: View {
         .listStyle(.plain)
         .navigationTitle("Following")
         .navigationDestination(for: FollowedChannel.self) { channel in
-            ChannelView(channelId: channel.id, player: player, following: following)
+            ChannelView(channelId: channel.id, player: player, following: following, recents: recents)
         }
         .overlay {
             if following.channels.isEmpty {

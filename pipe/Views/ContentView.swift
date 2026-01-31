@@ -14,11 +14,11 @@ struct ContentView: View {
                     switch selectedTab {
                     case 0:
                         NavigationStack {
-                            FeedView(player: player, following: following)
+                            FeedView(player: player, following: following, recents: recents)
                         }
                     case 1:
                         NavigationStack {
-                            SearchView(player: player, following: following)
+                            SearchView(player: player, following: following, recents: recents)
                         }
                     case 2:
                         NavigationStack {
@@ -26,7 +26,7 @@ struct ContentView: View {
                         }
                     case 3:
                         NavigationStack {
-                            FollowingView(player: player, following: following)
+                            FollowingView(player: player, following: following, recents: recents)
                         }
                     default:
                         EmptyView()
