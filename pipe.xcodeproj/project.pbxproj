@@ -7,22 +7,47 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4012CB05A3677D9AE2BD1197 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
+		84BFD413C09940E56AFDBA6B /* pipeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36970164189FFD98F2D75955 /* pipeUITests.swift */; };
 		A6CE203C2F2C279F009BCA23 /* MobileVLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = A6CE203B2F2C279F009BCA23 /* MobileVLCKit */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		36B18B90672F712A32A444F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A615CA872F2C0D6900F36993 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A615CA8E2F2C0D6900F36993;
+			remoteInfo = pipe;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		36970164189FFD98F2D75955 /* pipeUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = pipeUITests.swift; path = pipeUITests.swift; sourceTree = "<group>"; };
+		72A238017A49D96426B04048 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		924372965022C3C1863CD736 /* pipeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pipeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A615CA8F2F2C0D6900F36993 /* pipe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pipe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A615CA912F2C0D6900F36993 /* pipe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = pipe;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		276792C7ED571FDE0E0C6F50 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4012CB05A3677D9AE2BD1197 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A615CA8C2F2C0D6900F36993 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,11 +59,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1A016FC79A6C761C678F4604 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				72A238017A49D96426B04048 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		91A25A8DEBB4CE5F5A6CF8ED /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1A016FC79A6C761C678F4604 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A615CA862F2C0D6900F36993 = {
 			isa = PBXGroup;
 			children = (
 				A615CA912F2C0D6900F36993 /* pipe */,
 				A615CA902F2C0D6900F36993 /* Products */,
+				91A25A8DEBB4CE5F5A6CF8ED /* Frameworks */,
+				FD1E613AC95A98B9BCE5E25B /* pipeUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -46,8 +89,18 @@
 			isa = PBXGroup;
 			children = (
 				A615CA8F2F2C0D6900F36993 /* pipe.app */,
+				924372965022C3C1863CD736 /* pipeUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		FD1E613AC95A98B9BCE5E25B /* pipeUITests */ = {
+			isa = PBXGroup;
+			children = (
+				36970164189FFD98F2D75955 /* pipeUITests.swift */,
+			);
+			name = pipeUITests;
+			path = pipeUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -75,6 +128,24 @@
 			productName = pipe;
 			productReference = A615CA8F2F2C0D6900F36993 /* pipe.app */;
 			productType = "com.apple.product-type.application";
+		};
+		D6654F52081344F8E46395DC /* pipeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C89C5C1A8F38FE72DEC86B39 /* Build configuration list for PBXNativeTarget "pipeUITests" */;
+			buildPhases = (
+				866789E77D7F8E75EBFE6051 /* Sources */,
+				276792C7ED571FDE0E0C6F50 /* Frameworks */,
+				3473630BEC313CBE3527B1F5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EBF56C430A57457A2A668E78 /* PBXTargetDependency */,
+			);
+			name = pipeUITests;
+			productName = pipeUITests;
+			productReference = 924372965022C3C1863CD736 /* pipeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -109,11 +180,19 @@
 			projectRoot = "";
 			targets = (
 				A615CA8E2F2C0D6900F36993 /* pipe */,
+				D6654F52081344F8E46395DC /* pipeUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		3473630BEC313CBE3527B1F5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A615CA8D2F2C0D6900F36993 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,6 +203,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		866789E77D7F8E75EBFE6051 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				84BFD413C09940E56AFDBA6B /* pipeUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A615CA8B2F2C0D6900F36993 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -133,7 +220,40 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		EBF56C430A57457A2A668E78 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = pipe;
+			target = A615CA8E2F2C0D6900F36993 /* pipe */;
+			targetProxy = 36B18B90672F712A32A444F2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		2407F8007464856D95DCDB42 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = JW5SC3NYUV;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.johncorser.pipeUITests;
+				PRODUCT_NAME = pipeUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "";
+				TEST_TARGET_NAME = pipe;
+			};
+			name = Debug;
+		};
 		A615CA982F2C0D6A00F36993 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -323,6 +443,31 @@
 			};
 			name = Release;
 		};
+		DA4D7E1AEABA30EFA9B6C6DB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = JW5SC3NYUV;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.johncorser.pipeUITests;
+				PRODUCT_NAME = pipeUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "";
+				TEST_TARGET_NAME = pipe;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -340,6 +485,15 @@
 			buildConfigurations = (
 				A615CA9B2F2C0D6A00F36993 /* Debug */,
 				A615CA9C2F2C0D6A00F36993 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C89C5C1A8F38FE72DEC86B39 /* Build configuration list for PBXNativeTarget "pipeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA4D7E1AEABA30EFA9B6C6DB /* Release */,
+				2407F8007464856D95DCDB42 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

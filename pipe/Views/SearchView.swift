@@ -27,9 +27,26 @@ struct SearchView: View {
                             .font(.system(size: 48))
                             .foregroundStyle(.secondary)
                             .padding(.top, 60)
-                        Text("Search YouTube")
+                        Text("Search Videos")
                             .font(.title2)
-                        Text("Try one of these popular channels")
+                        
+                        // Inline search field for better iPad compatibility
+                        HStack {
+                            TextField("Search...", text: $query)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit { search(query) }
+                            Button { search(query) } label: {
+                                Image(systemName: "magnifyingglass")
+                                    .padding(8)
+                                    .background(Color.accentColor)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            }
+                            .disabled(query.isEmpty)
+                        }
+                        .padding(.horizontal, 40)
+                        
+                        Text("Or try one of these popular channels")
                             .foregroundStyle(.secondary)
                         
                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
@@ -69,13 +86,12 @@ struct SearchView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Search")
         .navigationDestination(for: SearchItem.self) { item in
             if item.isChannel { ChannelView(channelId: item.channelId, player: player, following: following) }
             else { DetailView(videoId: item.videoId, player: player) }
         }
-        .searchable(text: $query, prompt: "Search")
+        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search")
         .onSubmit(of: .search) { search(query) }
         .overlay { if loading { ProgressView() } }
     }
