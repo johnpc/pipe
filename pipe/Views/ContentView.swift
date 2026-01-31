@@ -14,13 +14,17 @@ struct ContentView: View {
                     switch selectedTab {
                     case 0:
                         NavigationStack {
-                            SearchView(player: player, following: following)
+                            FeedView(player: player, following: following)
                         }
                     case 1:
                         NavigationStack {
-                            RecentsView(player: player, recents: recents)
+                            SearchView(player: player, following: following)
                         }
                     case 2:
+                        NavigationStack {
+                            RecentsView(player: player, recents: recents)
+                        }
+                    case 3:
                         NavigationStack {
                             FollowingView(player: player, following: following)
                         }
@@ -37,9 +41,10 @@ struct ContentView: View {
                     
                     // Custom tab bar
                     HStack {
-                        TabButton(icon: "magnifyingglass", label: "Search", isSelected: selectedTab == 0) { selectedTab = 0 }
-                        TabButton(icon: "clock", label: "Recents", isSelected: selectedTab == 1) { selectedTab = 1 }
-                        TabButton(icon: "heart.fill", label: "Following", isSelected: selectedTab == 2) { selectedTab = 2 }
+                        TabButton(icon: "rectangle.stack", label: "Feed", isSelected: selectedTab == 0) { selectedTab = 0 }
+                        TabButton(icon: "magnifyingglass", label: "Search", isSelected: selectedTab == 1) { selectedTab = 1 }
+                        TabButton(icon: "clock", label: "Recents", isSelected: selectedTab == 2) { selectedTab = 2 }
+                        TabButton(icon: "heart.fill", label: "Following", isSelected: selectedTab == 3) { selectedTab = 3 }
                     }
                     .padding(.top, 8)
                     .padding(.bottom, 2)

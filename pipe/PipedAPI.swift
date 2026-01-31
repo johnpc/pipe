@@ -52,6 +52,7 @@ struct RelatedStream: Codable, Identifiable, Hashable {
     let duration: Int
     let uploaderName: String?
     let uploadedDate: String?
+    let uploaded: Int64?
     
     var id: String { url }
     var videoId: String { url.replacingOccurrences(of: "/watch?v=", with: "") }
