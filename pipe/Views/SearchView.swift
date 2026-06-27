@@ -5,6 +5,7 @@ struct SearchView: View {
     @ObservedObject var following: FollowingStore
     @ObservedObject var recents: RecentsStore
     @ObservedObject var settings: AppSettings
+    @ObservedObject var saved: SavedStore
     @State private var query = ""
     @State private var results: [SearchItem] = []
     @State private var loading = false
@@ -28,7 +29,7 @@ struct SearchView: View {
                         }
                     } else {
                         NavigationLink(value: item) {
-                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) })
+                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) }, isSaved: saved.isSaved(item.videoId), onToggleSave: { saved.toggle(savedItem(item)) })
                         }
                     }
                 }
@@ -67,5 +68,9 @@ struct SearchView: View {
 
     private func queueItem(_ item: SearchItem) {
         Task { await Playback.run(videoId: item.videoId, action: .queue, player: player) }
+    }
+
+    private func savedItem(_ item: SearchItem) -> SavedItem {
+        SavedItem(videoId: item.videoId, title: item.displayTitle, artist: item.displayUploader, thumbnail: item.displayThumbnail, duration: item.duration ?? 0)
     }
 }

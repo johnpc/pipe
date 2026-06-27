@@ -32,7 +32,15 @@ final class FixtureURLProtocol: URLProtocol {
 
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
+    /// When true, only `/streams/` requests fail — so search still returns
+    /// results but opening a video detail fails, exercising the Retry UI.
+    static var failStreams = false
+
     override func startLoading() {
+        if FixtureURLProtocol.failStreams, request.url?.path.hasPrefix("/streams/") == true {
+            client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+            return
+        }
         guard let url = request.url,
               let name = FixtureRouter.fixtureName(for: url),
               let data = FixtureURLProtocol.loader(name) else {
@@ -64,8 +72,13 @@ enum MockMode {
         PipedAPI.session = URLSession(configuration: config)
     }
 
-    /// Activate only when the launch argument is present.
-    static func activateIfNeeded() {
-        if isEnabled() { activate() }
+    static let failArgument = "--uitest-fail-streams"
+
+    /// Activate only when the launch argument is present. Also honors a flag that
+    /// makes `/streams/` requests error, for the error-recovery UI test.
+    static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
+        guard isEnabled(args) else { return }
+        FixtureURLProtocol.failStreams = args.contains(failArgument)
+        activate()
     }
 }

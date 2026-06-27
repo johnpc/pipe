@@ -197,3 +197,58 @@ Feature: Audio and Video Playback Mode
     When I tap "Show Video"
     Then the control should switch to "Audio Only"
 ```
+
+## Feature: Save for Later
+
+```gherkin
+Feature: Save for Later
+  As a user
+  I want to save videos to a list
+  So that I can watch them later
+
+  Scenario: Empty saved state
+    Given I have saved nothing
+    When I open the Saved screen from the Feed
+    Then I should see a "Nothing Saved" empty state
+```
+
+## Feature: Watch History Management
+
+```gherkin
+Feature: Watch History Management
+  As a user
+  I want to clear my watch history
+  So that I can manage my privacy
+
+  Scenario: Clearing watch history
+    Given I have played a video
+    When I open Settings and tap "Clear Watch History"
+    Then the watch history should be empty
+```
+
+## Feature: Feed Sorting and Filtering
+
+```gherkin
+Feature: Feed Sorting and Filtering
+  As a user
+  I want to sort and filter my feed
+  So that I can find content my way
+
+  Scenario: Feed offers sort and hide-watched options
+    Given I am on the Feed tab
+    When I open the feed options menu
+    Then I should see sort options and a "Hide Watched" toggle
+```
+
+## Feature: Error Recovery
+
+```gherkin
+Feature: Error Recovery
+  As a user
+  I want a retry option when content fails to load
+  So that a flaky connection doesn't dead-end me
+
+  Scenario: Detail view offers retry on failure
+    Given a video detail fails to load
+    Then I should see a Retry button
+```

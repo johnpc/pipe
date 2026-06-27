@@ -25,8 +25,27 @@ struct VideoRow: View {
     var resumeTime: Double? = nil
     let onPlay: () -> Void
     let onQueue: () -> Void
+    var isSaved: Bool = false
+    var onToggleSave: (() -> Void)? = nil
 
     var body: some View {
+        content
+            .contextMenu {
+                Button { onPlay() } label: { Label("Play", systemImage: "play.fill") }
+                Button { onQueue() } label: { Label("Add to Queue", systemImage: "text.badge.plus") }
+                if let onToggleSave {
+                    Button { onToggleSave() } label: {
+                        Label(isSaved ? "Remove from Saved" : "Save for Later",
+                              systemImage: isSaved ? "bookmark.fill" : "bookmark")
+                    }
+                }
+                if let url = RowActions.youtubeURL(videoId: v.videoId) {
+                    ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
+                }
+            }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 ZStack(alignment: .bottomTrailing) {

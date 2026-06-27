@@ -225,6 +225,51 @@ final class AcceptanceTests: XCTestCase {
         XCTAssertTrue(app.buttons["Audio Only"].waitForExistence(timeout: 5), "Toggle should flip to Audio Only")
     }
 
+    // MARK: - Feature: Save for Later
+
+    /// Scenario: Empty saved state
+    func testSavedEmptyState() throws {
+        // Open Saved from the Feed toolbar bookmark.
+        let savedButton = app.buttons["savedButton"]
+        XCTAssertTrue(savedButton.waitForExistence(timeout: 10))
+        savedButton.tap()
+        XCTAssertTrue(app.staticTexts["Nothing Saved"].waitForExistence(timeout: 10),
+                      "Saved screen should show its empty state")
+    }
+
+    // MARK: - Feature: Watch History Management
+
+    /// Scenario: Clearing watch history
+    func testClearWatchHistory() throws {
+        // Given I have played a video (records watch history).
+        searchAndPlayFirstStream()
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15))
+        // When I open Settings and clear watch history.
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["Watch History"].waitForExistence(timeout: 10))
+        let clear = app.buttons["Clear Watch History"]
+        if !clear.waitForExistence(timeout: 3) || !clear.isHittable { app.swipeUp() }
+        XCTAssertTrue(clear.waitForExistence(timeout: 5), "Clear Watch History should be present")
+        clear.tap()
+        XCTAssertTrue(app.staticTexts["No watch history"].waitForExistence(timeout: 5),
+                      "Watch history should be empty after clearing")
+    }
+
+    // MARK: - Feature: Feed Sorting and Filtering
+
+    /// Scenario: Feed offers sort and hide-watched options
+    func testFeedMenuOffersSortAndFilter() throws {
+        let menu = app.buttons["feedMenu"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 10))
+        menu.tap()
+        XCTAssertTrue(app.buttons["Newest"].waitForExistence(timeout: 5) ||
+                      app.staticTexts["Newest"].waitForExistence(timeout: 5),
+                      "Sort options should be shown")
+        XCTAssertTrue(app.switches["Hide Watched"].waitForExistence(timeout: 5) ||
+                      app.buttons["Hide Watched"].exists,
+                      "Hide Watched toggle should be shown")
+    }
+
     // MARK: - Helpers
 
     /// Type a query into the search field and submit.
@@ -242,5 +287,33 @@ final class AcceptanceTests: XCTestCase {
         let playButton = app.buttons["playButton"].firstMatch
         XCTAssertTrue(playButton.waitForExistence(timeout: 15), "A play control should be present in results")
         playButton.tap()
+    }
+}
+
+/// Error-recovery scenarios launch the app in a mode where every request fails,
+/// so the Retry UI is exercised deterministically.
+final class ErrorRecoveryAcceptanceTests: XCTestCase {
+    private var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        // Search works; only /streams/ fails, so opening a video detail fails.
+        app.launchArguments = ["--uitest-mock", "--uitest-fail-streams"]
+        app.launch()
+    }
+
+    /// Scenario: Detail view offers retry on failure
+    func testDetailViewOffersRetryOnFailure() throws {
+        // Search returns fixture results...
+        app.buttons["Search"].tap()
+        app.buttons["MrBeast"].firstMatch.tap()
+        // ...tap the first video result (a stream NavigationLink) to open Detail.
+        let firstVideo = app.staticTexts["Guess What Age Punched You"].firstMatch
+        XCTAssertTrue(firstVideo.waitForExistence(timeout: 15))
+        firstVideo.tap()
+        // Detail's streams load fails → Retry surfaces.
+        XCTAssertTrue(app.buttons["retryButton"].waitForExistence(timeout: 15),
+                      "Detail view should show a Retry button when loading fails")
     }
 }

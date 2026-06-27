@@ -29,11 +29,16 @@ class PlayerState: ObservableObject {
     private let queueKey = "savedQueue"
     private let indexKey = "savedQueueIndex"
 
+    private let speedKey = "playbackSpeed"
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         setupAudioSession()
         setupRemoteCommands()
         restoreQueue()
+        // Restore the user's preferred playback speed (podcast-app behavior).
+        let savedSpeed = defaults.float(forKey: speedKey)
+        if savedSpeed > 0 { playbackSpeed = savedSpeed }
     }
 
     // Opt the deinit out of MainActor isolation to avoid a crashing async
@@ -76,6 +81,7 @@ class PlayerState: ObservableObject {
     
     func setSpeed(_ speed: Float) {
         playbackSpeed = speed
+        defaults.set(speed, forKey: speedKey)
         if isPlaying { player?.rate = speed }
         updateNowPlaying()
     }
@@ -230,6 +236,8 @@ class PlayerState: ObservableObject {
         }
         
         player?.play()
+        // Apply the remembered playback speed to the new item.
+        if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
         isPlaying = true
         updateNowPlaying()
     }

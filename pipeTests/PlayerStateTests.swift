@@ -165,6 +165,19 @@ struct PlayerStateTests {
         #expect(player.playbackSpeed == 1.5)
     }
 
+    @Test func playbackSpeedPersistsAcrossInstances() {
+        let suite = UserDefaults(suiteName: "speed-\(UUID().uuidString)")!
+        let p1 = PlayerState(defaults: suite)
+        p1.setSpeed(2.0)
+        let p2 = PlayerState(defaults: suite)
+        #expect(p2.playbackSpeed == 2.0)
+    }
+
+    @Test func defaultSpeedIsOneWhenNoneSaved() {
+        let player = isolatedPlayer()
+        #expect(player.playbackSpeed == 1.0)
+    }
+
     @Test func skipClampsWithinDuration() {
         let player = isolatedPlayer()
         player.duration = 100

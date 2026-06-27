@@ -4,31 +4,46 @@ struct FeedView: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var following: FollowingStore
     @ObservedObject var recents: RecentsStore
+    @ObservedObject var saved: SavedStore
     @State private var videos: [RelatedStream] = []
     @State private var loading = false
+    @State private var sort: FeedSort = .newest
+    @State private var hideWatched = false
     var cache = FeedCache()
-    
+
+    private var arranged: [RelatedStream] {
+        FeedLogic.arrange(videos, sort: sort, hideWatched: hideWatched) {
+            recents.isCompleted(videoId: $0.videoId)
+        }
+    }
+
     var body: some View {
         Group {
             if loading {
                 ProgressView("Loading feed...")
-            } else if videos.isEmpty {
+            } else if arranged.isEmpty {
                 ContentUnavailableView("No Feed", systemImage: "rectangle.stack", description: Text("Follow channels to see their videos here"))
             } else {
-                List(videos) { v in
-                    VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { playVideo(v) }, onQueue: { queueVideo(v) })
+                List(arranged) { v in
+                    VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { playVideo(v) }, onQueue: { queueVideo(v) }, isSaved: saved.isSaved(v.videoId), onToggleSave: { saved.toggle(savedItem(v)) })
                 }
                 .listStyle(.plain)
                 .refreshable { await loadFeed() }
             }
         }
         .navigationTitle("Feed")
+        .navigationDestination(for: String.self) { _ in SavedView(player: player, saved: saved) }
+        .toolbar {
+            FeedSortMenu(sort: $sort, hideWatched: $hideWatched)
+            NavigationLink(value: "saved") { Image(systemName: "bookmark") }
+                .accessibilityIdentifier("savedButton")
+        }
         .task { await loadFeed() }
         .onChange(of: following.channels) { _, _ in
             Task { await loadFeed() }
         }
     }
-    
+
     private func loadFeed() async {
         guard !following.channels.isEmpty else {
             videos = []
@@ -65,6 +80,10 @@ struct FeedView: View {
         loading = false
     }
     
+    private func savedItem(_ v: RelatedStream) -> SavedItem {
+        SavedItem(videoId: v.videoId, title: v.title, artist: v.uploaderName ?? "", thumbnail: v.thumbnail, duration: v.duration)
+    }
+
     private func playVideo(_ v: RelatedStream) {
         Task { await Playback.run(videoId: v.videoId, action: .play, player: player) }
     }
