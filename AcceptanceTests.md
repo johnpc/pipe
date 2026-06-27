@@ -35,6 +35,41 @@ The generated file is checked in; a quality gate
 (`generate_acceptance_tests.py --check`, run in `scripts/quality.sh` and CI)
 fails the build if it drifts from the `.feature` files.
 
+> **Reuse step phrasings.** Each step line must match **exactly one** definition.
+> A near-duplicate fails as *undefined* (no match) or *ambiguous* (two matches).
+> Reach for an existing step before inventing new wording.
+
+### Worked example
+
+A scenario in `pipeUITests/Features/picture_in_picture.feature`:
+
+```gherkin
+  Scenario: Video mode presents a PiP-capable player
+    Given a video is playing
+    And I have opened the full player
+    When I enable "Show Video"
+    Then the video surface should be shown (PiP-capable)
+```
+
+`Given a video is playing` and `And I have opened the full player` already exist,
+so they need nothing. The last two lines are new phrasings, so each gets a
+definition in `StepDefinitions.swift` — note the pattern is a **regex**, so the
+literal parentheses in the last step are escaped:
+
+```swift
+r.define("I enable \"(.+)\"") { w in
+    let button = w.app.buttons[w.capture()]
+    XCTAssertTrue(button.waitForExistence(timeout: medium))
+    button.tap()
+}
+r.define("the video surface should be shown \\(PiP-capable\\)") { w in
+    XCTAssertTrue(w.app.buttons["Audio Only"].waitForExistence(timeout: short),
+                  "Video surface (PiP-capable) should be active in video mode")
+}
+```
+
+The capture group `"(.+)"` is passed to the handler as `w.capture()`.
+
 ## Determinism
 
 The app launches in mock mode (`--uitest-mock`), serving bundled real Piped

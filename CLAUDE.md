@@ -28,11 +28,16 @@ Every feature ships as one **thin vertical slice** — view + logic helper + sto
 API + tests, just enough for the scenario, nothing speculative.
 
 1. **Spec first.** Write/confirm Gherkin acceptance scenarios as real
-   `.feature` files in `pipeUITests/Features/` (the source of truth). Steps are
-   executed by the native Swift runner (`GherkinParser` + `StepDefinitions` +
-   `StepRegistry`); new step phrasings need a matching definition in
-   `StepDefinitions.swift`. Regenerate the concrete XCUITest methods with
-   `python3 scripts/generate_acceptance_tests.py`.
+   `.feature` files in `pipeUITests/Features/` (the source of truth), executed
+   by the native Swift runner (`GherkinParser` + `StepDefinitions` +
+   `StepRegistry`). **Prefer reusing existing step phrasings** — each step must
+   match exactly one definition in `StepDefinitions.swift`, so a near-duplicate
+   line fails as undefined or ambiguous; a genuinely new phrasing needs a new
+   definition there (its pattern is a regex — escape literals like `(` and `?`).
+   Then regenerate **and commit** the concrete XCUITest methods
+   (`AcceptanceTests.generated.swift`):
+   `python3 scripts/generate_acceptance_tests.py`. See `AcceptanceTests.md` for
+   a worked example.
 2. **Implement to pass the spec** — follow the architecture and conventions below.
 3. **Run the full quality gate** and get it green locally (`bash scripts/quality.sh`).
 4. **Conventional commit, push, CI green.** Open a PR; CI blocks the merge.
