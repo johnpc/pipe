@@ -6,6 +6,7 @@ struct ContentView: View {
     @StateObject private var recents = RecentsStore()
     @StateObject private var settings = AppSettings()
     @StateObject private var saved = SavedStore()
+    @StateObject private var downloads = DownloadStore()
     @StateObject private var toast = ToastManager.shared
     @State private var selectedTab = 0
     @State private var showSettings = false
@@ -17,7 +18,7 @@ struct ContentView: View {
                     switch selectedTab {
                     case 0:
                         NavigationStack {
-                            FeedView(player: player, following: following, recents: recents, saved: saved)
+                            FeedView(player: player, following: following, recents: recents, saved: saved, downloads: downloads)
                         }
                     case 1:
                         NavigationStack {
@@ -58,7 +59,7 @@ struct ContentView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .onAppear { player.recents = recents }
+        .onAppear { player.recents = recents; player.downloads = downloads }
         .onChange(of: player.error) { _, newError in
             if let msg = newError {
                 toast.showError(msg)

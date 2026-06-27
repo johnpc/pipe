@@ -20,10 +20,28 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Channel Metadata
+
+    func test_Channel_results_show_subscriber_count_and_verified_badge() {
+        runScenario(feature: "channel_metadata.feature", scenario: "Channel results show subscriber count and verified badge")
+    }
+
+
     // MARK: - Chapters
 
     func test_Opening_a_video_with_chapters_shows_a_tappable_chapter_list() {
         runScenario(feature: "chapters.feature", scenario: "Opening a video with chapters shows a tappable chapter list")
+    }
+
+
+    // MARK: - Offline Downloads
+
+    func test_Empty_downloads_state() {
+        runScenario(feature: "downloads.feature", scenario: "Empty downloads state")
+    }
+
+    func test_Downloading_a_video_adds_it_to_Downloads() {
+        runScenario(feature: "downloads.feature", scenario: "Downloading a video adds it to Downloads")
     }
 
 
@@ -129,6 +147,13 @@ extension AcceptanceTests {
 
     func test_Clearing_search_history_empties_it() {
         runScenario(feature: "settings.feature", scenario: "Clearing search history empties it")
+    }
+
+
+    // MARK: - Sleep Timer End of Episode
+
+    func test_Setting_an_end_of_episode_sleep_timer_shows_its_state() {
+        runScenario(feature: "sleep_timer.feature", scenario: "Setting an end-of-episode sleep timer shows its state")
     }
 
 

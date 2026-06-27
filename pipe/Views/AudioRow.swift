@@ -80,15 +80,3 @@ struct AudioRow: View {
         .padding(.vertical, 8)
     }
 }
-
-struct ChannelRow: View {
-    let item: SearchItem
-    
-    var body: some View {
-        HStack {
-            AsyncImage(url: URL(string: item.displayThumbnail)) { $0.resizable() } placeholder: { Color.gray }
-                .frame(width: 44, height: 44).clipShape(Circle())
-            Text(item.displayTitle).font(.headline)
-        }
-    }
-}

@@ -52,12 +52,19 @@ final class ViewRenderTests: XCTestCase {
         SavedStore(defaults: UserDefaults(suiteName: "render-saved-\(UUID().uuidString)")!)
     }
 
+    private func makeDownloads() -> DownloadStore {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("render-dl-\(UUID().uuidString)", isDirectory: true)
+        return DownloadStore(defaults: UserDefaults(suiteName: "render-dl-\(UUID().uuidString)")!, directory: dir) { _, dest in
+            try Data("m".utf8).write(to: dest)
+        }
+    }
+
     private func searchVideo() -> SearchItem {
-        SearchItem(url: "/watch?v=v1", type: "stream", title: "Video", thumbnail: "t", uploaderName: "U", uploaderUrl: "/channel/c1", duration: 120, name: nil, uploadedDate: "1 day ago")
+        SearchItem(url: "/watch?v=v1", type: "stream", title: "Video", thumbnail: "t", uploaderName: "U", uploaderUrl: "/channel/c1", duration: 120, name: nil, uploadedDate: "1 day ago", verified: nil, subscribers: nil)
     }
 
     private func searchChannel() -> SearchItem {
-        SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil)
+        SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: nil, subscribers: nil)
     }
 
     private func relatedStream() -> RelatedStream {
@@ -73,7 +80,7 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderFeedView() {
         let (p, f, r) = makeStores()
-        render(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
+        render(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), downloads: makeDownloads(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
     func testRenderSearchViewEmptyState() {
@@ -113,6 +120,24 @@ final class ViewRenderTests: XCTestCase {
         let s = makeSaved()
         s.add(SavedItem(videoId: "v1", title: "Saved One", artist: "A", thumbnail: "t", duration: 60))
         render(NavigationStack { SavedView(player: p, saved: s) })
+    }
+
+    func testRenderDownloadsViewEmpty() {
+        let (p, _, _) = makeStores()
+        render(NavigationStack { DownloadsView(player: p, downloads: makeDownloads()) })
+    }
+
+    func testRenderDownloadsViewWithItems() async {
+        let (p, _, _) = makeStores()
+        let d = makeDownloads()
+        await d.download(videoId: "v1", title: "Downloaded One", artist: "A", thumbnail: "t", duration: 60, audioUrl: "https://x/a", videoUrl: "")
+        render(NavigationStack { DownloadsView(player: p, downloads: d) })
+    }
+
+    func testRenderDownloadButton() {
+        let d = makeDownloads()
+        let stream = StreamResponse(title: "T", description: nil, uploader: "U", uploaderUrl: nil, duration: 10, hls: nil, audioStreams: [], videoStreams: [], thumbnailUrl: "t", uploadDate: nil, chapters: nil)
+        render(DownloadButton(videoId: "v1", stream: stream, downloads: d))
     }
 
     func testRenderRecentsViewEmpty() {
@@ -190,7 +215,7 @@ final class ViewRenderTests: XCTestCase {
         """)
         let (p, f, r) = makeStores()
         f.follow(FollowedChannel(id: "c1", name: "Chan", thumbnail: "t"))
-        renderLive(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
+        renderLive(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), downloads: makeDownloads(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
 
@@ -212,6 +237,11 @@ final class ViewRenderTests: XCTestCase {
     }
 
     func testRenderChannelRow() { render(ChannelRow(item: searchChannel())) }
+
+    func testRenderChannelRowVerifiedWithSubscribers() {
+        let item = SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Big Chan", uploadedDate: nil, verified: true, subscribers: 505_000_000)
+        render(ChannelRow(item: item))
+    }
 
     // MARK: - Player
 

@@ -251,6 +251,47 @@ enum StepDefinitions {
                           "Hide Watched toggle should be shown")
         }
 
+        // MARK: Downloads
+        r.define("I have downloaded nothing") { _ in }
+        r.define("I have searched and opened a video") { w in
+            w.app.buttons["Search"].tap()
+            w.app.buttons[channelName].firstMatch.tap()
+            let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
+            XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
+            firstVideo.tap()
+        }
+        r.define("I tap the download button") { w in
+            let button = w.app.buttons["downloadButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: long), "Download button should be present")
+            button.tap()
+        }
+        r.define("I open the Downloads screen from the Feed") { w in
+            // Ensure we're on the Feed first (a prior step may have navigated away).
+            w.app.buttons["Feed"].tap()
+            let button = w.app.buttons["downloadsButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: medium))
+            button.tap()
+        }
+        r.define("I should see the downloaded video") { w in
+            // The downloaded item shows by title (fixture now-playing title).
+            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long) ||
+                          w.app.cells.count > 0,
+                          "Downloaded video should be listed")
+        }
+
+        // MARK: Channel metadata
+        r.define("the channel result should show a subscriber count") { w in
+            XCTAssertTrue(w.app.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS[c] 'subscribers'")).firstMatch.waitForExistence(timeout: long),
+                          "Channel result should show a subscriber count")
+        }
+
+        // MARK: Sleep timer (end of episode)
+        r.define("I should see \"Stops after this episode\"") { w in
+            XCTAssertTrue(w.app.staticTexts["Stops after this episode"].waitForExistence(timeout: short),
+                          "End-of-episode sleep state should be shown")
+        }
+
         // MARK: Error recovery (scenario launches with --uitest-fail-streams)
         r.define("a video detail fails to load") { w in
             w.app.buttons["Search"].tap()

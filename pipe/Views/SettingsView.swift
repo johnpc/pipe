@@ -34,10 +34,18 @@ struct SettingsView: View {
                         Button("Cancel") { player.startSleepTimer(minutes: nil) }
                             .foregroundColor(.red)
                     }
+                } else if player.stopAfterCurrentEpisode {
+                    HStack {
+                        Label("Stops after this episode", systemImage: "moon.zzz.fill")
+                        Spacer()
+                        Button("Cancel") { player.stopAfterCurrentEpisode = false }
+                            .foregroundColor(.red)
+                    }
                 } else {
                     ForEach(sleepOptions, id: \.self) { mins in
                         Button("Sleep after \(mins) min") { player.startSleepTimer(minutes: mins) }
                     }
+                    Button("Sleep at end of episode") { player.stopAfterCurrentEpisode = true }
                 }
             }
 

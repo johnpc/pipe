@@ -16,11 +16,15 @@ class PlayerState: ObservableObject {
     @Published var videoMode = false
     /// Minutes remaining on the sleep timer, or nil when no timer is set.
     @Published var sleepMinutesRemaining: Int?
+    /// When set, playback stops at the end of the current item instead of
+    /// advancing — the "sleep at end of episode" option.
+    @Published var stopAfterCurrentEpisode = false
 
     private var sleepTimer: Timer?
     
     var player: AVPlayer?
     var recents: RecentsStore?
+    var downloads: DownloadStore?
     private var currentVideoId: String?
     private var timeObserver: Any?
     private var endObserver: Any?
@@ -220,7 +224,9 @@ class PlayerState: ObservableObject {
         error = nil
         setupAudioSession()
 
-        guard let url = URL(string: item.playbackURL(videoMode: videoMode)) else {
+        // Prefer a downloaded local file (offline playback) over streaming.
+        let source = downloads?.localURLString(for: item.videoId) ?? item.playbackURL(videoMode: videoMode)
+        guard let url = URL(string: source) else {
             error = "Couldn't play \(item.title)"
             return
         }
@@ -296,7 +302,12 @@ class PlayerState: ObservableObject {
         guard finishedIndex >= 0, finishedIndex < queue.count else { return }
         queue.remove(at: finishedIndex)
         persistQueue()
-        if queue.isEmpty {
+        // Honor an "end of episode" sleep request: stop instead of advancing.
+        if stopAfterCurrentEpisode {
+            stopAfterCurrentEpisode = false
+            currentIndex = queue.isEmpty ? -1 : min(finishedIndex, queue.count - 1)
+            stop()
+        } else if queue.isEmpty {
             currentIndex = -1
             stop()
         } else {
