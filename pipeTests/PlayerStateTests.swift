@@ -368,6 +368,20 @@ struct PlayerStateTests {
         #expect(p2.isPlaying == false)
     }
 
+    @Test func resumeAfterRestoreStartsCurrentItem() {
+        // Regression: after a cold launch the queue is restored but player is nil;
+        // resume() must start the current item, not silently no-op.
+        let suite = UserDefaults(suiteName: "resume-restore-\(UUID().uuidString)")!
+        let p1 = PlayerState(defaults: suite)
+        p1.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+
+        let p2 = PlayerState(defaults: suite)  // fresh: player == nil, queue restored
+        #expect(p2.player == nil)
+        p2.resume()
+        #expect(p2.isPlaying == true)
+        #expect(p2.player != nil)  // an item was actually loaded
+    }
+
     @Test func clearedQueueDoesNotRestore() {
         let suite = UserDefaults(suiteName: "persist-clear-\(UUID().uuidString)")!
         let p1 = PlayerState(defaults: suite)

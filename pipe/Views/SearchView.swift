@@ -30,7 +30,7 @@ struct SearchView: View {
                         }
                     } else {
                         NavigationLink(value: item) {
-                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) }, isSaved: saved.isSaved(item.videoId), onToggleSave: { saved.toggle(savedItem(item)) }, isDownloaded: downloads.isDownloaded(item.videoId), onToggleDownload: { toggleDownload(item) })
+                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) }, isSaved: saved.isSaved(item.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(item)) }, isDownloaded: downloads.isDownloaded(item.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(item) })
                         }
                     }
                 }

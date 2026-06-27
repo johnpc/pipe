@@ -24,6 +24,7 @@ struct MiniPlayerBar: View {
                         .font(.title2)
                         .frame(width: 44, height: 44)
                 }
+                .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

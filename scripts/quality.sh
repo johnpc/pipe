@@ -10,7 +10,7 @@ DESTINATION="${PIPE_DESTINATION:-platform=iOS Simulator,name=iPhone 17 Pro}"
 RESULT="TestResults.xcresult"
 
 echo "▶ [1/4] View file line limit (≤100)"
-bash scripts/check_view_lines.sh
+bash scripts/check_file_lines.sh
 
 echo "▶ [1b/4] Acceptance tests generated from .feature files are in sync"
 python3 scripts/generate_acceptance_tests.py --check

@@ -49,8 +49,8 @@ struct FeedView: View {
         VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId),
                  resumeTime: recents.resumeTime(videoId: v.videoId),
                  onPlay: { playVideo(v) }, onQueue: { queueVideo(v) },
-                 isSaved: saved.isSaved(v.videoId), onToggleSave: { saved.toggle(savedItem(v)) },
-                 isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { toggleDownload(v) })
+                 isSaved: saved.isSaved(v.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(v)) },
+                 isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(v) })
     }
 
     private func loadFeed() async {
