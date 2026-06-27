@@ -53,32 +53,10 @@ struct FeedView: View {
     }
     
     private func playVideo(_ v: RelatedStream) {
-        ToastManager.shared.showLoading("Loading...")
-        Task {
-            guard let stream = try? await PipedAPI.streams(v.videoId) else {
-                await MainActor.run { ToastManager.shared.hide() }
-                return
-            }
-            let url = getStreamUrl(stream)
-            await MainActor.run {
-                player.play(videoId: v.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration, uploadedDate: stream.uploadDate)
-                ToastManager.shared.showSuccess("Now Playing")
-            }
-        }
+        Task { await Playback.run(videoId: v.videoId, action: .play, player: player) }
     }
-    
+
     private func queueVideo(_ v: RelatedStream) {
-        ToastManager.shared.showLoading("Adding...")
-        Task {
-            guard let stream = try? await PipedAPI.streams(v.videoId) else {
-                await MainActor.run { ToastManager.shared.hide() }
-                return
-            }
-            let url = getStreamUrl(stream)
-            await MainActor.run {
-                player.addToQueue(videoId: v.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration, uploadedDate: stream.uploadDate)
-                ToastManager.shared.showSuccess("Added to Queue")
-            }
-        }
+        Task { await Playback.run(videoId: v.videoId, action: .queue, player: player) }
     }
 }

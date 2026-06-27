@@ -28,19 +28,28 @@ class RecentsStore: ObservableObject {
     @Published var items: [RecentItem] = []
     private let key = "recentItems"
     private let maxItems = 50
-    
-    init() { load() }
-    
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        load()
+    }
+
+    // Opt the deinitializer out of MainActor isolation: there is no
+    // actor-isolated cleanup here, and an isolated deinit triggers an
+    // async executor hop that crashes under the current toolchain.
+    nonisolated deinit {}
+
     func load() {
-        if let data = UserDefaults.standard.data(forKey: key),
+        if let data = defaults.data(forKey: key),
            let decoded = try? JSONDecoder().decode([RecentItem].self, from: data) {
             items = decoded
         }
     }
-    
+
     func save() {
         if let data = try? JSONEncoder().encode(items) {
-            UserDefaults.standard.set(data, forKey: key)
+            defaults.set(data, forKey: key)
         }
     }
     

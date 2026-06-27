@@ -85,29 +85,40 @@ struct VideoStream: Codable {
 }
 
 enum PipedAPI {
-    static func search(_ query: String) async throws -> [SearchItem] {
+    /// Injectable session so tests can stub responses via a custom URLProtocol.
+    /// Defaults to `.shared` in the app.
+    static var session: URLSession = .shared
+
+    /// Builds the search request URL. Pure, so URL construction is unit-testable.
+    static func searchURL(_ query: String) -> URL {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        let url = URL(string: "\(pipedBase)/search?q=\(encoded)&filter=all")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        return URL(string: "\(pipedBase)/search?q=\(encoded)&filter=all")!
+    }
+
+    static func channelTabURL(_ tabData: String) -> URL {
+        let encoded = tabData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? tabData
+        return URL(string: "\(pipedBase)/channels/tabs?data=\(encoded)")!
+    }
+
+    static func search(_ query: String) async throws -> [SearchItem] {
+        let (data, _) = try await session.data(from: searchURL(query))
         return try JSONDecoder().decode(SearchResponse.self, from: data).items
     }
-    
+
     static func channel(_ id: String) async throws -> ChannelResponse {
         let url = URL(string: "\(pipedBase)/channel/\(id)")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(from: url)
         return try JSONDecoder().decode(ChannelResponse.self, from: data)
     }
-    
+
     static func channelTab(_ tabData: String) async throws -> ChannelTabResponse {
-        let encoded = tabData.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? tabData
-        let url = URL(string: "\(pipedBase)/channels/tabs?data=\(encoded)")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(from: channelTabURL(tabData))
         return try JSONDecoder().decode(ChannelTabResponse.self, from: data)
     }
-    
+
     static func streams(_ videoId: String) async throws -> StreamResponse {
         let url = URL(string: "\(pipedBase)/streams/\(videoId)")!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        let (data, _) = try await session.data(from: url)
         return try JSONDecoder().decode(StreamResponse.self, from: data)
     }
 }

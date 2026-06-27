@@ -3,3 +3,5 @@ DerivedData/
 *.xcuserstate
 *.xcuserdatad/
 .DS_Store
+TestResults.xcresult/
+coverage.json

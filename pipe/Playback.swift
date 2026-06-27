@@ -1,0 +1,80 @@
+import Foundation
+
+/// Shared playback orchestration extracted out of the view layer.
+///
+/// All list views (Feed, Search, Channel, Recents) need the identical
+/// "fetch stream → resolve URL → play or enqueue → show toast" flow.
+/// Keeping it here means the views only render and this logic is unit-testable.
+enum Playback {
+    /// What to do with a resolved stream.
+    enum Action { case play, queue }
+
+    /// Build the metadata tuple a player call needs from a decoded stream.
+    /// Pure and synchronous so it can be exercised directly in tests.
+    static func resolve(_ stream: StreamResponse, videoId: String) -> ResolvedStream {
+        ResolvedStream(
+            videoId: videoId,
+            url: getStreamUrl(stream),
+            title: stream.title,
+            artist: stream.uploader,
+            thumbnail: stream.thumbnailUrl,
+            duration: stream.duration,
+            uploadedDate: stream.uploadDate
+        )
+    }
+
+    /// Apply a resolved stream to the player for the given action.
+    @MainActor
+    static func apply(_ resolved: ResolvedStream, action: Action, to player: PlayerState) {
+        switch action {
+        case .play:
+            player.play(videoId: resolved.videoId, urlString: resolved.url, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+        case .queue:
+            player.addToQueue(videoId: resolved.videoId, url: resolved.url, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+        }
+    }
+
+    /// Toast copy for each phase of an action. Pure so tests can assert it.
+    static func loadingMessage(for action: Action) -> String {
+        action == .play ? "Loading..." : "Adding..."
+    }
+
+    static func successMessage(for action: Action) -> String {
+        action == .play ? "Now Playing" : "Added to Queue"
+    }
+
+    /// Full async flow used by the views: fetch, resolve, apply, toast.
+    /// `toast` defaults to the shared manager; tests pass a spy.
+    @MainActor
+    static func run(videoId: String, action: Action, player: PlayerState, toast: ToastManaging? = nil) async {
+        let toast = toast ?? ToastManager.shared
+        toast.showLoading(loadingMessage(for: action))
+        guard let stream = try? await PipedAPI.streams(videoId) else {
+            toast.hide()
+            return
+        }
+        apply(resolve(stream, videoId: videoId), action: action, to: player)
+        toast.showSuccess(successMessage(for: action))
+    }
+}
+
+/// Value type carrying everything the player needs to start an item.
+struct ResolvedStream: Equatable {
+    let videoId: String
+    let url: String
+    let title: String
+    let artist: String
+    let thumbnail: String
+    let duration: Int
+    let uploadedDate: String?
+}
+
+/// Protocol over ToastManager so playback logic can be tested without the singleton.
+@MainActor
+protocol ToastManaging {
+    func showLoading(_ msg: String)
+    func showSuccess(_ msg: String)
+    func hide()
+}
+
+extension ToastManager: ToastManaging {}
