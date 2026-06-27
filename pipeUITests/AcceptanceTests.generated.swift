@@ -20,6 +20,13 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Chapters
+
+    func test_Opening_a_video_with_chapters_shows_a_tappable_chapter_list() {
+        runScenario(feature: "chapters.feature", scenario: "Opening a video with chapters shows a tappable chapter list")
+    }
+
+
     // MARK: - Error Recovery
 
     func test_Detail_view_offers_retry_on_failure() {

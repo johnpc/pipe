@@ -207,6 +207,27 @@ enum StepDefinitions {
                           "Toggle should flip to \(w.capture())")
         }
 
+        // MARK: Chapters (streams fixture includes a chapters list)
+        r.define("I have searched and opened a video that has chapters") { w in
+            w.app.buttons["Search"].tap()
+            w.app.buttons[channelName].firstMatch.tap()
+            let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
+            XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
+            firstVideo.tap()
+        }
+        r.define("I should see a \"Chapters\" list") { w in
+            XCTAssertTrue(w.app.staticTexts["Chapters"].waitForExistence(timeout: long), "Chapters list should appear")
+            XCTAssertTrue(w.app.staticTexts["Introduction"].exists, "A fixture chapter title should be listed")
+        }
+        r.define("I tap a chapter") { w in
+            w.app.buttons["chapterRow"].firstMatch.tap()
+        }
+        r.define("playback should jump to that chapter's start") { w in
+            let miniControl = w.app.buttons.matching(
+                NSPredicate(format: "label CONTAINS[c] 'pause' OR label CONTAINS[c] 'play'")).firstMatch
+            XCTAssertTrue(miniControl.waitForExistence(timeout: long), "Tapping a chapter should start playback")
+        }
+
         // MARK: Save for later
         r.define("I open the Saved screen from the Feed") { w in
             let saved = w.app.buttons["savedButton"]
