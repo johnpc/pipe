@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# pipe pre-commit hook: lint/format -> tests -> build.
+# Install with: bash scripts/install-hooks.sh
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+SCHEME="pipe"
+DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
+
+echo "▶ [1/4] View file line limit"
+bash scripts/check_view_lines.sh
+
+echo "▶ [2/4] Lint / format (swiftformat --lint if available)"
+if command -v swiftformat >/dev/null 2>&1; then
+  swiftformat --lint pipe pipeTests pipeUITests
+else
+  echo "  swiftformat not installed — skipping (brew install swiftformat to enable)"
+fi
+
+echo "▶ [3/4] Unit tests"
+xcodebuild test \
+  -scheme "$SCHEME" \
+  -destination "$DESTINATION" \
+  -only-testing:"pipeTests" \
+  -derivedDataPath DerivedData \
+  -quiet
+
+echo "▶ [4/4] Build app"
+xcodebuild build \
+  -scheme "$SCHEME" \
+  -destination "$DESTINATION" \
+  -derivedDataPath DerivedData \
+  -quiet
+
+echo "✅ Pre-commit checks passed"

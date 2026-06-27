@@ -7,67 +7,13 @@ struct SearchView: View {
     @State private var query = ""
     @State private var results: [SearchItem] = []
     @State private var loading = false
-    
-    private let suggestions = [
-        "Joe Rogan Experience",
-        "Lex Fridman",
-        "Huberman Lab",
-        "MrBeast",
-        "Veritasium",
-        "Marques Brownlee",
-        "Kurzgesagt",
-        "3Blue1Brown"
-    ]
-    
+
+    private let suggestions = SearchLogic.suggestions
+
     var body: some View {
         Group {
             if results.isEmpty && !loading {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 60)
-                        Text("Search Videos")
-                            .font(.title2)
-                        
-                        // Inline search field for better iPad compatibility
-                        HStack {
-                            TextField("Search...", text: $query)
-                                .textFieldStyle(.roundedBorder)
-                                .onSubmit { search(query) }
-                            Button { search(query) } label: {
-                                Image(systemName: "magnifyingglass")
-                                    .padding(8)
-                                    .background(Color.accentColor)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
-                            }
-                            .disabled(query.isEmpty)
-                        }
-                        .padding(.horizontal, 40)
-                        
-                        Text("Or try one of these popular channels")
-                            .foregroundStyle(.secondary)
-                        
-                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                            ForEach(suggestions, id: \.self) { suggestion in
-                                Button { search(suggestion) } label: {
-                                    Text(suggestion)
-                                        .font(.subheadline)
-                                        .lineLimit(1)
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 8)
-                                        .frame(maxWidth: .infinity)
-                                        .background(Color.secondary.opacity(0.15))
-                                        .cornerRadius(8)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
-                }
+                SearchSuggestionsView(query: $query, suggestions: suggestions, onSearch: search)
             } else {
                 List(results) { item in
                     if item.isChannel {
@@ -112,32 +58,10 @@ struct SearchView: View {
     }
     
     private func playItem(_ item: SearchItem) {
-        ToastManager.shared.showLoading("Loading...")
-        Task {
-            guard let stream = try? await PipedAPI.streams(item.videoId) else {
-                await MainActor.run { ToastManager.shared.hide() }
-                return
-            }
-            let url = getStreamUrl(stream)
-            await MainActor.run {
-                player.play(videoId: item.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration, uploadedDate: stream.uploadDate)
-                ToastManager.shared.showSuccess("Now Playing")
-            }
-        }
+        Task { await Playback.run(videoId: item.videoId, action: .play, player: player) }
     }
-    
+
     private func queueItem(_ item: SearchItem) {
-        ToastManager.shared.showLoading("Adding...")
-        Task {
-            guard let stream = try? await PipedAPI.streams(item.videoId) else {
-                await MainActor.run { ToastManager.shared.hide() }
-                return
-            }
-            let url = getStreamUrl(stream)
-            await MainActor.run {
-                player.addToQueue(videoId: item.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration, uploadedDate: stream.uploadDate)
-                ToastManager.shared.showSuccess("Added to Queue")
-            }
-        }
+        Task { await Playback.run(videoId: item.videoId, action: .queue, player: player) }
     }
 }

@@ -58,32 +58,10 @@ struct RecentsView: View {
     }
     
     private func playItem(_ item: RecentItem) {
-        ToastManager.shared.showLoading("Loading...")
-        Task {
-            guard let stream = try? await PipedAPI.streams(item.videoId) else {
-                await MainActor.run { ToastManager.shared.hide() }
-                return
-            }
-            let url = getStreamUrl(stream)
-            await MainActor.run {
-                player.play(videoId: item.videoId, urlString: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration, uploadedDate: stream.uploadDate)
-                ToastManager.shared.showSuccess("Now Playing")
-            }
-        }
+        Task { await Playback.run(videoId: item.videoId, action: .play, player: player) }
     }
-    
+
     private func queueItem(_ item: RecentItem) {
-        ToastManager.shared.showLoading("Adding...")
-        Task {
-            guard let stream = try? await PipedAPI.streams(item.videoId) else {
-                await MainActor.run { ToastManager.shared.hide() }
-                return
-            }
-            let url = getStreamUrl(stream)
-            await MainActor.run {
-                player.addToQueue(videoId: item.videoId, url: url, title: stream.title, artist: stream.uploader, thumbnail: stream.thumbnailUrl, duration: stream.duration, uploadedDate: stream.uploadDate)
-                ToastManager.shared.showSuccess("Added to Queue")
-            }
-        }
+        Task { await Playback.run(videoId: item.videoId, action: .queue, player: player) }
     }
 }

@@ -25,6 +25,11 @@ class PlayerState: ObservableObject {
         setupAudioSession()
         setupRemoteCommands()
     }
+
+    // Opt the deinit out of MainActor isolation to avoid a crashing async
+    // executor hop on deallocation. Observers capture self weakly, so letting
+    // ARC release them here is safe.
+    nonisolated deinit {}
     
     func setupAudioSession() {
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
@@ -166,21 +171,11 @@ class PlayerState: ObservableObject {
         player = AVPlayer(url: url)
         
         timeObserver = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 5, preferredTimescale: 1), queue: .main) { [weak self] time in
-            guard let self else { return }
-            self.currentTime = time.seconds
-            if let d = self.player?.currentItem?.duration.seconds, d.isFinite, d > 0 { self.duration = d }
-            // Save progress to recents
-            if let vid = self.currentVideoId {
-                self.recents?.updateTimestamp(videoId: vid, timestamp: time.seconds)
-            }
+            self?.handleProgress(currentTime: time.seconds, itemDuration: self?.player?.currentItem?.duration.seconds)
         }
-        
+
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player?.currentItem, queue: .main) { [weak self] _ in
-            // Mark as complete (timestamp 0)
-            if let vid = self?.currentVideoId {
-                self?.recents?.updateTimestamp(videoId: vid, timestamp: 0)
-            }
-            self?.playNext()
+            self?.handlePlaybackEnded()
         }
         
         // Resume from saved position
@@ -198,6 +193,25 @@ class PlayerState: ObservableObject {
         updateNowPlaying()
     }
     
+    /// Handle a periodic playback-time update: publish the current time, adopt a
+    /// valid item duration, and persist progress. Extracted from the time
+    /// observer closure so it is directly unit-testable.
+    func handleProgress(currentTime time: Double, itemDuration: Double?) {
+        self.currentTime = time
+        if let d = itemDuration, d.isFinite, d > 0 { self.duration = d }
+        if let vid = currentVideoId {
+            recents?.updateTimestamp(videoId: vid, timestamp: time)
+        }
+    }
+
+    /// Handle the current item finishing: mark it complete and advance the queue.
+    func handlePlaybackEnded() {
+        if let vid = currentVideoId {
+            recents?.updateTimestamp(videoId: vid, timestamp: 0)
+        }
+        playNext()
+    }
+
     func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
         let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, duration: duration, uploadedDate: uploadedDate)
         queue.insert(item, at: 0)

@@ -10,6 +10,7 @@
 		4012CB05A3677D9AE2BD1197 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
 		84BFD413C09940E56AFDBA6B /* pipeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36970164189FFD98F2D75955 /* pipeUITests.swift */; };
 		A6CE203C2F2C279F009BCA23 /* MobileVLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = A6CE203B2F2C279F009BCA23 /* MobileVLCKit */; };
+		BABD5749CE5D2838EF7E614E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,16 +21,31 @@
 			remoteGlobalIDString = A615CA8E2F2C0D6900F36993;
 			remoteInfo = pipe;
 		};
+		FF62A3508FE2FA9EC525F38D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A615CA872F2C0D6900F36993 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A615CA8E2F2C0D6900F36993;
+			remoteInfo = pipe;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		36970164189FFD98F2D75955 /* pipeUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = pipeUITests.swift; path = pipeUITests.swift; sourceTree = "<group>"; };
+		4861D81DC6391C9F455F1D34 /* pipeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pipeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		72A238017A49D96426B04048 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		924372965022C3C1863CD736 /* pipeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pipeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A615CA8F2F2C0D6900F36993 /* pipe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pipe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		5267A6B0D6C7A40E072EDD82 /* pipeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = pipeTests;
+			sourceTree = "<group>";
+		};
 		A615CA912F2C0D6900F36993 /* pipe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -45,6 +61,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				4012CB05A3677D9AE2BD1197 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		714BDA07ED11701957A5A173 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BABD5749CE5D2838EF7E614E /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,6 +106,7 @@
 				A615CA902F2C0D6900F36993 /* Products */,
 				91A25A8DEBB4CE5F5A6CF8ED /* Frameworks */,
 				FD1E613AC95A98B9BCE5E25B /* pipeUITests */,
+				5267A6B0D6C7A40E072EDD82 /* pipeTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -90,6 +115,7 @@
 			children = (
 				A615CA8F2F2C0D6900F36993 /* pipe.app */,
 				924372965022C3C1863CD736 /* pipeUITests.xctest */,
+				4861D81DC6391C9F455F1D34 /* pipeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -106,6 +132,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		276614626ECF88D39E2F651F /* pipeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AFC37D95018A813F584735E8 /* Build configuration list for PBXNativeTarget "pipeTests" */;
+			buildPhases = (
+				A3399EB4C1D8E794C03E22EF /* Sources */,
+				714BDA07ED11701957A5A173 /* Frameworks */,
+				41829C48001FED64E237F50B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7B0E225289A62E363C0A4E1C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5267A6B0D6C7A40E072EDD82 /* pipeTests */,
+			);
+			name = pipeTests;
+			productName = pipeTests;
+			productReference = 4861D81DC6391C9F455F1D34 /* pipeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		A615CA8E2F2C0D6900F36993 /* pipe */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A615CA9A2F2C0D6A00F36993 /* Build configuration list for PBXNativeTarget "pipe" */;
@@ -181,12 +228,20 @@
 			targets = (
 				A615CA8E2F2C0D6900F36993 /* pipe */,
 				D6654F52081344F8E46395DC /* pipeUITests */,
+				276614626ECF88D39E2F651F /* pipeTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		3473630BEC313CBE3527B1F5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		41829C48001FED64E237F50B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -211,6 +266,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A3399EB4C1D8E794C03E22EF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A615CA8B2F2C0D6900F36993 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -221,6 +283,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		7B0E225289A62E363C0A4E1C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = pipe;
+			target = A615CA8E2F2C0D6900F36993 /* pipe */;
+			targetProxy = FF62A3508FE2FA9EC525F38D /* PBXContainerItemProxy */;
+		};
 		EBF56C430A57457A2A668E78 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = pipe;
@@ -230,6 +298,28 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		0B8A5B0218B167401E4C4F3B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = JW5SC3NYUV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.johncorser.pipeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/pipe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/pipe";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		2407F8007464856D95DCDB42 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -384,8 +474,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JW5SC3NYUV;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -418,8 +510,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JW5SC3NYUV;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_TESTABILITY = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UIBackgroundModes = audio;
@@ -442,6 +536,27 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
+		};
+		B713E35E3AF2DBD53EF139B2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = JW5SC3NYUV;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.johncorser.pipeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/pipe.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/pipe";
+			};
+			name = Debug;
 		};
 		DA4D7E1AEABA30EFA9B6C6DB /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -485,6 +600,15 @@
 			buildConfigurations = (
 				A615CA9B2F2C0D6A00F36993 /* Debug */,
 				A615CA9C2F2C0D6A00F36993 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AFC37D95018A813F584735E8 /* Build configuration list for PBXNativeTarget "pipeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0B8A5B0218B167401E4C4F3B /* Release */,
+				B713E35E3AF2DBD53EF139B2 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -4,19 +4,27 @@ import Combine
 class FollowingStore: ObservableObject {
     @Published var channels: [FollowedChannel] = []
     private let key = "followedChannels"
-    
-    init() { load() }
-    
+    private let defaults: UserDefaults
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        load()
+    }
+
+    // See RecentsStore: opt the deinit out of MainActor isolation to avoid a
+    // crashing async executor hop on deallocation.
+    nonisolated deinit {}
+
     func load() {
-        if let data = UserDefaults.standard.data(forKey: key),
+        if let data = defaults.data(forKey: key),
            let decoded = try? JSONDecoder().decode([FollowedChannel].self, from: data) {
             channels = decoded
         }
     }
-    
+
     func save() {
         if let data = try? JSONEncoder().encode(channels) {
-            UserDefaults.standard.set(data, forKey: key)
+            defaults.set(data, forKey: key)
         }
     }
     
