@@ -15,5 +15,22 @@
     }
   ],
   "thumbnailUrl": "https://pipedproxy.jpc.io/vi_webp/iYlODtkyw_I/maxresdefault.webp?host=i.ytimg.com",
-  "uploadDate": "2026-06-27T09:00:05-07:00"
+  "uploadDate": "2026-06-27T09:00:05-07:00",
+  "chapters": [
+    {
+      "title": "Introduction",
+      "start": 0,
+      "image": null
+    },
+    {
+      "title": "Main Part",
+      "start": 120,
+      "image": null
+    },
+    {
+      "title": "Conclusion",
+      "start": 600,
+      "image": null
+    }
+  ]
 }

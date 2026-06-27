@@ -148,6 +148,26 @@ struct PlayerStateTests {
         #expect(player.currentTitle == "Z")
     }
 
+    // MARK: - chapter jump
+
+    @Test func jumpToNewVideoQueuesAndStartsIt() {
+        let player = isolatedPlayer()
+        player.jumpTo(videoId: "v", url: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 300, startAt: 120)
+        #expect(player.queue.first?.videoId == "v")
+        #expect(player.currentIndex == 0)
+        #expect(player.currentTitle == "T")
+    }
+
+    @Test func jumpToCurrentVideoSeeksInPlace() {
+        let player = isolatedPlayer()
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 300)
+        let countBefore = player.queue.count
+        player.jumpTo(videoId: "v", url: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 300, startAt: 90)
+        // Same item: no new queue entry, current time moved.
+        #expect(player.queue.count == countBefore)
+        #expect(player.currentTime == 90)
+    }
+
     // MARK: - playback controls (no AVPlayer asserts, just state)
 
     @Test func togglePlayPauseFlipsState() {

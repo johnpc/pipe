@@ -178,6 +178,16 @@ struct PipedAPITests {
         }
     }
 
+    @Test func streamsDecodesChapters() async throws {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"{"title":"T","description":null,"uploader":"U","uploaderUrl":null,"duration":300,"hls":null,"audioStreams":[],"videoStreams":[],"thumbnailUrl":"t","uploadDate":null,"chapters":[{"title":"Intro","start":0,"image":"img"},{"title":"Part 2","start":120,"image":null}]}"#)
+        let s = try await PipedAPI.streams("v")
+        #expect(s.chapters?.count == 2)
+        #expect(s.chapters?[1].title == "Part 2")
+        #expect(s.chapters?[1].start == 120)
+    }
+
     @Test func channelNextPageDecodes() async throws {
         PipedAPI.session = MockURLProtocol.makeSession()
         defer { PipedAPI.session = .shared }

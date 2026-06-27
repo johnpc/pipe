@@ -51,10 +51,18 @@ struct DetailView: View {
                     }
                 }
             }
+            if ChaptersLogic.hasChapters(s.chapters), let chapters = s.chapters {
+                ChaptersView(chapters: chapters) { seekToChapter($0, in: s) }
+            }
             if let d = s.description {
                 Text(htmlToAttributedString(d)).font(.body)
             }
         }
+    }
+
+    private func seekToChapter(_ chapter: Chapter, in s: StreamResponse) {
+        let resolved = Playback.resolve(s, videoId: videoId)
+        player.jumpTo(videoId: videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, startAt: Double(chapter.start))
     }
 
     private func load() async {

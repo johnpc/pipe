@@ -244,6 +244,25 @@ final class AcceptanceTests: XCTestCase {
                       "Video surface (PiP-capable) should be active in video mode")
     }
 
+    // MARK: - Feature: Chapters
+
+    /// Scenario: Opening a video with chapters shows a tappable chapter list
+    func testVideoWithChaptersShowsChapterList() throws {
+        // Open a video detail (streams fixture includes chapters).
+        app.buttons["Search"].tap()
+        app.buttons["MrBeast"].firstMatch.tap()
+        let firstVideo = app.staticTexts[fixtureSearchStreamTitle].firstMatch
+        XCTAssertTrue(firstVideo.waitForExistence(timeout: 15))
+        firstVideo.tap()
+        // Then a Chapters list is shown.
+        XCTAssertTrue(app.staticTexts["Chapters"].waitForExistence(timeout: 15), "Chapters list should appear")
+        XCTAssertTrue(app.staticTexts["Introduction"].exists, "A fixture chapter title should be listed")
+        // When I tap a chapter, playback jumps there (mini player appears).
+        app.buttons["chapterRow"].firstMatch.tap()
+        let miniControl = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pause' OR label CONTAINS[c] 'play'")).firstMatch
+        XCTAssertTrue(miniControl.waitForExistence(timeout: 15), "Tapping a chapter should start playback")
+    }
+
     // MARK: - Feature: Save for Later
 
     /// Scenario: Empty saved state

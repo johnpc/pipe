@@ -25,6 +25,9 @@ class PlayerState: ObservableObject {
     private var timeObserver: Any?
     private var endObserver: Any?
     private var statusObserver: NSKeyValueObservation?
+    /// One-shot start position (seconds) applied on the next playItem, e.g. when
+    /// jumping to a chapter. Overrides the saved-resume position for that play.
+    private var pendingSeek: Double?
 
     private let defaults: UserDefaults
     private let queueKey = "savedQueue"
@@ -78,6 +81,19 @@ class PlayerState: ObservableObject {
         player?.seek(to: CMTime(seconds: time, preferredTimescale: 1))
         currentTime = time
         updateNowPlaying()
+    }
+
+    /// Jump to a video at a specific start time (used for chapter navigation).
+    /// Seeks in place if it's already the current item; otherwise starts it at
+    /// the given offset.
+    func jumpTo(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int, startAt: Double) {
+        if currentVideoId == videoId, player != nil {
+            seek(to: startAt)
+            if !isPlaying { resume() }
+            return
+        }
+        pendingSeek = startAt
+        play(videoId: videoId, urlString: url, audioUrl: audioUrl, title: title, artist: artist, thumbnail: thumbnail, duration: duration)
     }
     
     func setSpeed(_ speed: Float) {
@@ -242,10 +258,15 @@ class PlayerState: ObservableObject {
         // Add to recents
         recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
         
-        if savedPos > 10 {
+        // A pending chapter seek takes precedence over the saved-resume position.
+        if let target = pendingSeek {
+            pendingSeek = nil
+            currentTime = target
+            player?.seek(to: CMTime(seconds: target, preferredTimescale: 1))
+        } else if savedPos > 10 {
             player?.seek(to: CMTime(seconds: savedPos, preferredTimescale: 1))
         }
-        
+
         player?.play()
         // Apply the remembered playback speed to the new item.
         if playbackSpeed != 1.0 { player?.rate = playbackSpeed }

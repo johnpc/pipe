@@ -147,6 +147,15 @@ final class ViewRenderTests: XCTestCase {
         render(NavigationStack { DetailView(videoId: "v1", player: p) })
     }
 
+    func testRenderChaptersView() {
+        let chapters = [
+            Chapter(title: "Intro", start: 0, image: nil),
+            Chapter(title: "Deep Dive", start: 90, image: nil),
+            Chapter(title: "Wrap Up", start: 240, image: nil),
+        ]
+        render(ChaptersView(chapters: chapters) { _ in })
+    }
+
     /// Drives ChannelView's `.task` loader with a stubbed channel response so the
     /// loaded body (tab pills + video list) renders, not just the spinner.
     func testRenderChannelViewLoaded() {
