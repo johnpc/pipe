@@ -12,6 +12,9 @@ RESULT="TestResults.xcresult"
 echo "▶ [1/4] View file line limit (≤100)"
 bash scripts/check_view_lines.sh
 
+echo "▶ [1b/4] Acceptance tests generated from .feature files are in sync"
+python3 scripts/generate_acceptance_tests.py --check
+
 echo "▶ [2/4] Unit tests + coverage"
 rm -rf "$RESULT"
 xcodebuild test \

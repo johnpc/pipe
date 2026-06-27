@@ -27,10 +27,17 @@ technical decision below.
 Every feature ships as one **thin vertical slice** — view + logic helper + store/
 API + tests, just enough for the scenario, nothing speculative.
 
-1. **Spec first.** Write/confirm Gherkin acceptance scenarios in
-   `AcceptanceTests.md`, implemented as XCUITest methods in
-   `pipeUITests/AcceptanceTests.swift` (one `test…` per Scenario, Given/When/Then
-   as comments).
+1. **Spec first.** Write/confirm Gherkin acceptance scenarios as real
+   `.feature` files in `pipeUITests/Features/` (the source of truth), executed
+   by the native Swift runner (`GherkinParser` + `StepDefinitions` +
+   `StepRegistry`). **Prefer reusing existing step phrasings** — each step must
+   match exactly one definition in `StepDefinitions.swift`, so a near-duplicate
+   line fails as undefined or ambiguous; a genuinely new phrasing needs a new
+   definition there (its pattern is a regex — escape literals like `(` and `?`).
+   Then regenerate **and commit** the concrete XCUITest methods
+   (`AcceptanceTests.generated.swift`):
+   `python3 scripts/generate_acceptance_tests.py`. See `AcceptanceTests.md` for
+   a worked example.
 2. **Implement to pass the spec** — follow the architecture and conventions below.
 3. **Run the full quality gate** and get it green locally (`bash scripts/quality.sh`).
 4. **Conventional commit, push, CI green.** Open a PR; CI blocks the merge.
@@ -78,10 +85,12 @@ the code, never the gate.
 - **CRAP ≤ 15 per function** (`scripts/crap_check.py`, decision-point based). Over →
   raise its coverage or reduce its complexity (extract the branchy bit into a tested
   helper).
-- **Acceptance tests are always Gherkin** — `.feature`-style Scenarios in
-  `AcceptanceTests.md`, each mapped to an XCUITest. Never ship a feature without its
-  acceptance scenario. Keep `AcceptanceTests.md` and the test methods **in sync** —
-  every documented Scenario has an implementing `test…`, and vice versa.
+- **Acceptance tests are always Gherkin** — real `.feature` files in
+  `pipeUITests/Features/`, executed by the native runner. Never ship a feature
+  without its acceptance scenario. The concrete XCUITest methods are **generated**
+  from the `.feature` files (`AcceptanceTests.generated.swift`); a gate
+  (`scripts/generate_acceptance_tests.py --check`, in `quality.sh` and CI) fails
+  if they drift, so regenerate after editing any `.feature` file.
 - **Build must pass** for the app, unit, and UI-test targets.
 
 ### Honest e2e: exercise the real behavior, not just navigation
@@ -102,8 +111,9 @@ A slice is done only when **all** of these hold:
 
 1. Full quality gate green locally (`bash scripts/quality.sh`): view-line limit,
    coverage ≥80%, CRAP ≤15, build.
-2. Gherkin acceptance Scenario(s) added to `AcceptanceTests.md` + implementing
-   XCUITest, and colocated unit tests, all passing.
+2. Gherkin acceptance Scenario(s) added as `.feature` files in
+   `pipeUITests/Features/` (generated methods regenerated), and colocated unit
+   tests, all passing.
 3. Conventional commit, branch pushed, PR open, **CI green**.
 
 ## Conventions
