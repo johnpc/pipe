@@ -10,17 +10,19 @@ where each `test…` method maps to one Scenario below (Given/When/Then in comme
 Feature: Tab Navigation
   As a user
   I want to move between the app's main tabs
-  So that I can reach feed, search, recents, and following
+  So that I can reach feed, search, recents, following, and settings
 
   Scenario: All tabs are reachable
     Given the app is launched
-    Then I should see the Feed, Search, Recents, and Following tabs
+    Then I should see the Feed, Search, Recents, Following, and Settings tabs
     When I tap the Search tab
     Then the Search screen should appear
     When I tap the Recents tab
     Then the Recents screen should appear
     When I tap the Following tab
     Then the Following screen should appear
+    When I tap the Settings tab
+    Then the Settings screen should appear
 ```
 
 ## Feature: Search
@@ -128,4 +130,60 @@ Feature: Recently Played
     Given I have not played anything
     When I open the Recents tab
     Then I should see a "No History" empty state
+```
+
+## Feature: Settings
+
+```gherkin
+Feature: Settings
+  As a user
+  I want to configure the app
+  So that I can choose my Piped instance and manage history
+
+  Scenario: Settings screen shows its sections
+    Given the app is launched
+    When I open the Settings tab
+    Then I should see the "Piped Instance" section
+    And I should see the "Sleep Timer" section
+    And I should see the "Search History" section
+
+  Scenario: Setting a sleep timer shows the countdown
+    Given I am on the Settings tab
+    When I tap "Sleep after 30 min"
+    Then I should see the remaining time with a Cancel option
+
+  Scenario: Clearing search history empties it
+    Given I have performed a search
+    When I open Settings and tap "Clear History"
+    Then the search history should be empty
+```
+
+## Feature: Search History
+
+```gherkin
+Feature: Search History
+  As a user
+  I want my recent searches remembered
+  So that I can re-run them quickly
+
+  Scenario: A performed search appears under Recent
+    Given I am on the Search tab
+    When I search for "lofi beats"
+    And I return to the empty search screen
+    Then "lofi beats" should appear under Recent
+```
+
+## Feature: Audio / Video Mode
+
+```gherkin
+Feature: Audio and Video Playback Mode
+  As a user
+  I want to switch between audio-only and video
+  So that I can save data when I only need audio
+
+  Scenario: Toggling video mode from the full player
+    Given a video is playing
+    And I have opened the full player
+    When I tap "Show Video"
+    Then the control should switch to "Audio Only"
 ```

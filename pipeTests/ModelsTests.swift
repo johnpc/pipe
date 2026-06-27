@@ -68,8 +68,31 @@ struct ModelsTests {
     // MARK: - QueueItem
 
     @Test func queueItemsHaveUniqueIds() {
-        let a = QueueItem(videoId: "v", title: "t", artist: "a", thumbnail: "", url: "u", duration: 0, uploadedDate: nil)
-        let b = QueueItem(videoId: "v", title: "t", artist: "a", thumbnail: "", url: "u", duration: 0, uploadedDate: nil)
+        let a = QueueItem(videoId: "v", title: "t", artist: "a", thumbnail: "", url: "u", audioUrl: "", duration: 0, uploadedDate: nil)
+        let b = QueueItem(videoId: "v", title: "t", artist: "a", thumbnail: "", url: "u", audioUrl: "", duration: 0, uploadedDate: nil)
         #expect(a.id != b.id)
+    }
+
+    @Test func queueItemPlaybackURLPrefersAudioWhenNotVideoMode() {
+        let item = QueueItem(videoId: "v", title: "t", artist: "a", thumbnail: "", url: "video-url", audioUrl: "audio-url", duration: 0, uploadedDate: nil)
+        #expect(item.playbackURL(videoMode: false) == "audio-url")
+        #expect(item.playbackURL(videoMode: true) == "video-url")
+    }
+
+    @Test func queueItemPlaybackURLFallsBackToVideoWhenNoAudio() {
+        let item = QueueItem(videoId: "v", title: "t", artist: "a", thumbnail: "", url: "video-url", audioUrl: "", duration: 0, uploadedDate: nil)
+        #expect(item.playbackURL(videoMode: false) == "video-url")
+        #expect(item.playbackURL(videoMode: true) == "video-url")
+    }
+
+    @Test func queueItemRoundTripsThroughCodable() throws {
+        let item = QueueItem(videoId: "v", title: "T", artist: "A", thumbnail: "th", url: "u", audioUrl: "au", duration: 42, uploadedDate: "2026")
+        let data = try JSONEncoder().encode(item)
+        let decoded = try JSONDecoder().decode(QueueItem.self, from: data)
+        // id is regenerated on decode; compare the persisted fields.
+        #expect(decoded.videoId == item.videoId)
+        #expect(decoded.url == item.url)
+        #expect(decoded.audioUrl == item.audioUrl)
+        #expect(decoded.duration == 42)
     }
 }

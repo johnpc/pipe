@@ -41,7 +41,11 @@ final class ViewRenderTests: XCTestCase {
 
     private func makeStores() -> (PlayerState, FollowingStore, RecentsStore) {
         let suite = UserDefaults(suiteName: "render-\(UUID().uuidString)")!
-        return (PlayerState(), FollowingStore(defaults: suite), RecentsStore(defaults: suite))
+        return (PlayerState(defaults: suite), FollowingStore(defaults: suite), RecentsStore(defaults: suite))
+    }
+
+    private func makeSettings() -> AppSettings {
+        AppSettings(defaults: UserDefaults(suiteName: "render-settings-\(UUID().uuidString)")!)
     }
 
     private func searchVideo() -> SearchItem {
@@ -70,11 +74,28 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderSearchViewEmptyState() {
         let (p, f, r) = makeStores()
-        render(NavigationStack { SearchView(player: p, following: f, recents: r) })
+        render(NavigationStack { SearchView(player: p, following: f, recents: r, settings: makeSettings()) })
     }
 
     func testRenderSearchSuggestionsView() {
         render(SearchSuggestionsView(query: .constant(""), suggestions: SearchLogic.suggestions, onSearch: { _ in }))
+    }
+
+    func testRenderSearchSuggestionsViewWithHistory() {
+        render(SearchSuggestionsView(query: .constant(""), suggestions: SearchLogic.suggestions, history: ["jazz", "lofi"], onSearch: { _ in }))
+    }
+
+    func testRenderSettingsView() {
+        let (p, _, _) = makeStores()
+        render(NavigationStack { SettingsView(settings: makeSettings(), player: p) })
+    }
+
+    func testRenderSettingsViewWithActiveSleepTimerAndHistory() {
+        let (p, _, _) = makeStores()
+        p.startSleepTimer(minutes: 30)
+        let s = makeSettings()
+        s.recordSearch("history item")
+        render(NavigationStack { SettingsView(settings: s, player: p) })
     }
 
     func testRenderRecentsViewEmpty() {

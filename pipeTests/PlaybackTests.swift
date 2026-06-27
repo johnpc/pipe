@@ -15,10 +15,11 @@ struct PlaybackTests {
     }
 
     @Test func resolveMapsStreamFields() {
-        let stream = StreamResponse(title: "T", description: "d", uploader: "U", uploaderUrl: nil, duration: 42, hls: nil, audioStreams: [], videoStreams: [VideoStream(url: "https://x/a.mp4", quality: "360p", mimeType: "video/mp4", videoOnly: false)], thumbnailUrl: "thumb", uploadDate: "2026-01-01")
+        let stream = StreamResponse(title: "T", description: "d", uploader: "U", uploaderUrl: nil, duration: 42, hls: nil, audioStreams: [AudioStream(url: "https://x/audio.m4a", bitrate: 128000, mimeType: "audio/mp4")], videoStreams: [VideoStream(url: "https://x/a.mp4", quality: "360p", mimeType: "video/mp4", videoOnly: false)], thumbnailUrl: "thumb", uploadDate: "2026-01-01")
         let resolved = Playback.resolve(stream, videoId: "vid1")
         #expect(resolved.videoId == "vid1")
         #expect(resolved.url == "https://x/a.mp4")
+        #expect(resolved.audioUrl == "https://x/audio.m4a")
         #expect(resolved.title == "T")
         #expect(resolved.artist == "U")
         #expect(resolved.thumbnail == "thumb")
@@ -29,8 +30,8 @@ struct PlaybackTests {
     // MARK: - apply()
 
     @Test func applyPlayInsertsAndStartsQueue() {
-        let player = PlayerState()
-        let resolved = ResolvedStream(videoId: "v", url: "bad://url", title: "t", artist: "a", thumbnail: "th", duration: 10, uploadedDate: nil)
+        let player = isolatedPlayer()
+        let resolved = ResolvedStream(videoId: "v", url: "bad://url", audioUrl: "", title: "t", artist: "a", thumbnail: "th", duration: 10, uploadedDate: nil)
         Playback.apply(resolved, action: .play, to: player)
         #expect(player.queue.count == 1)
         #expect(player.currentIndex == 0)
@@ -38,9 +39,9 @@ struct PlaybackTests {
     }
 
     @Test func applyQueueAppends() {
-        let player = PlayerState()
-        let a = ResolvedStream(videoId: "v1", url: "u1", title: "t1", artist: "a", thumbnail: "", duration: 0, uploadedDate: nil)
-        let b = ResolvedStream(videoId: "v2", url: "u2", title: "t2", artist: "a", thumbnail: "", duration: 0, uploadedDate: nil)
+        let player = isolatedPlayer()
+        let a = ResolvedStream(videoId: "v1", url: "u1", audioUrl: "", title: "t1", artist: "a", thumbnail: "", duration: 0, uploadedDate: nil)
+        let b = ResolvedStream(videoId: "v2", url: "u2", audioUrl: "", title: "t2", artist: "a", thumbnail: "", duration: 0, uploadedDate: nil)
         Playback.apply(a, action: .queue, to: player)
         Playback.apply(b, action: .queue, to: player)
         #expect(player.queue.count == 2)

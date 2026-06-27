@@ -9,12 +9,14 @@ enum Playback {
     /// What to do with a resolved stream.
     enum Action { case play, queue }
 
-    /// Build the metadata tuple a player call needs from a decoded stream.
-    /// Pure and synchronous so it can be exercised directly in tests.
+    /// Build the metadata a player call needs from a decoded stream, resolving
+    /// both the video and audio-only URLs. Pure and synchronous so it can be
+    /// exercised directly in tests.
     static func resolve(_ stream: StreamResponse, videoId: String) -> ResolvedStream {
         ResolvedStream(
             videoId: videoId,
             url: getStreamUrl(stream),
+            audioUrl: getAudioStreamUrl(stream),
             title: stream.title,
             artist: stream.uploader,
             thumbnail: stream.thumbnailUrl,
@@ -28,9 +30,9 @@ enum Playback {
     static func apply(_ resolved: ResolvedStream, action: Action, to player: PlayerState) {
         switch action {
         case .play:
-            player.play(videoId: resolved.videoId, urlString: resolved.url, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         case .queue:
-            player.addToQueue(videoId: resolved.videoId, url: resolved.url, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.addToQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         }
     }
 
@@ -62,6 +64,7 @@ enum Playback {
 struct ResolvedStream: Equatable {
     let videoId: String
     let url: String
+    let audioUrl: String
     let title: String
     let artist: String
     let thumbnail: String

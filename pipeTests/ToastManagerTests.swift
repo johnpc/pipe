@@ -33,4 +33,28 @@ struct ToastManagerTests {
         try await Task.sleep(nanoseconds: 1_800_000_000)
         #expect(toast.message == nil)
     }
+
+    @Test func showErrorSetsErrorFlag() {
+        let toast = ToastManager()
+        toast.showError("Something broke")
+        #expect(toast.message == "Something broke")
+        #expect(toast.isError == true)
+        #expect(toast.isLoading == false)
+    }
+
+    @Test func loadingClearsErrorFlag() {
+        let toast = ToastManager()
+        toast.showError("oops")
+        toast.showLoading("Loading...")
+        #expect(toast.isError == false)
+        #expect(toast.isLoading == true)
+    }
+
+    @Test func hideClearsErrorFlag() {
+        let toast = ToastManager()
+        toast.showError("oops")
+        toast.hide()
+        #expect(toast.message == nil)
+        #expect(toast.isError == false)
+    }
 }

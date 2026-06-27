@@ -101,7 +101,7 @@ struct PipedAPITests {
         MockURLProtocol.stub(json: Self.streamJSON)
         defer { PipedAPI.session = .shared }
 
-        let player = PlayerState()
+        let player = isolatedPlayer()
         let toast = SpyToast()
         await Playback.run(videoId: "vid", action: .play, player: player, toast: toast)
 
@@ -115,7 +115,7 @@ struct PipedAPITests {
         MockURLProtocol.stub(json: Self.streamJSON)
         defer { PipedAPI.session = .shared }
 
-        let player = PlayerState()
+        let player = isolatedPlayer()
         let toast = SpyToast()
         await Playback.run(videoId: "vid", action: .queue, player: player, toast: toast)
 
@@ -128,7 +128,7 @@ struct PipedAPITests {
         MockURLProtocol.stubError(URLError(.notConnectedToInternet))
         defer { PipedAPI.session = .shared }
 
-        let player = PlayerState()
+        let player = isolatedPlayer()
         let toast = SpyToast()
         await Playback.run(videoId: "vid", action: .play, player: player, toast: toast)
 

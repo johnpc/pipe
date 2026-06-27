@@ -60,6 +60,50 @@ struct StreamURLHelperTests {
         #expect(getStreamUrl(stream) == "")
     }
 
+    // MARK: - getAudioStreamUrl
+
+    @Test func getAudioStreamUrlPicksHighestBitrateM4A() {
+        let stream = makeStream(audioStreams: [
+            AudioStream(url: "https://x/lo.m4a", bitrate: 64000, mimeType: "audio/mp4"),
+            AudioStream(url: "https://x/hi.m4a", bitrate: 160000, mimeType: "audio/mp4")
+        ])
+        #expect(getAudioStreamUrl(stream) == "https://x/hi.m4a")
+    }
+
+    @Test func getAudioStreamUrlFallsBackToAnyAudioWhenNoMp4() {
+        let stream = makeStream(audioStreams: [
+            AudioStream(url: "https://x/a.webm", bitrate: 128000, mimeType: "audio/webm")
+        ])
+        #expect(getAudioStreamUrl(stream) == "https://x/a.webm")
+    }
+
+    @Test func getAudioStreamUrlEmptyWhenNoAudio() {
+        #expect(getAudioStreamUrl(makeStream()) == "")
+    }
+
+    @Test func getAudioStreamUrlRewritesProxyHost() {
+        let stream = makeStream(audioStreams: [
+            AudioStream(url: "https://pipedproxy.jpc.io/audioplayback?host=rr5---xyz.googlevideo.com&itag=140", bitrate: 128000, mimeType: "audio/mp4")
+        ])
+        let result = getAudioStreamUrl(stream)
+        #expect(result.hasPrefix("https://rr5---xyz.googlevideo.com/"))
+        #expect(!result.contains("host="))
+    }
+
+    // MARK: - rewriteProxyHost
+
+    @Test func rewriteProxyHostNoOpWithoutHostParam() {
+        #expect(rewriteProxyHost("https://example.com/video.mp4?itag=18") == "https://example.com/video.mp4?itag=18")
+    }
+
+    @Test func rewriteProxyHostWorksForArbitraryInstance() {
+        // Not tied to a hardcoded instance origin.
+        let input = "https://proxy.other-instance.net/x?host=upstream.googlevideo.com&itag=18"
+        let result = rewriteProxyHost(input)
+        #expect(result.hasPrefix("https://upstream.googlevideo.com/"))
+        #expect(!result.contains("host="))
+    }
+
     // MARK: - formatUploadDate
 
     @Test func formatUploadDateParsesISO8601() {
@@ -82,7 +126,7 @@ struct StreamURLHelperTests {
 
     // MARK: - Helpers
 
-    private func makeStream(videoStreams: [VideoStream]) -> StreamResponse {
-        StreamResponse(title: "t", description: nil, uploader: "u", uploaderUrl: nil, duration: 100, hls: nil, audioStreams: [], videoStreams: videoStreams, thumbnailUrl: "", uploadDate: nil)
+    private func makeStream(videoStreams: [VideoStream] = [], audioStreams: [AudioStream] = []) -> StreamResponse {
+        StreamResponse(title: "t", description: nil, uploader: "u", uploaderUrl: nil, duration: 100, hls: nil, audioStreams: audioStreams, videoStreams: videoStreams, thumbnailUrl: "", uploadDate: nil)
     }
 }

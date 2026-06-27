@@ -4,6 +4,7 @@ struct SearchView: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var following: FollowingStore
     @ObservedObject var recents: RecentsStore
+    @ObservedObject var settings: AppSettings
     @State private var query = ""
     @State private var results: [SearchItem] = []
     @State private var loading = false
@@ -13,7 +14,7 @@ struct SearchView: View {
     var body: some View {
         Group {
             if results.isEmpty && !loading {
-                SearchSuggestionsView(query: $query, suggestions: suggestions, onSearch: search)
+                SearchSuggestionsView(query: $query, suggestions: suggestions, history: settings.searchHistory, onSearch: search)
             } else {
                 List(results) { item in
                     if item.isChannel {
@@ -44,7 +45,9 @@ struct SearchView: View {
     }
     
     private func search(_ term: String) {
+        guard SearchLogic.isSubmittable(term) else { return }
         query = term
+        settings.recordSearch(term)
         loading = true
         Task { results = (try? await PipedAPI.search(term)) ?? []; loading = false }
     }

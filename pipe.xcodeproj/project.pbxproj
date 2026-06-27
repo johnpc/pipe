@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		4012CB05A3677D9AE2BD1197 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
 		84BFD413C09940E56AFDBA6B /* pipeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36970164189FFD98F2D75955 /* pipeUITests.swift */; };
-		A6CE203C2F2C279F009BCA23 /* MobileVLCKit in Frameworks */ = {isa = PBXBuildFile; productRef = A6CE203B2F2C279F009BCA23 /* MobileVLCKit */; };
+		A6CE203C2F2C279F009BCA23 /* BuildFile in Frameworks */ = {isa = PBXBuildFile; };
 		BABD5749CE5D2838EF7E614E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -76,7 +76,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A6CE203C2F2C279F009BCA23 /* MobileVLCKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,9 +168,6 @@
 				A615CA912F2C0D6900F36993 /* pipe */,
 			);
 			name = pipe;
-			packageProductDependencies = (
-				A6CE203B2F2C279F009BCA23 /* MobileVLCKit */,
-			);
 			productName = pipe;
 			productReference = A615CA8F2F2C0D6900F36993 /* pipe.app */;
 			productType = "com.apple.product-type.application";
@@ -218,9 +214,6 @@
 			);
 			mainGroup = A615CA862F2C0D6900F36993;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				A6CE203A2F2C279F009BCA23 /* XCRemoteSwiftPackageReference "MobileVLCKit-SPM" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A615CA902F2C0D6900F36993 /* Products */;
 			projectDirPath = "";
@@ -623,25 +616,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		A6CE203A2F2C279F009BCA23 /* XCRemoteSwiftPackageReference "MobileVLCKit-SPM" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/cfap/MobileVLCKit-SPM.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 3.7.2;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		A6CE203B2F2C279F009BCA23 /* MobileVLCKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A6CE203A2F2C279F009BCA23 /* XCRemoteSwiftPackageReference "MobileVLCKit-SPM" */;
-			productName = MobileVLCKit;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A615CA872F2C0D6900F36993 /* Project object */;
 }

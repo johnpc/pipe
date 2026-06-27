@@ -1,6 +1,8 @@
 import Foundation
 
-let pipedBase = "https://pipedapi.jpc.io"
+/// Base URL of the Piped API instance. Mutable so Settings can point the app at
+/// a different instance when the default is down. Defaults to jpc.io's instance.
+var pipedBase = "https://pipedapi.jpc.io"
 
 struct SearchItem: Codable, Identifiable, Hashable {
     let url: String
