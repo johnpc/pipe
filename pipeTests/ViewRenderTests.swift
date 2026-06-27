@@ -85,7 +85,7 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderSearchViewEmptyState() {
         let (p, f, r) = makeStores()
-        render(NavigationStack { SearchView(player: p, following: f, recents: r, settings: makeSettings(), saved: makeSaved()) })
+        render(NavigationStack { SearchView(player: p, following: f, recents: r, settings: makeSettings(), saved: makeSaved(), downloads: makeDownloads()) })
     }
 
     func testRenderSearchSuggestionsView() {
@@ -262,6 +262,13 @@ final class ViewRenderTests: XCTestCase {
         let (p, _, _) = makeStores()
         p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "Artist", thumbnail: "t", duration: 100)
         p.videoMode = true
+        render(FullPlayerSheet(player: p))
+    }
+
+    func testRenderFullPlayerSheetWithChapterLabel() {
+        let (p, _, _) = makeStores()
+        p.registerChapters([Chapter(title: "Intro", start: 0, image: nil), Chapter(title: "Part 2", start: 60, image: nil)], for: "v")
+        p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "Artist", thumbnail: "t", duration: 100)
         render(FullPlayerSheet(player: p))
     }
 

@@ -148,6 +148,48 @@ struct PlayerStateTests {
         #expect(player.currentTitle == "Z")
     }
 
+    // MARK: - current chapter label
+
+    @Test func currentChapterTitleTracksPlaybackTime() {
+        let player = isolatedPlayer()
+        let chapters = [
+            Chapter(title: "Intro", start: 0, image: nil),
+            Chapter(title: "Middle", start: 60, image: nil),
+            Chapter(title: "End", start: 120, image: nil),
+        ]
+        player.registerChapters(chapters, for: "v")
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 300)
+        // play() resets to t=0 → first chapter.
+        #expect(player.currentChapterTitle == "Intro")
+        player.handleProgress(currentTime: 65, itemDuration: 300)
+        #expect(player.currentChapterTitle == "Middle")
+        player.handleProgress(currentTime: 200, itemDuration: 300)
+        #expect(player.currentChapterTitle == "End")
+    }
+
+    @Test func currentChapterTitleNilWithoutChapters() {
+        let player = isolatedPlayer()
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 300)
+        player.handleProgress(currentTime: 50, itemDuration: 300)
+        #expect(player.currentChapterTitle == nil)
+    }
+
+    @Test func registerChaptersIgnoresEmpty() {
+        let player = isolatedPlayer()
+        player.registerChapters([], for: "v")
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 10)
+        #expect(player.currentChapterTitle == nil)
+    }
+
+    @Test func stopClearsCurrentChapter() {
+        let player = isolatedPlayer()
+        player.registerChapters([Chapter(title: "A", start: 0, image: nil), Chapter(title: "B", start: 30, image: nil)], for: "v")
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 60)
+        #expect(player.currentChapterTitle != nil)
+        player.stop()
+        #expect(player.currentChapterTitle == nil)
+    }
+
     // MARK: - chapter jump
 
     @Test func jumpToNewVideoQueuesAndStartsIt() {

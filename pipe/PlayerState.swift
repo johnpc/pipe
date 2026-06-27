@@ -19,8 +19,13 @@ class PlayerState: ObservableObject {
     /// When set, playback stops at the end of the current item instead of
     /// advancing — the "sleep at end of episode" option.
     @Published var stopAfterCurrentEpisode = false
+    /// Title of the chapter active at the current playback time, if the current
+    /// video has chapters. Drives the now-playing chapter label.
+    @Published var currentChapterTitle: String?
 
     private var sleepTimer: Timer?
+    /// Chapters keyed by video id, registered when a stream is resolved.
+    private var chaptersByVideo: [String: [Chapter]] = [:]
     
     var player: AVPlayer?
     var recents: RecentsStore?
@@ -218,8 +223,9 @@ class PlayerState: ObservableObject {
         currentThumbnail = nil
         currentTime = 0
         duration = 0
+        currentChapterTitle = nil
     }
-    
+
     private func playItem(_ item: QueueItem) {
         error = nil
         setupAudioSession()
@@ -237,6 +243,7 @@ class PlayerState: ObservableObject {
         currentThumbnail = item.thumbnail
         currentTime = 0
         duration = 0
+        updateCurrentChapter(for: item.videoId, at: 0)
         
         if let old = timeObserver, let p = player { p.removeTimeObserver(old); timeObserver = nil }
         if let old = endObserver { NotificationCenter.default.removeObserver(old); endObserver = nil }
@@ -288,7 +295,25 @@ class PlayerState: ObservableObject {
         if let d = itemDuration, d.isFinite, d > 0 { self.duration = d }
         if let vid = currentVideoId {
             recents?.updateTimestamp(videoId: vid, timestamp: time)
+            updateCurrentChapter(for: vid, at: time)
         }
+    }
+
+    /// Record the chapters for a video so the now-playing label can show the
+    /// active one. Called when a stream is resolved for playback.
+    func registerChapters(_ chapters: [Chapter], for videoId: String) {
+        guard !chapters.isEmpty else { return }
+        chaptersByVideo[videoId] = chapters
+    }
+
+    /// Update `currentChapterTitle` from the active chapter at `time`, or clear it
+    /// when the video has no (usable) chapters.
+    private func updateCurrentChapter(for videoId: String, at time: Double) {
+        guard let chapters = chaptersByVideo[videoId], ChaptersLogic.hasChapters(chapters) else {
+            currentChapterTitle = nil
+            return
+        }
+        currentChapterTitle = ChaptersLogic.current(at: time, in: chapters)?.title
     }
 
     /// Handle the current item finishing: mark it complete in history, drop it

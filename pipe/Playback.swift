@@ -21,13 +21,16 @@ enum Playback {
             artist: stream.uploader,
             thumbnail: stream.thumbnailUrl,
             duration: stream.duration,
-            uploadedDate: stream.uploadDate
+            uploadedDate: stream.uploadDate,
+            chapters: stream.chapters ?? []
         )
     }
 
     /// Apply a resolved stream to the player for the given action.
     @MainActor
     static func apply(_ resolved: ResolvedStream, action: Action, to player: PlayerState) {
+        // Make the stream's chapters available for the now-playing label.
+        player.registerChapters(resolved.chapters, for: resolved.videoId)
         switch action {
         case .play:
             player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
@@ -70,6 +73,7 @@ struct ResolvedStream: Equatable {
     let thumbnail: String
     let duration: Int
     let uploadedDate: String?
+    var chapters: [Chapter] = []
 }
 
 /// Protocol over ToastManager so playback logic can be tested without the singleton.

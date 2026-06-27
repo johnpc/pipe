@@ -22,7 +22,7 @@ struct ContentView: View {
                         }
                     case 1:
                         NavigationStack {
-                            SearchView(player: player, following: following, recents: recents, settings: settings, saved: saved)
+                            SearchView(player: player, following: following, recents: recents, settings: settings, saved: saved, downloads: downloads)
                         }
                     case 2:
                         NavigationStack {

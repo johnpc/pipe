@@ -27,21 +27,15 @@ struct VideoRow: View {
     let onQueue: () -> Void
     var isSaved: Bool = false
     var onToggleSave: (() -> Void)? = nil
+    var isDownloaded: Bool = false
+    var onToggleDownload: (() -> Void)? = nil
 
     var body: some View {
         content
             .contextMenu {
-                Button { onPlay() } label: { Label("Play", systemImage: "play.fill") }
-                Button { onQueue() } label: { Label("Add to Queue", systemImage: "text.badge.plus") }
-                if let onToggleSave {
-                    Button { onToggleSave() } label: {
-                        Label(isSaved ? "Remove from Saved" : "Save for Later",
-                              systemImage: isSaved ? "bookmark.fill" : "bookmark")
-                    }
-                }
-                if let url = RowActions.youtubeURL(videoId: v.videoId) {
-                    ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
-                }
+                mediaContextMenu(videoId: v.videoId, onPlay: onPlay, onQueue: onQueue,
+                                 isSaved: isSaved, onToggleSave: onToggleSave,
+                                 isDownloaded: isDownloaded, onToggleDownload: onToggleDownload)
             }
     }
 

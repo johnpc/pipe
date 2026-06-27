@@ -33,6 +33,10 @@ extension AcceptanceTests {
         runScenario(feature: "chapters.feature", scenario: "Opening a video with chapters shows a tappable chapter list")
     }
 
+    func test_The_full_player_shows_the_current_chapter() {
+        runScenario(feature: "chapters.feature", scenario: "The full player shows the current chapter")
+    }
+
 
     // MARK: - Offline Downloads
 
@@ -42,6 +46,10 @@ extension AcceptanceTests {
 
     func test_Downloading_a_video_adds_it_to_Downloads() {
         runScenario(feature: "downloads.feature", scenario: "Downloading a video adds it to Downloads")
+    }
+
+    func test_Downloading_from_a_search_result_s_context_menu() {
+        runScenario(feature: "downloads.feature", scenario: "Downloading from a search result's context menu")
     }
 
 

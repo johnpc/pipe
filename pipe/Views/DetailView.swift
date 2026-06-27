@@ -65,6 +65,7 @@ struct DetailView: View {
 
     private func seekToChapter(_ chapter: Chapter, in s: StreamResponse) {
         let resolved = Playback.resolve(s, videoId: videoId)
+        player.registerChapters(resolved.chapters, for: videoId)
         player.jumpTo(videoId: videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, startAt: Double(chapter.start))
     }
 

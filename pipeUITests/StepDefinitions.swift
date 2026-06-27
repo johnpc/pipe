@@ -222,6 +222,11 @@ enum StepDefinitions {
         r.define("I tap a chapter") { w in
             w.app.buttons["chapterRow"].firstMatch.tap()
         }
+        r.define("I should see the current chapter label") { w in
+            XCTAssertTrue(w.app.staticTexts.matching(identifier: "currentChapterLabel").firstMatch.waitForExistence(timeout: long) ||
+                          w.app.otherElements["currentChapterLabel"].waitForExistence(timeout: short),
+                          "Current chapter label should be shown in the full player")
+        }
         r.define("playback should jump to that chapter's start") { w in
             let miniControl = w.app.buttons.matching(
                 NSPredicate(format: "label CONTAINS[c] 'pause' OR label CONTAINS[c] 'play'")).firstMatch
@@ -264,6 +269,16 @@ enum StepDefinitions {
             let button = w.app.buttons["downloadButton"]
             XCTAssertTrue(button.waitForExistence(timeout: long), "Download button should be present")
             button.tap()
+        }
+        r.define("I download the first result from its context menu") { w in
+            // Long-press the first result row to reveal the context menu, then
+            // tap Download.
+            let row = w.app.cells.firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: long), "A result row should be present")
+            row.press(forDuration: 1.1)
+            let download = w.app.buttons["Download"]
+            XCTAssertTrue(download.waitForExistence(timeout: medium), "Download action should appear in the context menu")
+            download.tap()
         }
         r.define("I open the Downloads screen from the Feed") { w in
             // Ensure we're on the Feed first (a prior step may have navigated away).
