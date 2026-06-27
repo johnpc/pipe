@@ -21,8 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Enforce view file line limit (100 lines max)
-        run: bash scripts/check_view_lines.sh
+      - name: Enforce 100-line limit on all source files
+        run: bash scripts/check_file_lines.sh
 
       - name: Build for testing
         run: |

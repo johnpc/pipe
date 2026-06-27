@@ -80,10 +80,10 @@ struct VideoRow: View {
 
                 Button(action: onPlay) {
                     Image(systemName: "play.circle.fill").font(.title2)
-                }.buttonStyle(.plain).accessibilityIdentifier("playButton")
+                }.buttonStyle(.plain).accessibilityIdentifier("playButton").accessibilityLabel("Play")
                 Button(action: onQueue) {
                     Image(systemName: "text.badge.plus").font(.title3)
-                }.buttonStyle(.plain).accessibilityIdentifier("queueButton")
+                }.buttonStyle(.plain).accessibilityIdentifier("queueButton").accessibilityLabel("Add to queue")
             }
 
             Text(v.title).font(.subheadline).lineLimit(3)
