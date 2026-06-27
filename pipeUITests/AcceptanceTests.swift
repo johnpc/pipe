@@ -225,6 +225,25 @@ final class AcceptanceTests: XCTestCase {
         XCTAssertTrue(app.buttons["Audio Only"].waitForExistence(timeout: 5), "Toggle should flip to Audio Only")
     }
 
+    // MARK: - Feature: Picture in Picture
+
+    /// Scenario: Video mode presents a PiP-capable player
+    /// (PiP activation on backgrounding is an OS behavior not drivable in a
+    /// simulator UI test; this verifies the video surface engages, and
+    /// PiPLogicTests covers the eligibility decision.)
+    func testVideoModePresentsPiPCapablePlayer() throws {
+        searchAndPlayFirstStream()
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15))
+        app.staticTexts[fixtureNowPlayingTitle].firstMatch.tap()
+        let showVideo = app.buttons["Show Video"]
+        XCTAssertTrue(showVideo.waitForExistence(timeout: 10))
+        showVideo.tap()
+        // Video mode engaged → the PiP-capable AVPlayerViewController surface is
+        // shown; the toggle flipping to "Audio Only" confirms we're in video mode.
+        XCTAssertTrue(app.buttons["Audio Only"].waitForExistence(timeout: 5),
+                      "Video surface (PiP-capable) should be active in video mode")
+    }
+
     // MARK: - Feature: Save for Later
 
     /// Scenario: Empty saved state

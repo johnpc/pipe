@@ -247,6 +247,14 @@ final class ViewRenderTests: XCTestCase {
         render(VideoPlayerView(player: p))
     }
 
+    func testRenderPiPVideoPlayer() {
+        let (p, _, _) = makeStores()
+        p.play(videoId: "v", urlString: "bad://v", title: "S", artist: "A", thumbnail: "t", duration: 10)
+        if let avPlayer = p.player {
+            render(PiPVideoPlayer(player: avPlayer))
+        }
+    }
+
     // MARK: - Toast
 
     func testRenderToastView() {

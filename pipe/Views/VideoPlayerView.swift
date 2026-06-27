@@ -6,7 +6,7 @@ struct VideoPlayerView: View {
     
     var body: some View {
         if let avPlayer = player.player {
-            VideoPlayer(player: avPlayer)
+            PiPVideoPlayer(player: avPlayer)
                 .ignoresSafeArea()
         }
     }
