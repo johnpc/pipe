@@ -236,7 +236,7 @@ struct PlayerStateTests {
         #expect(player.duration == 50)
     }
 
-    @Test func handlePlaybackEndedMarksCompleteAndAdvances() {
+    @Test func handlePlaybackEndedMarksCompleteAndRemovesFromQueue() {
         let (player, recents) = playerWithRecents()
         player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
         player.addToQueue(videoId: "b", url: "bad://b", title: "B", artist: "x", thumbnail: "", duration: 10)
@@ -244,8 +244,27 @@ struct PlayerStateTests {
         #expect(recents.getTimestamp(videoId: "a") == 8)
 
         player.handlePlaybackEnded()
-        #expect(recents.getTimestamp(videoId: "a") == 0) // marked complete
-        #expect(player.currentIndex == 1) // advanced to next
+        #expect(recents.getTimestamp(videoId: "a") == 0) // marked complete in history
+        // Finished item dropped from the queue; next item shifts into slot 0.
+        #expect(player.queue.map(\.videoId) == ["b"])
+        #expect(player.currentIndex == 0)
+    }
+
+    @Test func handlePlaybackEndedOnLastItemStops() {
+        let player = isolatedPlayer()
+        player.addToQueue(videoId: "only", url: "bad://only", title: "Only", artist: "x", thumbnail: "", duration: 10)
+        player.handlePlaybackEnded()
+        #expect(player.queue.isEmpty)
+        #expect(player.currentIndex == -1)
+        #expect(player.isPlaying == false)
+    }
+
+    @Test func addToQueueDeduplicates() {
+        let player = isolatedPlayer()
+        player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+        player.addToQueue(videoId: "a", url: "bad://a2", title: "A again", artist: "x", thumbnail: "", duration: 10)
+        #expect(player.queue.count == 1)
+        #expect(player.queue.first?.title == "A")
     }
 
     // MARK: - error path

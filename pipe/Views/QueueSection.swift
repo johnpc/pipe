@@ -64,12 +64,8 @@ struct QueueRow: View {
                 }
             }
             Spacer()
-            if index != player.currentIndex {
-                Button { player.removeFromQueue(at: index) } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-            }
+            // Removal is via swipe-to-delete (List .onDelete), matching Recents
+            // and Saved — no inline button that conflicts with tap-to-play.
         }
         .padding(.horizontal)
         .contentShape(Rectangle())
