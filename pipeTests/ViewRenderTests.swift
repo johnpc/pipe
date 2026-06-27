@@ -69,7 +69,7 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderFeedView() {
         let (p, f, r) = makeStores()
-        render(NavigationStack { FeedView(player: p, following: f, recents: r) })
+        render(NavigationStack { FeedView(player: p, following: f, recents: r, cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
     func testRenderSearchViewEmptyState() {
@@ -164,7 +164,7 @@ final class ViewRenderTests: XCTestCase {
         """)
         let (p, f, r) = makeStores()
         f.follow(FollowedChannel(id: "c1", name: "Chan", thumbnail: "t"))
-        renderLive(NavigationStack { FeedView(player: p, following: f, recents: r) })
+        renderLive(NavigationStack { FeedView(player: p, following: f, recents: r, cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
 

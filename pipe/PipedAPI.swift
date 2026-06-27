@@ -86,10 +86,62 @@ struct VideoStream: Codable {
     let videoOnly: Bool?
 }
 
+/// Decides whether a failed request should be retried and how long to wait.
+/// Pure and synchronous so the policy is unit-testable without real delays.
+enum RetryPolicy {
+    static let maxAttempts = 3
+
+    /// Whether an error is worth retrying (transient connectivity, not a 4xx/decode).
+    static func shouldRetry(_ error: Error, attempt: Int) -> Bool {
+        guard attempt < maxAttempts else { return false }
+        guard let urlError = error as? URLError else { return false }
+        switch urlError.code {
+        case .timedOut, .cannotConnectToHost, .networkConnectionLost,
+             .notConnectedToInternet, .dnsLookupFailed, .cannotFindHost,
+             .resourceUnavailable:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Backoff in nanoseconds before the given (1-based) attempt: 0, 0.4s, 0.8s…
+    static func backoffNanos(beforeAttempt attempt: Int) -> UInt64 {
+        guard attempt > 1 else { return 0 }
+        return UInt64(attempt - 1) * 400_000_000
+    }
+}
+
 enum PipedAPI {
     /// Injectable session so tests can stub responses via a custom URLProtocol.
-    /// Defaults to `.shared` in the app.
-    static var session: URLSession = .shared
+    /// Defaults to a session with a sensible request timeout.
+    static var session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 20
+        config.waitsForConnectivity = false
+        return URLSession(configuration: config)
+    }()
+
+    /// Test seam for the inter-attempt delay so retry tests don't actually sleep.
+    static var sleep: (UInt64) async -> Void = { try? await Task.sleep(nanoseconds: $0) }
+
+    /// Fetch + decode with bounded retry on transient network errors.
+    static func fetch<T: Decodable>(_ type: T.Type, from url: URL) async throws -> T {
+        var attempt = 0
+        while true {
+            attempt += 1
+            do {
+                let (data, _) = try await session.data(from: url)
+                return try JSONDecoder().decode(T.self, from: data)
+            } catch {
+                if RetryPolicy.shouldRetry(error, attempt: attempt) {
+                    await sleep(RetryPolicy.backoffNanos(beforeAttempt: attempt + 1))
+                    continue
+                }
+                throw error
+            }
+        }
+    }
 
     /// Builds the search request URL. Pure, so URL construction is unit-testable.
     static func searchURL(_ query: String) -> URL {
@@ -103,24 +155,18 @@ enum PipedAPI {
     }
 
     static func search(_ query: String) async throws -> [SearchItem] {
-        let (data, _) = try await session.data(from: searchURL(query))
-        return try JSONDecoder().decode(SearchResponse.self, from: data).items
+        try await fetch(SearchResponse.self, from: searchURL(query)).items
     }
 
     static func channel(_ id: String) async throws -> ChannelResponse {
-        let url = URL(string: "\(pipedBase)/channel/\(id)")!
-        let (data, _) = try await session.data(from: url)
-        return try JSONDecoder().decode(ChannelResponse.self, from: data)
+        try await fetch(ChannelResponse.self, from: URL(string: "\(pipedBase)/channel/\(id)")!)
     }
 
     static func channelTab(_ tabData: String) async throws -> ChannelTabResponse {
-        let (data, _) = try await session.data(from: channelTabURL(tabData))
-        return try JSONDecoder().decode(ChannelTabResponse.self, from: data)
+        try await fetch(ChannelTabResponse.self, from: channelTabURL(tabData))
     }
 
     static func streams(_ videoId: String) async throws -> StreamResponse {
-        let url = URL(string: "\(pipedBase)/streams/\(videoId)")!
-        let (data, _) = try await session.data(from: url)
-        return try JSONDecoder().decode(StreamResponse.self, from: data)
+        try await fetch(StreamResponse.self, from: URL(string: "\(pipedBase)/streams/\(videoId)")!)
     }
 }

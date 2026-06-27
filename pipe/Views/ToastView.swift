@@ -30,6 +30,19 @@ class ToastManager: ObservableObject {
     @Published var isError = false
     private var hideTask: Task<Void, Never>?
 
+    /// Auto-hide delays (nanoseconds). Injectable so tests aren't coupled to
+    /// wall-clock timing under parallel load.
+    private let successDelay: UInt64
+    private let errorDelay: UInt64
+
+    init(successDelay: UInt64 = 1_500_000_000, errorDelay: UInt64 = 3_000_000_000) {
+        self.successDelay = successDelay
+        self.errorDelay = errorDelay
+    }
+
+    // Avoid the MainActor-isolated-deinit crash under the current toolchain.
+    nonisolated deinit {}
+
     func showLoading(_ msg: String) {
         hideTask?.cancel()
         message = msg
@@ -38,12 +51,12 @@ class ToastManager: ObservableObject {
     }
 
     func showSuccess(_ msg: String) {
-        autoHide(msg, error: false, after: 1_500_000_000)
+        autoHide(msg, error: false, after: successDelay)
     }
 
     /// Show an error toast; lingers a little longer than success so it's readable.
     func showError(_ msg: String) {
-        autoHide(msg, error: true, after: 3_000_000_000)
+        autoHide(msg, error: true, after: errorDelay)
     }
 
     private func autoHide(_ msg: String, error: Bool, after ns: UInt64) {

@@ -24,6 +24,24 @@ final class MockURLProtocol: URLProtocol {
         requestHandler = { _ in throw error }
     }
 
+    /// Number of requests served since the last reset — lets retry tests assert
+    /// how many attempts were made.
+    static private(set) var requestCount = 0
+
+    /// Fail with `error` for the first `times` requests, then return `json`.
+    /// Exercises the retry path deterministically.
+    static func failThenSucceed(times: Int, error: Error, json: String) {
+        requestCount = 0
+        requestHandler = { request in
+            requestCount += 1
+            if requestCount <= times { throw error }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data(json.utf8))
+        }
+    }
+
+    static func resetCount() { requestCount = 0 }
+
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 

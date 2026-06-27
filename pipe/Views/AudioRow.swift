@@ -47,12 +47,12 @@ struct AudioRow: View {
                 if let onPlay {
                     Button { onPlay() } label: {
                         Image(systemName: "play.circle.fill").font(.title2)
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).accessibilityIdentifier("playButton")
                 }
                 if let onQueue {
                     Button { onQueue() } label: {
                         Image(systemName: "text.badge.plus").font(.title3)
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).accessibilityIdentifier("queueButton")
                 }
             }
             

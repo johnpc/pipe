@@ -20,10 +20,11 @@ struct SearchView: View {
                     if item.isChannel {
                         HStack {
                             NavigationLink(value: item) { ChannelRow(item: item) }
+                                .accessibilityIdentifier("channelRow")
                             Button { toggleFollow(item) } label: {
                                 Image(systemName: following.isFollowing(item.channelId) ? "heart.fill" : "heart")
                                     .foregroundColor(following.isFollowing(item.channelId) ? .red : .gray)
-                            }.buttonStyle(.plain)
+                            }.buttonStyle(.plain).accessibilityIdentifier("followButton")
                         }
                     } else {
                         NavigationLink(value: item) {

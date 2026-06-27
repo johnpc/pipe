@@ -27,10 +27,17 @@ struct ToastManagerTests {
     }
 
     @Test func successAutoHidesAfterDelay() async throws {
-        let toast = ToastManager()
+        // Short injected delay so the test doesn't race wall-clock under load.
+        let toast = ToastManager(successDelay: 50_000_000) // 50ms
         toast.showSuccess("Bye")
         #expect(toast.message == "Bye")
-        try await Task.sleep(nanoseconds: 1_800_000_000)
+        // Poll up to 5s for the auto-hide so the test is robust under parallel
+        // load (the hide fires from a scheduled Task that may be delayed).
+        var elapsed: UInt64 = 0
+        while toast.message != nil && elapsed < 5_000_000_000 {
+            try await Task.sleep(nanoseconds: 50_000_000)
+            elapsed += 50_000_000
+        }
         #expect(toast.message == nil)
     }
 

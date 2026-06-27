@@ -4,6 +4,11 @@ These Gherkin specs describe the critical user flows that must pass before
 release. They are implemented as XCUITests in `pipeUITests/AcceptanceTests.swift`,
 where each `test…` method maps to one Scenario below (Given/When/Then in comments).
 
+The app runs these in **mock mode** (`--uitest-mock`), serving bundled real
+Piped fixtures captured from the live instance (`pipe/Fixtures/*.json`). Every
+data-reading scenario therefore asserts on **real fixture data** deterministically
+— no skips, no dependence on a live backend during CI.
+
 ## Feature: Tab Navigation
 
 ```gherkin
@@ -130,6 +135,11 @@ Feature: Recently Played
     Given I have not played anything
     When I open the Recents tab
     Then I should see a "No History" empty state
+
+  Scenario: Playing a video records it in Recents
+    Given I have searched and played a video
+    When I open the Recents tab
+    Then the played video should appear in my history
 ```
 
 ## Feature: Settings
@@ -166,11 +176,11 @@ Feature: Search History
   I want my recent searches remembered
   So that I can re-run them quickly
 
-  Scenario: A performed search appears under Recent
+  Scenario: A performed search is remembered
     Given I am on the Search tab
     When I search for "lofi beats"
-    And I return to the empty search screen
-    Then "lofi beats" should appear under Recent
+    And I open the Settings tab
+    Then "lofi beats" should appear in the Search History section
 ```
 
 ## Feature: Audio / Video Mode
