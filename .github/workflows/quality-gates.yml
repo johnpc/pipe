@@ -92,6 +92,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v5
+      - name: Verify generated acceptance tests match .feature files
+        run: python3 scripts/generate_acceptance_tests.py --check
       - name: Run acceptance tests (retry failed, then full suite)
         run: |
           RESULT_PATH=/tmp/AcceptanceResults.xcresult
