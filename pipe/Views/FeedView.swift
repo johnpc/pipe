@@ -25,11 +25,9 @@ struct FeedView: View {
             } else if arranged.isEmpty {
                 ContentUnavailableView("No Feed", systemImage: "rectangle.stack", description: Text("Follow channels to see their videos here"))
             } else {
-                List(arranged) { v in
-                    VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { playVideo(v) }, onQueue: { queueVideo(v) }, isSaved: saved.isSaved(v.videoId), onToggleSave: { saved.toggle(savedItem(v)) })
-                }
-                .listStyle(.plain)
-                .refreshable { await loadFeed() }
+                List(arranged) { row($0) }
+                    .listStyle(.plain)
+                    .refreshable { await loadFeed() }
             }
         }
         .navigationTitle("Feed")
@@ -47,42 +45,28 @@ struct FeedView: View {
         }
     }
 
-    private func loadFeed() async {
-        guard !following.channels.isEmpty else {
-            videos = []
-            return
-        }
+    private func row(_ v: RelatedStream) -> some View {
+        VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId),
+                 resumeTime: recents.resumeTime(videoId: v.videoId),
+                 onPlay: { playVideo(v) }, onQueue: { queueVideo(v) },
+                 isSaved: saved.isSaved(v.videoId), onToggleSave: { saved.toggle(savedItem(v)) },
+                 isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { toggleDownload(v) })
+    }
 
+    private func loadFeed() async {
+        guard !following.channels.isEmpty else { videos = []; return }
         // Show cached videos instantly; only spin on a true cold load.
         if videos.isEmpty, let cached = cache.cachedVideos(), !cached.isEmpty {
             videos = cached
         }
         loading = videos.isEmpty
-
-        var allVideos: [RelatedStream] = []
-        await withTaskGroup(of: [RelatedStream].self) { group in
-            for channel in following.channels {
-                group.addTask {
-                    (try? await PipedAPI.channel(channel.id).relatedStreams) ?? []
-                }
-            }
-            for await streams in group {
-                allVideos.append(contentsOf: streams)
-            }
+        if let fetched = await FeedLoader.fetch(channels: following.channels) {
+            videos = fetched
+            cache.save(fetched)
         }
-
-        // Keep showing cached content if the network returned nothing.
-        if allVideos.isEmpty {
-            loading = false
-            return
-        }
-
-        let sorted = allVideos.sorted { ($0.uploaded ?? 0) > ($1.uploaded ?? 0) }
-        videos = sorted
-        cache.save(sorted)
         loading = false
     }
-    
+
     private func savedItem(_ v: RelatedStream) -> SavedItem {
         SavedItem(videoId: v.videoId, title: v.title, artist: v.uploaderName ?? "", thumbnail: v.thumbnail, duration: v.duration)
     }
@@ -93,5 +77,11 @@ struct FeedView: View {
 
     private func queueVideo(_ v: RelatedStream) {
         Task { await Playback.run(videoId: v.videoId, action: .queue, player: player) }
+    }
+
+    private func toggleDownload(_ v: RelatedStream) {
+        Task {
+            await DownloadCoordinator.toggle(videoId: v.videoId, title: v.title, artist: v.uploaderName ?? "", thumbnail: v.thumbnail, duration: v.duration, downloads: downloads)
+        }
     }
 }

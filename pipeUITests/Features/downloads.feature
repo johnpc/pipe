@@ -13,3 +13,9 @@ Feature: Offline Downloads
     When I tap the download button
     And I open the Downloads screen from the Feed
     Then I should see the downloaded video
+
+  Scenario: Downloading from a search result's context menu
+    Given I have searched for "MrBeast"
+    When I download the first result from its context menu
+    And I open the Downloads screen from the Feed
+    Then I should see the downloaded video

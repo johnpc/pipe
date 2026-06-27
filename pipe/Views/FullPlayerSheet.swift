@@ -44,6 +44,13 @@ struct FullPlayerSheet: View {
                         Spacer()
                         Text(formatTime(player.duration)).font(.caption)
                     }.foregroundStyle(.secondary)
+                    if let chapter = player.currentChapterTitle {
+                        Label(chapter, systemImage: "list.bullet")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .padding(.top, 2)
+                            .accessibilityIdentifier("currentChapterLabel")
+                    }
                 }.padding(.horizontal, 30)
                 
                 HStack(spacing: 36) {

@@ -8,21 +8,15 @@ struct AudioRow: View {
     var onQueue: (() -> Void)?
     var isSaved: Bool = false
     var onToggleSave: (() -> Void)? = nil
+    var isDownloaded: Bool = false
+    var onToggleDownload: (() -> Void)? = nil
 
     var body: some View {
         content
             .contextMenu {
-                if let onPlay { Button { onPlay() } label: { Label("Play", systemImage: "play.fill") } }
-                if let onQueue { Button { onQueue() } label: { Label("Add to Queue", systemImage: "text.badge.plus") } }
-                if let onToggleSave {
-                    Button { onToggleSave() } label: {
-                        Label(isSaved ? "Remove from Saved" : "Save for Later",
-                              systemImage: isSaved ? "bookmark.fill" : "bookmark")
-                    }
-                }
-                if let url = RowActions.youtubeURL(videoId: item.videoId) {
-                    ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
-                }
+                mediaContextMenu(videoId: item.videoId, onPlay: onPlay, onQueue: onQueue,
+                                 isSaved: isSaved, onToggleSave: onToggleSave,
+                                 isDownloaded: isDownloaded, onToggleDownload: onToggleDownload)
             }
     }
 

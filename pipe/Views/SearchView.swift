@@ -6,6 +6,7 @@ struct SearchView: View {
     @ObservedObject var recents: RecentsStore
     @ObservedObject var settings: AppSettings
     @ObservedObject var saved: SavedStore
+    @ObservedObject var downloads: DownloadStore
     @State private var query = ""
     @State private var results: [SearchItem] = []
     @State private var loading = false
@@ -29,7 +30,7 @@ struct SearchView: View {
                         }
                     } else {
                         NavigationLink(value: item) {
-                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) }, isSaved: saved.isSaved(item.videoId), onToggleSave: { saved.toggle(savedItem(item)) })
+                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) }, isSaved: saved.isSaved(item.videoId), onToggleSave: { saved.toggle(savedItem(item)) }, isDownloaded: downloads.isDownloaded(item.videoId), onToggleDownload: { toggleDownload(item) })
                         }
                     }
                 }
@@ -72,5 +73,11 @@ struct SearchView: View {
 
     private func savedItem(_ item: SearchItem) -> SavedItem {
         SavedItem(videoId: item.videoId, title: item.displayTitle, artist: item.displayUploader, thumbnail: item.displayThumbnail, duration: item.duration ?? 0)
+    }
+
+    private func toggleDownload(_ item: SearchItem) {
+        Task {
+            await DownloadCoordinator.toggle(videoId: item.videoId, title: item.displayTitle, artist: item.displayUploader, thumbnail: item.displayThumbnail, duration: item.duration ?? 0, downloads: downloads)
+        }
     }
 }
