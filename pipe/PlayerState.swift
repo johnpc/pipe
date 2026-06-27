@@ -14,16 +14,26 @@ class PlayerState: ObservableObject {
     @Published var queue: [QueueItem] = []
     @Published var currentIndex: Int = -1
     @Published var videoMode = false
+    /// Minutes remaining on the sleep timer, or nil when no timer is set.
+    @Published var sleepMinutesRemaining: Int?
+
+    private var sleepTimer: Timer?
     
     var player: AVPlayer?
     var recents: RecentsStore?
     private var currentVideoId: String?
     private var timeObserver: Any?
     private var endObserver: Any?
-    
-    init() {
+
+    private let defaults: UserDefaults
+    private let queueKey = "savedQueue"
+    private let indexKey = "savedQueueIndex"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         setupAudioSession()
         setupRemoteCommands()
+        restoreQueue()
     }
 
     // Opt the deinit out of MainActor isolation to avoid a crashing async
@@ -81,16 +91,41 @@ class PlayerState: ObservableObject {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
     
-    func addToQueue(videoId: String, url: String, title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
-        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, duration: duration, uploadedDate: uploadedDate)
+    func addToQueue(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
         queue.append(item)
+        persistQueue()
         if currentIndex == -1 { playIndex(0) }
     }
     
     func playIndex(_ index: Int) {
         guard index >= 0, index < queue.count else { return }
         currentIndex = index
+        persistQueue()
         playItem(queue[index])
+    }
+
+    /// Persist the queue and current index so playback survives an app restart.
+    func persistQueue() {
+        if let data = try? JSONEncoder().encode(queue) {
+            defaults.set(data, forKey: queueKey)
+            defaults.set(currentIndex, forKey: indexKey)
+        }
+    }
+
+    /// Restore a previously persisted queue (paused) without auto-playing.
+    private func restoreQueue() {
+        guard let data = defaults.data(forKey: queueKey),
+              let saved = try? JSONDecoder().decode([QueueItem].self, from: data),
+              !saved.isEmpty else { return }
+        queue = saved
+        let idx = defaults.integer(forKey: indexKey)
+        currentIndex = (idx >= 0 && idx < saved.count) ? idx : 0
+        let item = queue[currentIndex]
+        currentTitle = item.title
+        currentArtist = item.artist
+        currentThumbnail = item.thumbnail
+        currentVideoId = item.videoId
     }
     
     func playNext() {
@@ -114,6 +149,7 @@ class PlayerState: ObservableObject {
                 currentIndex = queue.count - 1
             }
         }
+        persistQueue()
     }
     
     func removeFromQueue(at offsets: IndexSet) {
@@ -134,11 +170,13 @@ class PlayerState: ObservableObject {
         } else if sourceIndex > currentIndex && destination <= currentIndex {
             currentIndex += 1
         }
+        persistQueue()
     }
-    
+
     func clearQueue() {
         queue.removeAll()
         currentIndex = -1
+        persistQueue()
         stop()
     }
     
@@ -155,9 +193,12 @@ class PlayerState: ObservableObject {
     private func playItem(_ item: QueueItem) {
         error = nil
         setupAudioSession()
-        
-        guard let url = URL(string: item.url) else { error = "Invalid URL"; return }
-        
+
+        guard let url = URL(string: item.playbackURL(videoMode: videoMode)) else {
+            error = "Couldn't play \(item.title)"
+            return
+        }
+
         currentVideoId = item.videoId
         currentTitle = item.title
         currentArtist = item.artist
@@ -212,9 +253,49 @@ class PlayerState: ObservableObject {
         playNext()
     }
 
-    func play(videoId: String, urlString: String, title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
-        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, duration: duration, uploadedDate: uploadedDate)
+    func play(videoId: String, urlString: String, audioUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
+        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
         queue.insert(item, at: 0)
         playIndex(0)
+    }
+
+    /// Start a sleep timer that pauses playback after `minutes`. Passing nil or
+    /// a non-positive value cancels any running timer.
+    func startSleepTimer(minutes: Int?) {
+        sleepTimer?.invalidate()
+        sleepTimer = nil
+        guard let minutes, minutes > 0 else {
+            sleepMinutesRemaining = nil
+            return
+        }
+        sleepMinutesRemaining = minutes
+        sleepTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.tickSleepTimer() }
+        }
+    }
+
+    /// One minute elapsed: decrement and pause when it reaches zero. Extracted so
+    /// the countdown logic is unit-testable without waiting on a real Timer.
+    func tickSleepTimer() {
+        guard let remaining = sleepMinutesRemaining else { return }
+        let next = remaining - 1
+        if next <= 0 {
+            sleepMinutesRemaining = nil
+            sleepTimer?.invalidate()
+            sleepTimer = nil
+            pause()
+        } else {
+            sleepMinutesRemaining = next
+        }
+    }
+
+    /// Toggle audio-only vs video and re-load the current item at the same
+    /// position so the switch actually changes which stream is downloaded.
+    func toggleVideoMode() {
+        videoMode.toggle()
+        guard currentIndex >= 0, currentIndex < queue.count else { return }
+        let resumeAt = currentTime
+        playItem(queue[currentIndex])
+        if resumeAt > 1 { seek(to: resumeAt) }
     }
 }

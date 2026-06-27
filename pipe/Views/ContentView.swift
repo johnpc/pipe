@@ -4,6 +4,7 @@ struct ContentView: View {
     @StateObject private var player = PlayerState()
     @StateObject private var following = FollowingStore()
     @StateObject private var recents = RecentsStore()
+    @StateObject private var settings = AppSettings()
     @StateObject private var toast = ToastManager.shared
     @State private var selectedTab = 0
     
@@ -18,7 +19,7 @@ struct ContentView: View {
                         }
                     case 1:
                         NavigationStack {
-                            SearchView(player: player, following: following, recents: recents)
+                            SearchView(player: player, following: following, recents: recents, settings: settings)
                         }
                     case 2:
                         NavigationStack {
@@ -27,6 +28,10 @@ struct ContentView: View {
                     case 3:
                         NavigationStack {
                             FollowingView(player: player, following: following, recents: recents)
+                        }
+                    case 4:
+                        NavigationStack {
+                            SettingsView(settings: settings, player: player)
                         }
                     default:
                         EmptyView()
@@ -45,6 +50,7 @@ struct ContentView: View {
                         TabButton(icon: "magnifyingglass", label: "Search", isSelected: selectedTab == 1) { selectedTab = 1 }
                         TabButton(icon: "clock", label: "Recents", isSelected: selectedTab == 2) { selectedTab = 2 }
                         TabButton(icon: "heart.fill", label: "Following", isSelected: selectedTab == 3) { selectedTab = 3 }
+                        TabButton(icon: "gearshape", label: "Settings", isSelected: selectedTab == 4) { selectedTab = 4 }
                     }
                     .padding(.top, 8)
                     .padding(.bottom, 2)
@@ -56,7 +62,7 @@ struct ContentView: View {
             if let msg = toast.message {
                 VStack {
                     Spacer()
-                    ToastView(message: msg, isLoading: toast.isLoading)
+                    ToastView(message: msg, isLoading: toast.isLoading, isError: toast.isError)
                         .padding(.bottom, 120)
                 }
                 .animation(.easeInOut(duration: 0.2), value: toast.message)
@@ -64,6 +70,12 @@ struct ContentView: View {
             }
         }
         .onAppear { player.recents = recents }
+        .onChange(of: player.error) { _, newError in
+            if let msg = newError {
+                toast.showError(msg)
+                player.error = nil
+            }
+        }
     }
 }
 

@@ -4,6 +4,7 @@ import SwiftUI
 struct SearchSuggestionsView: View {
     @Binding var query: String
     let suggestions: [String]
+    var history: [String] = []
     let onSearch: (String) -> Void
 
     var body: some View {
@@ -15,6 +16,21 @@ struct SearchSuggestionsView: View {
                     .padding(.top, 60)
                 Text("Search Videos")
                     .font(.title2)
+
+                if !history.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Recent").font(.headline)
+                        ForEach(history, id: \.self) { term in
+                            Button { onSearch(term) } label: {
+                                Label(term, systemImage: "clock.arrow.circlepath")
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 40)
+                }
 
                 // Inline search field for better iPad compatibility
                 HStack {

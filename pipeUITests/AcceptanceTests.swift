@@ -25,8 +25,8 @@ final class AcceptanceTests: XCTestCase {
 
     /// Scenario: All tabs are reachable
     func testAllTabsAreReachable() throws {
-        // Given the app is launched / Then I should see the four tabs
-        for tab in ["Feed", "Search", "Recents", "Following"] {
+        // Given the app is launched / Then I should see the five tabs
+        for tab in ["Feed", "Search", "Recents", "Following", "Settings"] {
             XCTAssertTrue(app.buttons[tab].waitForExistence(timeout: 10), "\(tab) tab should exist")
         }
 
@@ -39,6 +39,9 @@ final class AcceptanceTests: XCTestCase {
 
         app.buttons["Following"].tap()
         XCTAssertTrue(app.navigationBars["Following"].waitForExistence(timeout: 5))
+
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
     }
 
     // MARK: - Feature: Search
@@ -226,6 +229,95 @@ final class AcceptanceTests: XCTestCase {
         let emptyState = app.staticTexts["No History"]
         XCTAssertTrue(emptyState.waitForExistence(timeout: 10) || app.cells.count > 0,
                       "Recents tab should show empty state or history")
+    }
+
+    // MARK: - Feature: Settings
+
+    /// Scenario: Settings screen shows its sections
+    func testSettingsShowsSections() throws {
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Piped Instance"].exists, "Piped Instance section")
+        XCTAssertTrue(app.staticTexts["Sleep Timer"].exists, "Sleep Timer section")
+        XCTAssertTrue(app.staticTexts["Search History"].exists, "Search History section")
+    }
+
+    /// Scenario: Setting a sleep timer shows the countdown
+    func testSleepTimerShowsCountdown() throws {
+        app.buttons["Settings"].tap()
+        let option = app.buttons["Sleep after 30 min"]
+        XCTAssertTrue(option.waitForExistence(timeout: 10))
+        option.tap()
+
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5), "Cancel should appear once a timer is set")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'min remaining'")).firstMatch.exists,
+                      "Remaining time should be shown")
+    }
+
+    // MARK: - Feature: Search History
+
+    /// Scenario: A performed search appears under Recent
+    func testSearchAppearsInHistory() throws {
+        // Given I am on the Search tab / When I search
+        app.buttons["Search"].tap()
+        let field = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("lofi beats\n")
+
+        // And I return to the empty search screen (clear the query)
+        let clear = app.buttons["Clear text"].firstMatch
+        if clear.waitForExistence(timeout: 3) { clear.tap() }
+
+        // Then the term appears under Recent
+        XCTAssertTrue(app.buttons["lofi beats"].waitForExistence(timeout: 5) ||
+                      app.staticTexts["lofi beats"].waitForExistence(timeout: 5),
+                      "Performed search should appear in history")
+    }
+
+    /// Scenario: Clearing search history empties it
+    func testClearSearchHistory() throws {
+        // Given I have performed a search
+        app.buttons["Search"].tap()
+        let field = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("temporary query\n")
+
+        // When I open Settings and clear history
+        app.buttons["Settings"].tap()
+        let clearButton = app.buttons["Clear History"]
+        guard clearButton.waitForExistence(timeout: 10) else {
+            throw XCTSkip("History not recorded (search may not have committed)")
+        }
+        clearButton.tap()
+
+        // Then the history is empty
+        XCTAssertTrue(app.staticTexts["No recent searches"].waitForExistence(timeout: 5),
+                      "History should be empty after clearing")
+    }
+
+    // MARK: - Feature: Audio / Video Mode
+
+    /// Scenario: Toggling video mode from the full player
+    func testToggleVideoModeFromFullPlayer() throws {
+        // Given a video is playing
+        try startPlaybackFromSuggestion("3Blue1Brown")
+
+        // And I have opened the full player
+        let miniArtwork = app.images.firstMatch
+        if miniArtwork.waitForExistence(timeout: 10) { miniArtwork.tap() }
+
+        // When I tap "Show Video"
+        let showVideo = app.buttons["Show Video"]
+        guard showVideo.waitForExistence(timeout: 10) else {
+            throw XCTSkip("Full player did not present (playback may not have started)")
+        }
+        showVideo.tap()
+
+        // Then the control switches to "Audio Only"
+        XCTAssertTrue(app.buttons["Audio Only"].waitForExistence(timeout: 5),
+                      "Toggle should flip to Audio Only")
     }
 
     // MARK: - Helpers

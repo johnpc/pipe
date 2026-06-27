@@ -22,9 +22,9 @@ struct FullPlayerSheet: View {
                 Text(player.currentTitle ?? "").font(.title3).bold().lineLimit(2).multilineTextAlignment(.center).padding(.horizontal)
                 Text(player.currentArtist ?? "").foregroundStyle(.secondary)
                 
-                // Video/Audio toggle
+                // Video/Audio toggle — reloads the stream at the same position
                 Button {
-                    player.videoMode.toggle()
+                    player.toggleVideoMode()
                 } label: {
                     Label(player.videoMode ? "Audio Only" : "Show Video", systemImage: player.videoMode ? "waveform" : "video")
                         .font(.subheadline)
