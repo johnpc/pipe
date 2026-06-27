@@ -5,6 +5,7 @@ struct FeedView: View {
     @ObservedObject var following: FollowingStore
     @ObservedObject var recents: RecentsStore
     @ObservedObject var saved: SavedStore
+    @ObservedObject var downloads: DownloadStore
     @State private var videos: [RelatedStream] = []
     @State private var loading = false
     @State private var sort: FeedSort = .newest
@@ -32,12 +33,14 @@ struct FeedView: View {
             }
         }
         .navigationTitle("Feed")
-        .navigationDestination(for: String.self) { _ in SavedView(player: player, saved: saved) }
-        .toolbar {
-            FeedSortMenu(sort: $sort, hideWatched: $hideWatched)
-            NavigationLink(value: "saved") { Image(systemName: "bookmark") }
-                .accessibilityIdentifier("savedButton")
+        .navigationDestination(for: String.self) { dest in
+            if dest == "downloads" {
+                DownloadsView(player: player, downloads: downloads)
+            } else {
+                SavedView(player: player, saved: saved)
+            }
         }
+        .toolbar { FeedToolbar(sort: $sort, hideWatched: $hideWatched) }
         .task { await loadFeed() }
         .onChange(of: following.channels) { _, _ in
             Task { await loadFeed() }

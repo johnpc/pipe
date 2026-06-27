@@ -279,6 +279,18 @@ struct PlayerStateTests {
         #expect(player.isPlaying == false)
     }
 
+    @Test func stopAfterCurrentEpisodeStopsInsteadOfAdvancing() {
+        let player = isolatedPlayer()
+        player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+        player.addToQueue(videoId: "b", url: "bad://b", title: "B", artist: "x", thumbnail: "", duration: 10)
+        player.stopAfterCurrentEpisode = true
+        player.handlePlaybackEnded()
+        // Finished item removed, but playback stopped rather than advancing to b.
+        #expect(player.queue.map(\.videoId) == ["b"])
+        #expect(player.isPlaying == false)
+        #expect(player.stopAfterCurrentEpisode == false) // one-shot, reset
+    }
+
     @Test func addToQueueDeduplicates() {
         let player = isolatedPlayer()
         player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)

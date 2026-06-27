@@ -18,6 +18,9 @@ struct DetailView: View {
         }
         .navigationTitle("Episode")
         .toolbar {
+            if case .loaded(let s) = state, let downloads = player.downloads {
+                DownloadButton(videoId: videoId, stream: s, downloads: downloads)
+            }
             if let url = RowActions.youtubeURL(videoId: videoId) {
                 ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
                     .accessibilityIdentifier("shareButton")
