@@ -48,6 +48,10 @@ final class ViewRenderTests: XCTestCase {
         AppSettings(defaults: UserDefaults(suiteName: "render-settings-\(UUID().uuidString)")!)
     }
 
+    private func makeSaved() -> SavedStore {
+        SavedStore(defaults: UserDefaults(suiteName: "render-saved-\(UUID().uuidString)")!)
+    }
+
     private func searchVideo() -> SearchItem {
         SearchItem(url: "/watch?v=v1", type: "stream", title: "Video", thumbnail: "t", uploaderName: "U", uploaderUrl: "/channel/c1", duration: 120, name: nil, uploadedDate: "1 day ago")
     }
@@ -69,12 +73,12 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderFeedView() {
         let (p, f, r) = makeStores()
-        render(NavigationStack { FeedView(player: p, following: f, recents: r, cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
+        render(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
     func testRenderSearchViewEmptyState() {
         let (p, f, r) = makeStores()
-        render(NavigationStack { SearchView(player: p, following: f, recents: r, settings: makeSettings()) })
+        render(NavigationStack { SearchView(player: p, following: f, recents: r, settings: makeSettings(), saved: makeSaved()) })
     }
 
     func testRenderSearchSuggestionsView() {
@@ -86,16 +90,29 @@ final class ViewRenderTests: XCTestCase {
     }
 
     func testRenderSettingsView() {
-        let (p, _, _) = makeStores()
-        render(NavigationStack { SettingsView(settings: makeSettings(), player: p) })
+        let (p, _, r) = makeStores()
+        render(NavigationStack { SettingsView(settings: makeSettings(), player: p, recents: r) })
     }
 
     func testRenderSettingsViewWithActiveSleepTimerAndHistory() {
-        let (p, _, _) = makeStores()
+        let (p, _, r) = makeStores()
         p.startSleepTimer(minutes: 30)
+        r.add(videoId: "w", title: "Watched", artist: "A", thumbnail: "", timestamp: 5, duration: 10)
         let s = makeSettings()
         s.recordSearch("history item")
-        render(NavigationStack { SettingsView(settings: s, player: p) })
+        render(NavigationStack { SettingsView(settings: s, player: p, recents: r) })
+    }
+
+    func testRenderSavedViewEmpty() {
+        let (p, _, _) = makeStores()
+        render(NavigationStack { SavedView(player: p, saved: makeSaved()) })
+    }
+
+    func testRenderSavedViewWithItems() {
+        let (p, _, _) = makeStores()
+        let s = makeSaved()
+        s.add(SavedItem(videoId: "v1", title: "Saved One", artist: "A", thumbnail: "t", duration: 60))
+        render(NavigationStack { SavedView(player: p, saved: s) })
     }
 
     func testRenderRecentsViewEmpty() {
@@ -164,7 +181,7 @@ final class ViewRenderTests: XCTestCase {
         """)
         let (p, f, r) = makeStores()
         f.follow(FollowedChannel(id: "c1", name: "Chan", thumbnail: "t"))
-        renderLive(NavigationStack { FeedView(player: p, following: f, recents: r, cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
+        renderLive(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
 

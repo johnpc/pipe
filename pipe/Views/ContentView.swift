@@ -5,8 +5,10 @@ struct ContentView: View {
     @StateObject private var following = FollowingStore()
     @StateObject private var recents = RecentsStore()
     @StateObject private var settings = AppSettings()
+    @StateObject private var saved = SavedStore()
     @StateObject private var toast = ToastManager.shared
     @State private var selectedTab = 0
+    @State private var showSettings = false
     
     var body: some View {
         ZStack {
@@ -15,11 +17,11 @@ struct ContentView: View {
                     switch selectedTab {
                     case 0:
                         NavigationStack {
-                            FeedView(player: player, following: following, recents: recents)
+                            FeedView(player: player, following: following, recents: recents, saved: saved)
                         }
                     case 1:
                         NavigationStack {
-                            SearchView(player: player, following: following, recents: recents, settings: settings)
+                            SearchView(player: player, following: following, recents: recents, settings: settings, saved: saved)
                         }
                     case 2:
                         NavigationStack {
@@ -28,10 +30,6 @@ struct ContentView: View {
                     case 3:
                         NavigationStack {
                             FollowingView(player: player, following: following, recents: recents)
-                        }
-                    case 4:
-                        NavigationStack {
-                            SettingsView(settings: settings, player: player)
                         }
                     default:
                         EmptyView()
@@ -44,16 +42,7 @@ struct ContentView: View {
                         MiniPlayerBar(player: player)
                     }
                     
-                    // Custom tab bar
-                    HStack {
-                        TabButton(icon: "rectangle.stack", label: "Feed", isSelected: selectedTab == 0) { selectedTab = 0 }
-                        TabButton(icon: "magnifyingglass", label: "Search", isSelected: selectedTab == 1) { selectedTab = 1 }
-                        TabButton(icon: "clock", label: "Recents", isSelected: selectedTab == 2) { selectedTab = 2 }
-                        TabButton(icon: "heart.fill", label: "Following", isSelected: selectedTab == 3) { selectedTab = 3 }
-                        TabButton(icon: "gearshape", label: "Settings", isSelected: selectedTab == 4) { selectedTab = 4 }
-                    }
-                    .padding(.top, 8)
-                    .padding(.bottom, 2)
+                    BottomTabBar(selectedTab: $selectedTab) { showSettings = true }
                 }
                 .background(.bar)
             }
@@ -74,6 +63,11 @@ struct ContentView: View {
             if let msg = newError {
                 toast.showError(msg)
                 player.error = nil
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            NavigationStack {
+                SettingsView(settings: settings, player: player, recents: recents)
             }
         }
     }

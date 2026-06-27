@@ -11,6 +11,36 @@ struct RecentsStoreTests {
         return RecentsStore(defaults: suite)
     }
 
+    @Test func removeByVideoIdDeletesAndPersists() {
+        let suite = UserDefaults(suiteName: "test-recents-rm-\(UUID().uuidString)")!
+        let store = RecentsStore(defaults: suite)
+        store.add(videoId: "a", title: "A", artist: "x", thumbnail: "", timestamp: 0)
+        store.add(videoId: "b", title: "B", artist: "x", thumbnail: "", timestamp: 0)
+        store.remove(videoId: "a")
+        #expect(store.items.map(\.videoId) == ["b"])
+        // persisted
+        #expect(RecentsStore(defaults: suite).items.map(\.videoId) == ["b"])
+    }
+
+    @Test func removeAtOffsetsDeletes() {
+        let store = makeStore()
+        store.add(videoId: "a", title: "", artist: "", thumbnail: "", timestamp: 0)
+        store.add(videoId: "b", title: "", artist: "", thumbnail: "", timestamp: 0)
+        store.add(videoId: "c", title: "", artist: "", thumbnail: "", timestamp: 0)
+        // items are [c, b, a]; remove index 0 (c) and 2 (a)
+        store.remove(at: IndexSet([0, 2]))
+        #expect(store.items.map(\.videoId) == ["b"])
+    }
+
+    @Test func clearEmptiesAndPersists() {
+        let suite = UserDefaults(suiteName: "test-recents-clear-\(UUID().uuidString)")!
+        let store = RecentsStore(defaults: suite)
+        store.add(videoId: "a", title: "", artist: "", thumbnail: "", timestamp: 0)
+        store.clear()
+        #expect(store.items.isEmpty)
+        #expect(RecentsStore(defaults: suite).items.isEmpty)
+    }
+
     @Test func addInsertsAtFront() {
         let store = makeStore()
         store.add(videoId: "a", title: "A", artist: "x", thumbnail: "", timestamp: 0)

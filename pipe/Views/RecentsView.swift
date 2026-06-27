@@ -46,7 +46,18 @@ struct RecentsView: View {
                     Text(item.title).font(.subheadline).lineLimit(3)
                 }
                 .padding(.vertical, 8)
+                .contextMenu {
+                    Button { playItem(item) } label: { Label("Play", systemImage: "play.fill") }
+                    Button { queueItem(item) } label: { Label("Add to Queue", systemImage: "text.badge.plus") }
+                    if let url = RowActions.youtubeURL(videoId: item.videoId) {
+                        ShareLink(item: url) { Label("Share", systemImage: "square.and.arrow.up") }
+                    }
+                    Button(role: .destructive) { recents.remove(videoId: item.videoId) } label: {
+                        Label("Remove", systemImage: "trash")
+                    }
+                }
             }
+            .onDelete { recents.remove(at: $0) }
         }
         .listStyle(.plain)
         .navigationTitle("Recents")

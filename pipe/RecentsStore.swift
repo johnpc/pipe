@@ -53,6 +53,26 @@ class RecentsStore: ObservableObject {
         }
     }
     
+    /// Remove a single watched item by video id.
+    func remove(videoId: String) {
+        items.removeAll { $0.videoId == videoId }
+        save()
+    }
+
+    /// Remove items at the given list offsets (for swipe-to-delete).
+    func remove(at offsets: IndexSet) {
+        for index in offsets.sorted(by: >) where index < items.count {
+            items.remove(at: index)
+        }
+        save()
+    }
+
+    /// Clear the entire watch history.
+    func clear() {
+        items.removeAll()
+        save()
+    }
+
     func add(videoId: String, title: String, artist: String, thumbnail: String, timestamp: Double, duration: Int = 0, uploadedDate: String? = nil) {
         items.removeAll { $0.videoId == videoId }
         let item = RecentItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, timestamp: timestamp, lastWatched: Date(), duration: duration, uploadedDate: uploadedDate)

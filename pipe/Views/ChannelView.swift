@@ -6,13 +6,10 @@ struct ChannelView: View {
     @ObservedObject var following: FollowingStore
     @ObservedObject var recents: RecentsStore
     @State private var channel: ChannelResponse?
+    @State private var failed = false
     @State private var selectedTab = "videos"
     @State private var tabContent: [RelatedStream] = []
     @State private var loadingTab = false
-
-    var videos: [RelatedStream] {
-        selectedTab == "videos" ? (channel?.relatedStreams ?? []) : tabContent
-    }
 
     var body: some View {
         Group {
@@ -37,8 +34,12 @@ struct ChannelView: View {
 
                     if loadingTab {
                         Spacer(); ProgressView(); Spacer()
+                    } else if selectedTab == "videos" {
+                        // Paginated main videos list.
+                        ChannelVideoList(channelId: channelId, player: player, recents: recents, videos: ch.relatedStreams, nextpage: ch.nextpage)
+                            .id(ch.id)
                     } else {
-                        List(videos) { v in
+                        List(tabContent) { v in
                             NavigationLink(value: v) {
                                 VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { play(v, .play) }, onQueue: { play(v, .queue) })
                             }
@@ -49,9 +50,20 @@ struct ChannelView: View {
                 .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player) }
                 .navigationTitle(ch.name)
                 .toolbar { followButton(ch) }
+            } else if failed {
+                RetryView { Task { await load() } }
             } else { ProgressView() }
         }
-        .task { channel = try? await PipedAPI.channel(channelId) }
+        .task { await load() }
+    }
+
+    private func load() async {
+        failed = false
+        if let result = try? await PipedAPI.channel(channelId) {
+            channel = result
+        } else if channel == nil {
+            failed = true
+        }
     }
 
     private func followButton(_ ch: ChannelResponse) -> some View {

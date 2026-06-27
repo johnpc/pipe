@@ -35,6 +35,7 @@ struct ChannelResponse: Codable {
     let description: String?
     let relatedStreams: [RelatedStream]
     let tabs: [ChannelTab]?
+    let nextpage: String?
 }
 
 struct ChannelTab: Codable {
@@ -60,7 +61,7 @@ struct RelatedStream: Codable, Identifiable, Hashable {
     var videoId: String { url.replacingOccurrences(of: "/watch?v=", with: "") }
 }
 
-struct StreamResponse: Codable {
+struct StreamResponse: Codable, Equatable {
     let title: String
     let description: String?
     let uploader: String
@@ -73,13 +74,13 @@ struct StreamResponse: Codable {
     let uploadDate: String?
 }
 
-struct AudioStream: Codable {
+struct AudioStream: Codable, Equatable {
     let url: String
     let bitrate: Int
     let mimeType: String
 }
 
-struct VideoStream: Codable {
+struct VideoStream: Codable, Equatable {
     let url: String
     let quality: String
     let mimeType: String
@@ -168,5 +169,16 @@ enum PipedAPI {
 
     static func streams(_ videoId: String) async throws -> StreamResponse {
         try await fetch(StreamResponse.self, from: URL(string: "\(pipedBase)/streams/\(videoId)")!)
+    }
+
+    static func channelNextPageURL(channelId: String, nextpage: String) -> URL {
+        let encoded = nextpage.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? nextpage
+        return URL(string: "\(pipedBase)/nextpage/channel/\(channelId)?nextpage=\(encoded)")!
+    }
+
+    /// Fetch the next page of a channel's videos. Returns the page's streams and
+    /// the following page token (nil when exhausted).
+    static func channelNextPage(channelId: String, nextpage: String) async throws -> ChannelTabResponse {
+        try await fetch(ChannelTabResponse.self, from: channelNextPageURL(channelId: channelId, nextpage: nextpage))
     }
 }

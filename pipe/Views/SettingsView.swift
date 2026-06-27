@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var player: PlayerState
+    @ObservedObject var recents: RecentsStore
     @State private var instanceDraft = ""
 
     private let sleepOptions = [15, 30, 45, 60]
@@ -48,6 +49,17 @@ struct SettingsView: View {
                         Text(term)
                     }
                     Button("Clear History") { settings.clearHistory() }
+                        .foregroundColor(.red)
+                }
+            }
+
+            Section("Watch History") {
+                if recents.items.isEmpty {
+                    Text("No watch history").foregroundStyle(.secondary)
+                } else {
+                    Text("\(recents.items.count) watched")
+                        .foregroundStyle(.secondary)
+                    Button("Clear Watch History") { recents.clear() }
                         .foregroundColor(.red)
                 }
             }
