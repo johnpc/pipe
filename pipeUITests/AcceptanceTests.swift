@@ -3,9 +3,10 @@ import XCTest
 /// Acceptance tests implementing the Gherkin scenarios in `AcceptanceTests.md`.
 /// Each test maps to one Scenario, with Given/When/Then steps as comments.
 ///
-/// Network-dependent assertions (search results, playback) use generous waits
-/// and tolerate slow/offline backends; offline-deterministic flows (tab
-/// navigation, empty states, suggestions) are asserted strictly.
+/// The app is launched in **mock mode** (`--uitest-mock`), serving bundled real
+/// Piped fixtures (captured from pipedapi.jpc.io) instead of the live network.
+/// This makes every data-reading flow deterministic — scenarios assert on the
+/// real fixture data (channel "MrBeast", real video titles) and never skip.
 ///
 /// Run with:
 ///   xcodebuild test -scheme pipe \
@@ -15,9 +16,15 @@ final class AcceptanceTests: XCTestCase {
 
     private var app: XCUIApplication!
 
+    // Known strings from the bundled fixtures (pipe/Fixtures/*.json).
+    private let fixtureChannelName = "MrBeast"
+    private let fixtureSearchStreamTitle = "Guess What Age Punched You"
+    private let fixtureNowPlayingTitle = "Survive 30 Days Chained To A Stranger, Win $250,000"
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["--uitest-mock"]
         app.launch()
     }
 
@@ -25,21 +32,15 @@ final class AcceptanceTests: XCTestCase {
 
     /// Scenario: All tabs are reachable
     func testAllTabsAreReachable() throws {
-        // Given the app is launched / Then I should see the five tabs
         for tab in ["Feed", "Search", "Recents", "Following", "Settings"] {
             XCTAssertTrue(app.buttons[tab].waitForExistence(timeout: 10), "\(tab) tab should exist")
         }
-
-        // When I tap each tab / Then the screen should appear
         app.buttons["Search"].tap()
         XCTAssertTrue(app.navigationBars["Search"].waitForExistence(timeout: 5))
-
         app.buttons["Recents"].tap()
         XCTAssertTrue(app.navigationBars["Recents"].waitForExistence(timeout: 5))
-
         app.buttons["Following"].tap()
         XCTAssertTrue(app.navigationBars["Following"].waitForExistence(timeout: 5))
-
         app.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
     }
@@ -48,187 +49,116 @@ final class AcceptanceTests: XCTestCase {
 
     /// Scenario: Empty state shows suggestions
     func testSearchEmptyStateShowsSuggestions() throws {
-        // Given I am on the Search tab
         app.buttons["Search"].tap()
-
-        // Then I should see popular channel suggestions
         XCTAssertTrue(app.buttons["MrBeast"].waitForExistence(timeout: 10), "Suggestion should be visible")
-        // And an inline search field
         XCTAssertTrue(app.textFields.firstMatch.exists || app.searchFields.firstMatch.exists)
     }
 
     /// Scenario: Searching returns results
     func testSearchReturnsResults() throws {
-        // Given I am on the Search tab
         app.buttons["Search"].tap()
-
-        // When I type into the search field and submit
-        let searchField = app.searchFields.firstMatch
-        if searchField.waitForExistence(timeout: 5) {
-            searchField.tap()
-            searchField.typeText("MrBeast")
-            app.keyboards.buttons["Search"].tap()
-        } else {
-            // Fall back to the inline field
-            let field = app.textFields.firstMatch
-            field.tap()
-            field.typeText("MrBeast\n")
-        }
-
-        // Then I should see a list of results
-        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "Search results should appear")
+        performSearch("anything")
+        // Then I should see the real fixture results (a known video title).
+        XCTAssertTrue(app.staticTexts[fixtureSearchStreamTitle].waitForExistence(timeout: 15),
+                      "Real fixture search result should render")
     }
 
     /// Scenario: Tapping a suggestion runs a search
     func testTappingSuggestionRunsSearch() throws {
-        // Given I am on the Search tab
         app.buttons["Search"].tap()
-
-        // When I tap the "MrBeast" suggestion
         let suggestion = app.buttons["MrBeast"]
         XCTAssertTrue(suggestion.waitForExistence(timeout: 10))
         suggestion.tap()
-
-        // Then I should see a list of results
-        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 20), "Results should appear after suggestion tap")
+        XCTAssertTrue(app.staticTexts[fixtureSearchStreamTitle].waitForExistence(timeout: 15),
+                      "Results should render after tapping a suggestion")
     }
 
     // MARK: - Feature: Playback
 
     /// Scenario: Playing a result starts the mini player
     func testPlayingResultStartsMiniPlayer() throws {
-        // Given I have searched
-        app.buttons["Search"].tap()
-        let suggestion = app.buttons["Lex Fridman"]
-        XCTAssertTrue(suggestion.waitForExistence(timeout: 10))
-        suggestion.tap()
-
-        guard app.cells.firstMatch.waitForExistence(timeout: 20) else {
-            throw XCTSkip("Backend returned no results; cannot exercise playback")
-        }
-
-        // When I tap the play button on the first result
-        let playButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'play'")).firstMatch
-        guard playButton.waitForExistence(timeout: 5) else {
-            throw XCTSkip("No play control surfaced in results")
-        }
-        playButton.tap()
-
-        // Then the mini player bar should appear (a pause/play control persists at the bottom)
-        let miniControl = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pause' OR label CONTAINS[c] 'play'")).firstMatch
-        XCTAssertTrue(miniControl.waitForExistence(timeout: 25), "Mini player should appear after playback starts")
+        searchAndPlayFirstStream()
+        // Then the mini player shows the now-playing title from the streams fixture.
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15),
+                      "Mini player should show the now-playing title")
     }
 
     /// Scenario: Expanding the mini player shows full controls
     func testExpandingMiniPlayerShowsFullControls() throws {
-        // Given a video is playing
-        try startPlaybackFromSuggestion("Veritasium")
-
-        // When I tap the mini player bar
-        let miniArtwork = app.images.firstMatch
-        if miniArtwork.waitForExistence(timeout: 10) { miniArtwork.tap() }
-
-        // Then the full player sheet should appear with playback controls (speed buttons)
-        let speed = app.buttons["1x"].firstMatch
-        XCTAssertTrue(speed.waitForExistence(timeout: 10), "Full player sheet should show speed controls")
+        searchAndPlayFirstStream()
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15))
+        app.staticTexts[fixtureNowPlayingTitle].firstMatch.tap()
+        XCTAssertTrue(app.buttons["1x"].waitForExistence(timeout: 10), "Full player should show speed controls")
     }
 
     // MARK: - Feature: Queue
 
     /// Scenario: Queueing a result adds it to the queue
     func testQueueingResultAddsToQueue() throws {
-        // Given I have searched
         app.buttons["Search"].tap()
-        let suggestion = app.buttons["Kurzgesagt"]
-        XCTAssertTrue(suggestion.waitForExistence(timeout: 10))
-        suggestion.tap()
-        guard app.cells.firstMatch.waitForExistence(timeout: 20) else {
-            throw XCTSkip("Backend returned no results; cannot exercise queue")
-        }
-
-        // When I tap the queue button on the first result
-        let queueButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'badge' OR label CONTAINS[c] 'plus'")).firstMatch
-        guard queueButton.waitForExistence(timeout: 5) else {
-            throw XCTSkip("No queue control surfaced in results")
-        }
+        performSearch("anything")
+        let queueButton = app.buttons["queueButton"].firstMatch
+        XCTAssertTrue(queueButton.waitForExistence(timeout: 15), "A queue control should be present")
         queueButton.tap()
-
-        // Then the mini player bar should appear (queue started playing the first item)
-        let miniControl = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pause' OR label CONTAINS[c] 'play'")).firstMatch
-        XCTAssertTrue(miniControl.waitForExistence(timeout: 25), "Mini player should appear after queueing")
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15),
+                      "Queued item should begin playing and show in the mini player")
     }
 
     // MARK: - Feature: Channel Browsing
 
     /// Scenario: Opening a channel shows its videos
     func testOpeningChannelShowsVideos() throws {
-        // Given I have searched for a channel
         app.buttons["Search"].tap()
-        let suggestion = app.buttons["MrBeast"]
-        XCTAssertTrue(suggestion.waitForExistence(timeout: 10))
-        suggestion.tap()
-        guard app.cells.firstMatch.waitForExistence(timeout: 20) else {
-            throw XCTSkip("Backend returned no results; cannot exercise channel browsing")
-        }
-
-        // When I tap a channel result
-        let channelCell = app.cells.firstMatch
-        channelCell.tap()
-
-        // Then I should land on a channel screen with a Videos tab pill
-        let videosPill = app.buttons["Videos"]
-        XCTAssertTrue(videosPill.waitForExistence(timeout: 20) || app.cells.firstMatch.waitForExistence(timeout: 20),
-                      "Channel screen should show a Videos tab or a video list")
+        performSearch("anything")
+        // The channel result row (fixture: "MrBeast").
+        let channelRow = app.buttons["channelRow"].firstMatch
+        XCTAssertTrue(channelRow.waitForExistence(timeout: 15), "Channel result should be present")
+        channelRow.tap()
+        // Channel screen shows its title and a Videos tab.
+        XCTAssertTrue(app.buttons["Videos"].waitForExistence(timeout: 15) ||
+                      app.navigationBars[fixtureChannelName].waitForExistence(timeout: 15),
+                      "Channel screen should render with its videos")
     }
 
     // MARK: - Feature: Following
 
     /// Scenario: Empty following state
     func testFollowingEmptyState() throws {
-        // Given a fresh install with no follows / When I open Following
         app.buttons["Following"].tap()
-
-        // Then I should see the empty state (or, if channels exist from a prior run, the list)
-        let emptyState = app.staticTexts["No Channels"]
-        XCTAssertTrue(emptyState.waitForExistence(timeout: 10) || app.cells.count > 0,
+        XCTAssertTrue(app.staticTexts["No Channels"].waitForExistence(timeout: 10) || app.cells.count > 0,
                       "Following tab should show empty state or a channel list")
     }
 
     /// Scenario: Following a channel from search
     func testFollowingChannelFromSearch() throws {
-        // Given I have searched for a channel
         app.buttons["Search"].tap()
-        let suggestion = app.buttons["Huberman Lab"]
-        XCTAssertTrue(suggestion.waitForExistence(timeout: 10))
-        suggestion.tap()
-        guard app.cells.firstMatch.waitForExistence(timeout: 20) else {
-            throw XCTSkip("Backend returned no results; cannot exercise following")
-        }
-
-        // When I tap the follow heart on a channel result
-        let heart = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'heart'")).firstMatch
-        guard heart.waitForExistence(timeout: 5) else {
-            throw XCTSkip("No channel result with a follow control surfaced")
-        }
+        performSearch("anything")
+        // Tap the follow heart on the channel result.
+        let heart = app.buttons["followButton"].firstMatch
+        XCTAssertTrue(heart.waitForExistence(timeout: 15), "A follow heart should be present on the channel result")
         heart.tap()
-
-        // Then the channel should appear on the Following tab
+        // The followed channel appears on the Following tab.
         app.buttons["Following"].tap()
-        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10),
-                      "A followed channel should appear on the Following tab")
+        XCTAssertTrue(app.staticTexts[fixtureChannelName].waitForExistence(timeout: 10),
+                      "Followed channel should appear on the Following tab")
     }
 
     // MARK: - Feature: Recents
 
     /// Scenario: Empty recents state
     func testRecentsEmptyState() throws {
-        // When I open the Recents tab
         app.buttons["Recents"].tap()
-
-        // Then I should see the empty state (or history from a prior run)
-        let emptyState = app.staticTexts["No History"]
-        XCTAssertTrue(emptyState.waitForExistence(timeout: 10) || app.cells.count > 0,
+        XCTAssertTrue(app.staticTexts["No History"].waitForExistence(timeout: 10) || app.cells.count > 0,
                       "Recents tab should show empty state or history")
+    }
+
+    /// Scenario: Playing a video records it in Recents
+    func testPlayedVideoAppearsInRecents() throws {
+        searchAndPlayFirstStream()
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15))
+        app.buttons["Recents"].tap()
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 10),
+                      "Played video should appear in Recents")
     }
 
     // MARK: - Feature: Settings
@@ -248,94 +178,69 @@ final class AcceptanceTests: XCTestCase {
         let option = app.buttons["Sleep after 30 min"]
         XCTAssertTrue(option.waitForExistence(timeout: 10))
         option.tap()
-
         XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5), "Cancel should appear once a timer is set")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'min remaining'")).firstMatch.exists,
                       "Remaining time should be shown")
     }
 
-    // MARK: - Feature: Search History
-
-    /// Scenario: A performed search appears under Recent
-    func testSearchAppearsInHistory() throws {
-        // Given I am on the Search tab / When I search
-        app.buttons["Search"].tap()
-        let field = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        field.tap()
-        field.typeText("lofi beats\n")
-
-        // And I return to the empty search screen (clear the query)
-        let clear = app.buttons["Clear text"].firstMatch
-        if clear.waitForExistence(timeout: 3) { clear.tap() }
-
-        // Then the term appears under Recent
-        XCTAssertTrue(app.buttons["lofi beats"].waitForExistence(timeout: 5) ||
-                      app.staticTexts["lofi beats"].waitForExistence(timeout: 5),
-                      "Performed search should appear in history")
-    }
-
     /// Scenario: Clearing search history empties it
     func testClearSearchHistory() throws {
-        // Given I have performed a search
         app.buttons["Search"].tap()
-        let field = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        field.tap()
-        field.typeText("temporary query\n")
-
-        // When I open Settings and clear history
+        performSearch("temporary query")
         app.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["Search History"].waitForExistence(timeout: 10))
+        // Clear History sits below the history list; scroll it into view.
         let clearButton = app.buttons["Clear History"]
-        guard clearButton.waitForExistence(timeout: 10) else {
-            throw XCTSkip("History not recorded (search may not have committed)")
+        if !clearButton.waitForExistence(timeout: 3) || !clearButton.isHittable {
+            app.swipeUp()
         }
+        XCTAssertTrue(clearButton.waitForExistence(timeout: 5), "Clear History should be present after a search")
         clearButton.tap()
-
-        // Then the history is empty
         XCTAssertTrue(app.staticTexts["No recent searches"].waitForExistence(timeout: 5),
                       "History should be empty after clearing")
+    }
+
+    // MARK: - Feature: Search History
+
+    /// Scenario: A performed search is remembered
+    func testSearchIsRemembered() throws {
+        app.buttons["Search"].tap()
+        performSearch("lofi beats")
+        // The term is recorded; verify it in the Settings → Search History section.
+        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.staticTexts["lofi beats"].waitForExistence(timeout: 10),
+                      "Performed search should be remembered in history")
     }
 
     // MARK: - Feature: Audio / Video Mode
 
     /// Scenario: Toggling video mode from the full player
     func testToggleVideoModeFromFullPlayer() throws {
-        // Given a video is playing
-        try startPlaybackFromSuggestion("3Blue1Brown")
-
-        // And I have opened the full player
-        let miniArtwork = app.images.firstMatch
-        if miniArtwork.waitForExistence(timeout: 10) { miniArtwork.tap() }
-
-        // When I tap "Show Video"
+        searchAndPlayFirstStream()
+        XCTAssertTrue(app.staticTexts[fixtureNowPlayingTitle].waitForExistence(timeout: 15))
+        app.staticTexts[fixtureNowPlayingTitle].firstMatch.tap()
         let showVideo = app.buttons["Show Video"]
-        guard showVideo.waitForExistence(timeout: 10) else {
-            throw XCTSkip("Full player did not present (playback may not have started)")
-        }
+        XCTAssertTrue(showVideo.waitForExistence(timeout: 10), "Full player should offer Show Video")
         showVideo.tap()
-
-        // Then the control switches to "Audio Only"
-        XCTAssertTrue(app.buttons["Audio Only"].waitForExistence(timeout: 5),
-                      "Toggle should flip to Audio Only")
+        XCTAssertTrue(app.buttons["Audio Only"].waitForExistence(timeout: 5), "Toggle should flip to Audio Only")
     }
 
     // MARK: - Helpers
 
-    /// Searches via a suggestion and starts playback of the first result.
-    /// Skips the test if the backend returns nothing.
-    private func startPlaybackFromSuggestion(_ suggestion: String) throws {
+    /// Type a query into the search field and submit.
+    private func performSearch(_ term: String) {
+        let field = app.searchFields.firstMatch.exists ? app.searchFields.firstMatch : app.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "A search field should be present")
+        field.tap()
+        field.typeText("\(term)\n")
+    }
+
+    /// Search, then play the first stream result, leaving the mini player active.
+    private func searchAndPlayFirstStream() {
         app.buttons["Search"].tap()
-        let button = app.buttons[suggestion]
-        XCTAssertTrue(button.waitForExistence(timeout: 10))
-        button.tap()
-        guard app.cells.firstMatch.waitForExistence(timeout: 20) else {
-            throw XCTSkip("Backend returned no results; cannot exercise playback")
-        }
-        let playButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'play'")).firstMatch
-        guard playButton.waitForExistence(timeout: 5) else {
-            throw XCTSkip("No play control surfaced in results")
-        }
+        performSearch("anything")
+        let playButton = app.buttons["playButton"].firstMatch
+        XCTAssertTrue(playButton.waitForExistence(timeout: 15), "A play control should be present in results")
         playButton.tap()
     }
 }

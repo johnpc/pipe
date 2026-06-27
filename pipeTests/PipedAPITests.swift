@@ -136,4 +136,45 @@ struct PipedAPITests {
         #expect(toast.events.contains("hide"))
         #expect(player.queue.isEmpty)
     }
+
+    // MARK: - Retry integration (mutates global session + sleep, hence serialized here)
+
+    /// Fixture session + no-op sleep so retries don't actually wait.
+    private func withFastRetry(_ body: () async throws -> Void) async rethrows {
+        let prevSession = PipedAPI.session
+        let prevSleep = PipedAPI.sleep
+        PipedAPI.session = MockURLProtocol.makeSession()
+        PipedAPI.sleep = { _ in }
+        defer { PipedAPI.session = prevSession; PipedAPI.sleep = prevSleep }
+        try await body()
+    }
+
+    @Test func retryRecoversAfterTransientFailures() async throws {
+        try await withFastRetry {
+            MockURLProtocol.failThenSucceed(times: 2, error: URLError(.networkConnectionLost), json: #"{"items":[]}"#)
+            let items = try await PipedAPI.search("x")
+            #expect(items.isEmpty)
+            #expect(MockURLProtocol.requestCount == 3) // 2 failures + 1 success
+        }
+    }
+
+    @Test func retryGivesUpAfterMaxAttempts() async {
+        await withFastRetry {
+            MockURLProtocol.failThenSucceed(times: 99, error: URLError(.timedOut), json: #"{"items":[]}"#)
+            await #expect(throws: (any Error).self) {
+                _ = try await PipedAPI.search("x")
+            }
+            #expect(MockURLProtocol.requestCount == RetryPolicy.maxAttempts)
+        }
+    }
+
+    @Test func retryDoesNotRetryDecodingErrors() async {
+        await withFastRetry {
+            MockURLProtocol.failThenSucceed(times: 0, error: URLError(.timedOut), json: "not json")
+            await #expect(throws: (any Error).self) {
+                _ = try await PipedAPI.search("x")
+            }
+            #expect(MockURLProtocol.requestCount == 1) // no retry on decode failure
+        }
+    }
 }

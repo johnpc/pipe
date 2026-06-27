@@ -6,6 +6,7 @@ struct FeedView: View {
     @ObservedObject var recents: RecentsStore
     @State private var videos: [RelatedStream] = []
     @State private var loading = false
+    var cache = FeedCache()
     
     var body: some View {
         Group {
@@ -33,8 +34,13 @@ struct FeedView: View {
             videos = []
             return
         }
+
+        // Show cached videos instantly; only spin on a true cold load.
+        if videos.isEmpty, let cached = cache.cachedVideos(), !cached.isEmpty {
+            videos = cached
+        }
         loading = videos.isEmpty
-        
+
         var allVideos: [RelatedStream] = []
         await withTaskGroup(of: [RelatedStream].self) { group in
             for channel in following.channels {
@@ -46,9 +52,16 @@ struct FeedView: View {
                 allVideos.append(contentsOf: streams)
             }
         }
-        
-        // Sort by upload timestamp (most recent first)
-        videos = allVideos.sorted { ($0.uploaded ?? 0) > ($1.uploaded ?? 0) }
+
+        // Keep showing cached content if the network returned nothing.
+        if allVideos.isEmpty {
+            loading = false
+            return
+        }
+
+        let sorted = allVideos.sorted { ($0.uploaded ?? 0) > ($1.uploaded ?? 0) }
+        videos = sorted
+        cache.save(sorted)
         loading = false
     }
     

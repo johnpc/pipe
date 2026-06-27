@@ -67,10 +67,10 @@ struct VideoRow: View {
 
                 Button(action: onPlay) {
                     Image(systemName: "play.circle.fill").font(.title2)
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).accessibilityIdentifier("playButton")
                 Button(action: onQueue) {
                     Image(systemName: "text.badge.plus").font(.title3)
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).accessibilityIdentifier("queueButton")
             }
 
             Text(v.title).font(.subheadline).lineLimit(3)
