@@ -9,8 +9,8 @@ struct FullPlayerSheet: View {
             VStack(spacing: 20) {
                 Capsule().fill(.secondary).frame(width: 40, height: 5).padding(.top)
                 
-                if player.videoMode, let avPlayer = player.player {
-                    VideoPlayer(player: avPlayer)
+                if PiPLogic.isEligible(videoMode: player.videoMode, hasPlayer: player.player != nil), let avPlayer = player.player {
+                    PiPVideoPlayer(player: avPlayer)
                         .frame(height: 200)
                         .cornerRadius(8)
                         .padding(.horizontal)
