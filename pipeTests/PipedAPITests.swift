@@ -177,4 +177,13 @@ struct PipedAPITests {
             #expect(MockURLProtocol.requestCount == 1) // no retry on decode failure
         }
     }
+
+    @Test func channelNextPageDecodes() async throws {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"{"content":[{"url":"/watch?v=v9","title":"More","thumbnail":"t","duration":30,"uploaderName":"U","uploadedDate":null,"uploaded":1}],"nextpage":"tok2"}"#)
+        let page = try await PipedAPI.channelNextPage(channelId: "UC1", nextpage: "tok1")
+        #expect(page.content.first?.videoId == "v9")
+        #expect(page.nextpage == "tok2")
+    }
 }

@@ -32,11 +32,8 @@ struct PaginationTests {
         #expect(Pagination.hasMore("") == false)
         #expect(Pagination.hasMore("   ") == false)
     }
-}
 
-@MainActor
-@Suite(.serialized)
-struct ChannelNextPageTests {
+    // Pure URL builder — no global state, safe to run in parallel.
     @Test func nextPageURLEncodesToken() {
         let url = PipedAPI.channelNextPageURL(channelId: "UC1", nextpage: "a b&c")
         #expect(url.absoluteString.contains("/nextpage/channel/UC1"))
@@ -44,12 +41,7 @@ struct ChannelNextPageTests {
         #expect(!url.absoluteString.contains("a b&c"))
     }
 
-    @Test func channelNextPageDecodes() async throws {
-        PipedAPI.session = MockURLProtocol.makeSession()
-        defer { PipedAPI.session = .shared }
-        MockURLProtocol.stub(json: #"{"content":[{"url":"/watch?v=v9","title":"More","thumbnail":"t","duration":30,"uploaderName":"U","uploadedDate":null,"uploaded":1}],"nextpage":"tok2"}"#)
-        let page = try await PipedAPI.channelNextPage(channelId: "UC1", nextpage: "tok1")
-        #expect(page.content.first?.videoId == "v9")
-        #expect(page.nextpage == "tok2")
-    }
+    // NOTE: the `channelNextPage` decode integration test lives in
+    // `PipedAPITests` — the single serialized suite for tests that mutate the
+    // global `PipedAPI.session`, so they can't race other session-mutating tests.
 }
