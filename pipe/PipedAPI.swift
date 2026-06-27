@@ -72,6 +72,16 @@ struct StreamResponse: Codable, Equatable {
     let videoStreams: [VideoStream]
     let thumbnailUrl: String
     let uploadDate: String?
+    let chapters: [Chapter]?
+}
+
+/// A timeline marker within a video (YouTube chapters), as returned by Piped.
+struct Chapter: Codable, Equatable, Identifiable {
+    let title: String
+    let start: Int      // seconds from the start of the video
+    let image: String?
+
+    var id: Int { start }
 }
 
 struct AudioStream: Codable, Equatable {

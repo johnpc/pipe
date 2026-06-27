@@ -127,6 +127,6 @@ struct StreamURLHelperTests {
     // MARK: - Helpers
 
     private func makeStream(videoStreams: [VideoStream] = [], audioStreams: [AudioStream] = []) -> StreamResponse {
-        StreamResponse(title: "t", description: nil, uploader: "u", uploaderUrl: nil, duration: 100, hls: nil, audioStreams: audioStreams, videoStreams: videoStreams, thumbnailUrl: "", uploadDate: nil)
+        StreamResponse(title: "t", description: nil, uploader: "u", uploaderUrl: nil, duration: 100, hls: nil, audioStreams: audioStreams, videoStreams: videoStreams, thumbnailUrl: "", uploadDate: nil, chapters: nil)
     }
 }

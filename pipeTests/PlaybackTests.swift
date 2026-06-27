@@ -15,7 +15,7 @@ struct PlaybackTests {
     }
 
     @Test func resolveMapsStreamFields() {
-        let stream = StreamResponse(title: "T", description: "d", uploader: "U", uploaderUrl: nil, duration: 42, hls: nil, audioStreams: [AudioStream(url: "https://x/audio.m4a", bitrate: 128000, mimeType: "audio/mp4")], videoStreams: [VideoStream(url: "https://x/a.mp4", quality: "360p", mimeType: "video/mp4", videoOnly: false)], thumbnailUrl: "thumb", uploadDate: "2026-01-01")
+        let stream = StreamResponse(title: "T", description: "d", uploader: "U", uploaderUrl: nil, duration: 42, hls: nil, audioStreams: [AudioStream(url: "https://x/audio.m4a", bitrate: 128000, mimeType: "audio/mp4")], videoStreams: [VideoStream(url: "https://x/a.mp4", quality: "360p", mimeType: "video/mp4", videoOnly: false)], thumbnailUrl: "thumb", uploadDate: "2026-01-01", chapters: nil)
         let resolved = Playback.resolve(stream, videoId: "vid1")
         #expect(resolved.videoId == "vid1")
         #expect(resolved.url == "https://x/a.mp4")
