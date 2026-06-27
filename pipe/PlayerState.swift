@@ -24,6 +24,7 @@ class PlayerState: ObservableObject {
     private var currentVideoId: String?
     private var timeObserver: Any?
     private var endObserver: Any?
+    private var statusObserver: NSKeyValueObservation?
 
     private let defaults: UserDefaults
     private let queueKey = "savedQueue"
@@ -98,6 +99,8 @@ class PlayerState: ObservableObject {
     }
     
     func addToQueue(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        // Don't add a video that's already queued.
+        guard !queue.contains(where: { $0.videoId == videoId }) else { return }
         let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
         queue.append(item)
         persistQueue()
@@ -187,6 +190,7 @@ class PlayerState: ObservableObject {
     }
     
     func stop() {
+        statusObserver?.invalidate(); statusObserver = nil
         player?.pause()
         isPlaying = false
         currentTitle = nil
@@ -214,15 +218,22 @@ class PlayerState: ObservableObject {
         
         if let old = timeObserver, let p = player { p.removeTimeObserver(old); timeObserver = nil }
         if let old = endObserver { NotificationCenter.default.removeObserver(old); endObserver = nil }
-        
+        statusObserver?.invalidate(); statusObserver = nil
+
         player = AVPlayer(url: url)
-        
+
         timeObserver = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 5, preferredTimescale: 1), queue: .main) { [weak self] time in
             self?.handleProgress(currentTime: time.seconds, itemDuration: self?.player?.currentItem?.duration.seconds)
         }
 
         endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player?.currentItem, queue: .main) { [weak self] _ in
             self?.handlePlaybackEnded()
+        }
+
+        // Recover from involuntary stalls (audio stream buffer underruns) that
+        // otherwise leave playback frozen until the user manually seeks.
+        statusObserver = player?.observe(\.timeControlStatus, options: [.new]) { [weak self] p, _ in
+            Task { @MainActor in self?.handleTimeControlStatus(p.timeControlStatus) }
         }
         
         // Resume from saved position
@@ -253,12 +264,36 @@ class PlayerState: ObservableObject {
         }
     }
 
-    /// Handle the current item finishing: mark it complete and advance the queue.
+    /// Handle the current item finishing: mark it complete in history, drop it
+    /// from the queue, and play whatever shifts into its slot (the queue is a
+    /// consumption list). Stops when the finished item was the last one.
     func handlePlaybackEnded() {
         if let vid = currentVideoId {
             recents?.updateTimestamp(videoId: vid, timestamp: 0)
         }
-        playNext()
+        let finishedIndex = currentIndex
+        guard finishedIndex >= 0, finishedIndex < queue.count else { return }
+        queue.remove(at: finishedIndex)
+        persistQueue()
+        if queue.isEmpty {
+            currentIndex = -1
+            stop()
+        } else {
+            // The next item now occupies finishedIndex (clamp for the last item).
+            currentIndex = min(finishedIndex, queue.count - 1)
+            playItem(queue[currentIndex])
+        }
+    }
+
+    /// React to AVPlayer's timeControlStatus changing. When we intend to keep
+    /// playing but the player has involuntarily stopped (a buffer-underrun
+    /// stall), nudge it back to playing so audio doesn't freeze until a manual
+    /// seek. Decision is delegated to the pure `StallPolicy` for testability.
+    func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
+        if StallPolicy.shouldNudge(intendingToPlay: isPlaying, status: status) {
+            player?.play()
+            if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
+        }
     }
 
     func play(videoId: String, urlString: String, audioUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
