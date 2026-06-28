@@ -24,7 +24,12 @@ struct FixtureMockTests {
     }
 
     @Test func unknownPathReturnsNil() {
-        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/comments/abc")!) == nil)
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/playlists/abc")!) == nil)
+    }
+
+    @Test func routesTrendingAndComments() {
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/trending?region=US")!) == "trending")
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/comments/abc")!) == "comments")
     }
 
     // MARK: - MockMode
@@ -33,6 +38,30 @@ struct FixtureMockTests {
         #expect(MockMode.isEnabled([MockMode.launchArgument]) == true)
         #expect(MockMode.isEnabled(["other"]) == false)
         #expect(MockMode.isEnabled([]) == false)
+    }
+
+    @Test func resetClearsDefaultsDomainAndDownloads() throws {
+        let suiteName = "reset-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("v1", forKey: "downloadedItems")
+        #expect(defaults.string(forKey: "downloadedItems") == "v1")
+
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("reset-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try Data("m".utf8).write(to: dir.appendingPathComponent("a.m4a"))
+
+        MockMode.reset(defaults: defaults, domain: suiteName, downloads: dir)
+
+        #expect(defaults.string(forKey: "downloadedItems") == nil)
+        #expect(FileManager.default.fileExists(atPath: dir.path) == false)
+    }
+
+    @Test func resetWithNilDomainStillRemovesDownloads() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("reset-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        MockMode.reset(defaults: .standard, domain: nil, downloads: dir)
+        #expect(FileManager.default.fileExists(atPath: dir.path) == false)
     }
 
     // MARK: - FixtureURLProtocol serving

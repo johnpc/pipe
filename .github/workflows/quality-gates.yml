@@ -86,58 +86,53 @@ jobs:
         run: python3 scripts/crap_check.py coverage.json
 
   acceptance-tests:
-    name: Acceptance Tests (Gherkin)
+    name: Acceptance — ${{ matrix.theme }}
     runs-on: macos-26-xlarge
     needs: build
-    timeout-minutes: 40
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Themed shards — keep in sync with THEMES in scripts/acceptance_shard.py.
+        # A red job names what broke (e.g. "Acceptance — playback"). The --check
+        # gate below fails if any .feature file is unassigned, so a new feature
+        # can never be silently skipped.
+        theme: [playback, discovery, library, navigation]
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v5
+        with:
+          path: DerivedData
+          key: derived-data-${{ github.sha }}
       - name: Verify generated acceptance tests match .feature files
         run: python3 scripts/generate_acceptance_tests.py --check
-      - name: Run acceptance tests (retry failed, then full suite)
+      - name: Verify every feature is assigned to a theme
+        run: python3 scripts/acceptance_shard.py --check
+      - name: Run acceptance theme (retry shard on failure)
         run: |
-          RESULT_PATH=/tmp/AcceptanceResults.xcresult
-          rm -rf "$RESULT_PATH"
-          xcodebuild test \
-            -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
-            -only-testing:"pipeUITests/AcceptanceTests" \
-            -resultBundlePath "$RESULT_PATH" \
-            -quiet && exit 0
-
-          echo "⚠️ Some tests failed, retrying only failed tests..."
-          FAILED=$(xcrun xcresulttool get test-results tests --path "$RESULT_PATH" 2>/dev/null \
-            | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          for node in data.get('testNodes', []):
-            for child in node.get('children', []):
-              for test in child.get('children', []):
-                if test.get('result') == 'Failed':
-                  print(f\"pipeUITests/{child['name']}/{test['name']}\")
-          ")
-
-          if [ -n "$FAILED" ]; then
-            RETRY_ARGS=""
-            for t in $FAILED; do
-              echo "  Retrying: $t"
-              RETRY_ARGS="$RETRY_ARGS -only-testing:$t"
-            done
-            sleep 5
-            xcodebuild test \
+          # Run this theme's scenarios. Retry the WHOLE shard up to 2 more times
+          # to absorb genuine simulator flakes — but the LAST run's exit code is
+          # the gate, so a real failure always fails the job. We never parse a
+          # "failed tests" list to re-run a subset: a malformed -only-testing
+          # filter can match nothing and exit 0, masking failures (it once did).
+          ONLY_TESTING=$(python3 scripts/acceptance_shard.py --theme "${{ matrix.theme }}")
+          echo "Theme '${{ matrix.theme }}' → $ONLY_TESTING"
+          run_shard() {
+            xcodebuild test-without-building \
               -scheme "$SCHEME" \
               -destination "$DESTINATION" \
-              $RETRY_ARGS \
-              -quiet && exit 0
-          fi
-
-          echo "⚠️ Targeted retry failed, retrying full suite..."
-          sleep 5
-          xcodebuild test \
-            -scheme "$SCHEME" \
-            -destination "$DESTINATION" \
-            -only-testing:"pipeUITests/AcceptanceTests" \
-            -quiet
+              -derivedDataPath DerivedData \
+              $ONLY_TESTING \
+              -quiet
+          }
+          for attempt in 1 2 3; do
+            echo "▶ Attempt $attempt for theme '${{ matrix.theme }}'"
+            if run_shard; then exit 0; fi
+            echo "⚠️ Attempt $attempt failed"
+            sleep 5
+          done
+          echo "❌ Theme '${{ matrix.theme }}' failed after 3 attempts"
+          exit 1
 
   deploy:
     name: Deploy to App Store Connect

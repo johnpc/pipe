@@ -9,6 +9,8 @@ struct FeedToolbar: ToolbarContent {
     var body: some ToolbarContent {
         ToolbarItemGroup(placement: .topBarTrailing) {
             FeedSortMenu(sort: $sort, hideWatched: $hideWatched)
+            NavigationLink(value: "trending") { Image(systemName: "flame") }
+                .accessibilityIdentifier("trendingButton")
             NavigationLink(value: "downloads") { Image(systemName: "arrow.down.circle") }
                 .accessibilityIdentifier("downloadsButton")
             NavigationLink(value: "saved") { Image(systemName: "bookmark") }

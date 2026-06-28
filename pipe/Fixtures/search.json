@@ -9,7 +9,9 @@
       "uploaderUrl": null,
       "duration": null,
       "name": "MrBeast",
-      "uploadedDate": null
+      "uploadedDate": null,
+      "verified": true,
+      "subscribers": 339000000
     },
     {
       "url": "/watch?v=gar4U3n-ILY",

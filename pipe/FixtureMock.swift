@@ -9,6 +9,8 @@ enum FixtureRouter {
         if path.hasPrefix("/channels/tabs") { return "channelTab" }
         if path.hasPrefix("/channel/") { return "channel" }
         if path.hasPrefix("/streams/") { return "streams" }
+        if path.hasPrefix("/trending") { return "trending" }
+        if path.hasPrefix("/comments/") { return "comments" }
         return nil
     }
 }
@@ -54,31 +56,4 @@ final class FixtureURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
-}
-
-/// Wires the app to serve bundled fixtures when launched for UI testing.
-enum MockMode {
-    static let launchArgument = "--uitest-mock"
-
-    /// True when the process was launched in UI-test mock mode.
-    static func isEnabled(_ args: [String] = ProcessInfo.processInfo.arguments) -> Bool {
-        args.contains(launchArgument)
-    }
-
-    /// Point PipedAPI at a fixture-backed session.
-    static func activate() {
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [FixtureURLProtocol.self]
-        PipedAPI.session = URLSession(configuration: config)
-    }
-
-    static let failArgument = "--uitest-fail-streams"
-
-    /// Activate only when the launch argument is present. Also honors a flag that
-    /// makes `/streams/` requests error, for the error-recovery UI test.
-    static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
-        guard isEnabled(args) else { return }
-        FixtureURLProtocol.failStreams = args.contains(failArgument)
-        activate()
-    }
 }

@@ -95,6 +95,10 @@ enum StepDefinitions {
             XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long))
             w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
         }
+        r.define("I open the full player") { w in
+            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long))
+            w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
+        }
 
         // MARK: Queue
         r.define("I tap the queue button on the first result") { w in
@@ -271,10 +275,11 @@ enum StepDefinitions {
             button.tap()
         }
         r.define("I download the first result from its context menu") { w in
-            // Long-press the first result row to reveal the context menu, then
-            // tap Download.
-            let row = w.app.cells.firstMatch
-            XCTAssertTrue(row.waitForExistence(timeout: long), "A result row should be present")
+            // Long-press the first *stream* row to reveal the context menu, then
+            // tap Download. (The first cell is the channel result, which has no
+            // media context menu — target the stream row by its title.)
+            let row = firstStreamRow(w)
+            XCTAssertTrue(row.waitForExistence(timeout: long), "A stream result row should be present")
             row.press(forDuration: 1.1)
             let download = w.app.buttons["Download"]
             XCTAssertTrue(download.waitForExistence(timeout: medium), "Download action should appear in the context menu")
@@ -299,10 +304,38 @@ enum StepDefinitions {
                           "Storage-used footer should be shown")
         }
 
+        // MARK: Discovery — Trending, Comments, Up Next
+        r.define("I open Trending") { w in
+            let button = w.app.buttons["trendingButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: medium))
+            button.tap()
+        }
+        r.define("I should see a list of trending videos") { w in
+            XCTAssertTrue(w.app.cells.firstMatch.waitForExistence(timeout: long) ||
+                          w.app.navigationBars["Trending"].waitForExistence(timeout: medium),
+                          "Trending list should render")
+        }
+        r.define("I open the comments") { w in
+            let button = w.app.buttons["commentsButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: long))
+            button.tap()
+        }
+        r.define("I should see at least one comment") { w in
+            XCTAssertTrue(w.app.navigationBars["Comments"].waitForExistence(timeout: long) &&
+                          w.app.cells.firstMatch.waitForExistence(timeout: long),
+                          "At least one comment should be shown")
+        }
+        r.define("I should see an \"Up Next\" list") { w in
+            XCTAssertTrue(w.app.staticTexts["Up Next"].waitForExistence(timeout: long),
+                          "Up Next list should be shown")
+        }
+
         // MARK: Play Next
         r.define("I long-press the first result") { w in
-            let row = w.app.cells.firstMatch
-            XCTAssertTrue(row.waitForExistence(timeout: long), "A result row should be present")
+            // The first cell is a channel result (no media menu); long-press the
+            // first stream row instead.
+            let row = firstStreamRow(w)
+            XCTAssertTrue(row.waitForExistence(timeout: long), "A stream result row should be present")
             row.press(forDuration: 1.1)
         }
         r.define("I should see a \"Play Next\" option") { w in
@@ -351,6 +384,13 @@ enum StepDefinitions {
         XCTAssertTrue(field.waitForExistence(timeout: short), "A search field should be present")
         field.tap()
         field.typeText("\(term)\n")
+    }
+
+    /// The first *stream* result row (the first cell is a channel result, which
+    /// has no media context menu). Matched by the known fixture stream title.
+    private static func firstStreamRow(_ w: GherkinWorld) -> XCUIElement {
+        // Stream rows carry a "playButton"; the channel row carries "followButton".
+        return w.app.cells.containing(.button, identifier: "playButton").firstMatch
     }
 
     /// Search, then play the first stream result, leaving the mini player active.
