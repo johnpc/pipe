@@ -16,28 +16,16 @@ struct SearchView: View {
                 SearchSuggestionsView(query: $query, suggestions: suggestions, history: settings.searchHistory, onSearch: search)
             } else {
                 List(results) { item in
-                    if item.isChannel {
-                        HStack {
-                            NavigationLink(value: item) { ChannelRow(item: item) }
-                                .accessibilityIdentifier("channelRow")
-                            Button { toggleFollow(item) } label: {
-                                Image(systemName: following.isFollowing(item.channelId) ? "heart.fill" : "heart")
-                                    .foregroundColor(following.isFollowing(item.channelId) ? .red : .gray)
-                            }.buttonStyle(.plain).accessibilityIdentifier("followButton")
-                        }
-                    } else {
-                        NavigationLink(value: item) {
-                            AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId), resumeTime: recents.resumeTime(videoId: item.videoId), onPlay: { playItem(item) }, onQueue: { queueItem(item) }, onPlayNext: { playNextItem(item) }, isSaved: saved.isSaved(item.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(item)) }, isDownloaded: downloads.isDownloaded(item.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(item) })
-                        }
-                    }
+                    SearchResultRow(item: item, player: player, following: following, recents: recents,
+                                    saved: saved, downloads: downloads,
+                                    onToggleFollow: { toggleFollow(item) }, actions: rowActions)
                 }
                 .listStyle(.plain)
             }
         }
         .navigationTitle("Search")
         .navigationDestination(for: SearchItem.self) { item in
-            if item.isChannel { ChannelView(channelId: item.channelId, player: player, following: following, recents: recents) }
-            else { DetailView(videoId: item.videoId, player: player) }
+            SearchDestination(item: item, player: player, following: following, recents: recents)
         }
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search")
         .onSubmit(of: .search) { search(query) }
@@ -60,6 +48,11 @@ struct SearchView: View {
         settings.recordSearch(term)
         loading = true
         Task { results = (try? await PipedAPI.search(term)) ?? []; loading = false }
+    }
+    private var rowActions: SearchRowActions {
+        SearchRowActions(play: playItem, queue: queueItem, playNext: playNextItem,
+                         toggleSave: { saved.toggle(savedItem($0)) },
+                         toggleDownload: toggleDownload)
     }
     private func toggleFollow(_ item: SearchItem) {
         if following.isFollowing(item.channelId) {

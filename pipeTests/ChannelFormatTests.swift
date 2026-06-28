@@ -26,13 +26,13 @@ struct ChannelFormatTests {
     }
 
     @Test func searchItemExposesVerifiedAndSubscriberText() {
-        let item = SearchItem(url: "/channel/c", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: true, subscribers: 1_000_000)
+        let item = SearchItem(url: "/channel/c", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: true, subscribers: 1_000_000, videos: nil)
         #expect(item.isVerified == true)
         #expect(item.subscriberText == "1M subscribers")
     }
 
     @Test func searchItemDefaultsWhenFieldsMissing() {
-        let item = SearchItem(url: "/channel/c", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: nil, subscribers: nil)
+        let item = SearchItem(url: "/channel/c", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(item.isVerified == false)
         #expect(item.subscriberText == nil)
     }

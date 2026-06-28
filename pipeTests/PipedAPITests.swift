@@ -223,6 +223,30 @@ struct PipedAPITests {
         #expect(s.relatedStreams?.first?.videoId == "r1")
     }
 
+    // MARK: - Playlists
+
+    @Test func playlistURLEncodesId() {
+        let url = PipedAPI.playlistURL("PL abc")
+        #expect(url.absoluteString.contains("/playlists/"))
+        #expect(!url.absoluteString.contains("PL abc"))
+    }
+
+    @Test func playlistDecodesVideos() async throws {
+        try await withStub(#"{"name":"Mix","thumbnailUrl":"t","uploader":"U","relatedStreams":[{"url":"/watch?v=p1","title":"One","thumbnail":"t","duration":30,"uploaderName":"U","uploadedDate":null,"uploaded":1}]}"#) {
+            let pl = try await PipedAPI.playlist("PLx")
+            #expect(pl.name == "Mix")
+            #expect(pl.relatedStreams.first?.videoId == "p1")
+        }
+    }
+
+    @Test func playlistTabDecodesPlaylistItems() async throws {
+        try await withStub(#"{"content":[{"url":"/playlist?list=PLa","name":"Best","thumbnail":"t","uploaderName":"U","videos":3}]}"#) {
+            let items = try await PipedAPI.playlistTab("tok")
+            #expect(items.first?.playlistId == "PLa")
+            #expect(items.first?.videoCountText == "3 videos")
+        }
+    }
+
     // MARK: - FeedLoader (mutates the shared session, hence here in the one
     // serialized session suite)
 
@@ -274,5 +298,29 @@ struct PipedAPITests {
         await DownloadCoordinator.toggle(videoId: "v", title: "", artist: "", thumbnail: "", duration: 0, downloads: downloads, toast: toast)
         #expect(downloads.isDownloaded("v") == false)
         #expect(toast.events.contains("hide"))
+    }
+
+    // MARK: - PlaylistCoordinator (mutates the shared session)
+
+    private func relatedStream(_ id: String) -> RelatedStream {
+        RelatedStream(url: "/watch?v=\(id)", title: id, thumbnail: "t", duration: 10, uploaderName: "U", uploadedDate: nil, uploaded: nil)
+    }
+
+    @Test func playAllPlaysFirstAndQueuesRest() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stub(json: Self.streamJSON)
+        defer { PipedAPI.session = .shared }
+        let player = isolatedPlayer()
+        await PlaylistCoordinator.playAll([relatedStream("a"), relatedStream("b"), relatedStream("c")], player: player, toast: SpyToast())
+        // The first video plays (becomes the current item) and the whole playlist
+        // ends up in the queue in order.
+        #expect(player.queue.map(\.videoId) == ["a", "b", "c"])
+        #expect(player.currentIndex == 0)
+    }
+
+    @Test func playAllWithNoVideosIsNoOp() async {
+        let player = isolatedPlayer()
+        await PlaylistCoordinator.playAll([], player: player, toast: SpyToast())
+        #expect(player.currentVideoId == nil)
     }
 }

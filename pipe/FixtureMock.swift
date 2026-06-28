@@ -6,8 +6,14 @@ enum FixtureRouter {
     static func fixtureName(for url: URL) -> String? {
         let path = url.path
         if path.hasPrefix("/search") { return "search" }
-        if path.hasPrefix("/channels/tabs") { return "channelTab" }
+        if path.hasPrefix("/channels/tabs") {
+            // The same endpoint serves video tabs and playlist tabs; the opaque
+            // `data` token tells them apart in mock mode.
+            let data = url.query ?? ""
+            return data.contains("playlist") ? "channelPlaylistTab" : "channelTab"
+        }
         if path.hasPrefix("/channel/") { return "channel" }
+        if path.hasPrefix("/playlists/") { return "playlist" }
         if path.hasPrefix("/streams/") { return "streams" }
         if path.hasPrefix("/trending") { return "trending" }
         if path.hasPrefix("/comments/") { return "comments" }

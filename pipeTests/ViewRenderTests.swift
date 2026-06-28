@@ -60,11 +60,11 @@ final class ViewRenderTests: XCTestCase {
     }
 
     private func searchVideo() -> SearchItem {
-        SearchItem(url: "/watch?v=v1", type: "stream", title: "Video", thumbnail: "t", uploaderName: "U", uploaderUrl: "/channel/c1", duration: 120, name: nil, uploadedDate: "1 day ago", verified: nil, subscribers: nil)
+        SearchItem(url: "/watch?v=v1", type: "stream", title: "Video", thumbnail: "t", uploaderName: "U", uploaderUrl: "/channel/c1", duration: 120, name: nil, uploadedDate: "1 day ago", verified: nil, subscribers: nil, videos: nil)
     }
 
     private func searchChannel() -> SearchItem {
-        SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: nil, subscribers: nil)
+        SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Chan", uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
     }
 
     private func relatedStream() -> RelatedStream {
@@ -204,6 +204,67 @@ final class ViewRenderTests: XCTestCase {
         render(CommentsView(videoId: "v1"))
     }
 
+    // MARK: - Playlists
+
+    private func playlistItem() -> PlaylistItem {
+        PlaylistItem(url: "/playlist?list=PL1", name: "Best Mix", thumbnail: "t", uploaderName: "U", videos: 12)
+    }
+
+    func testRenderPlaylistRow() {
+        render(PlaylistRow(item: playlistItem()))
+        // Nil-count, nil-uploader variant covers the optional branches.
+        render(PlaylistRow(item: PlaylistItem(url: "/playlist?list=PL2", name: nil, thumbnail: nil, uploaderName: nil, videos: nil)))
+    }
+
+    func testRenderPlaylistHeaderVariants() {
+        let pl = PlaylistResponse(name: "Best Mix", thumbnailUrl: "t", uploader: "U", relatedStreams: [relatedStream()])
+        render(PlaylistHeader(playlist: pl, isSaved: false, onPlayAll: {}, onToggleSave: {}))
+        render(PlaylistHeader(playlist: pl, isSaved: true, onPlayAll: {}, onToggleSave: {}))
+    }
+
+    func testRenderPlaylistView() {
+        let (p, _, _) = makeStores()
+        render(NavigationStack { PlaylistView(playlistId: "PL1", title: "Mix", player: p, saved: makeSavedPlaylists()) })
+    }
+
+    func testRenderChannelPlaylistsTab() {
+        let (p, _, _) = makeStores()
+        render(NavigationStack { ChannelPlaylistsTab(playlists: [playlistItem(), playlistItem()], player: p) })
+        render(NavigationStack { ChannelPlaylistsTab(playlists: [], player: p) })
+    }
+
+    func testRenderSavedPlaylistsView() {
+        let (p, _, _) = makeStores()
+        let store = makeSavedPlaylists()
+        render(NavigationStack { SavedPlaylistsView(player: p, saved: store) })
+        store.add(SavedPlaylist(playlistId: "PL1", name: "Mix", thumbnail: "t", uploader: "U"))
+        render(NavigationStack { SavedPlaylistsView(player: p, saved: store) })
+    }
+
+    private func makeSavedPlaylists() -> SavedPlaylistsStore {
+        SavedPlaylistsStore(defaults: UserDefaults(suiteName: "render-savedpl-\(UUID().uuidString)")!)
+    }
+
+    func testRenderSearchResultRowAllTypes() {
+        let (p, f, r) = makeStores()
+        let noop = SearchRowActions(play: { _ in }, queue: { _ in }, playNext: { _ in }, toggleSave: { _ in }, toggleDownload: { _ in })
+        func row(_ item: SearchItem) -> some View {
+            NavigationStack { SearchResultRow(item: item, player: p, following: f, recents: r, saved: makeSaved(), downloads: makeDownloads(), onToggleFollow: {}, actions: noop) }
+        }
+        let playlist = SearchItem(url: "/playlist?list=PL1", type: "playlist", title: nil, thumbnail: "t", uploaderName: "U", uploaderUrl: nil, duration: nil, name: "Mix", uploadedDate: nil, verified: nil, subscribers: nil, videos: 4)
+        render(row(searchVideo()))
+        render(row(searchChannel()))
+        render(row(playlist))
+    }
+
+    func testRenderSearchDestinationRoutes() {
+        let (p, f, r) = makeStores()
+        let playlist = SearchItem(url: "/playlist?list=PL1", type: "playlist", title: nil, thumbnail: "t", uploaderName: "U", uploaderUrl: nil, duration: nil, name: "Mix", uploadedDate: nil, verified: nil, subscribers: nil, videos: 4)
+        for item in [searchVideo(), searchChannel(), playlist] {
+            render(NavigationStack { SearchDestination(item: item, player: p, following: f, recents: r) })
+        }
+    }
+
     func testRenderCommentRowVariants() {
         // Verified + pinned + likes, and the plain variant — covers the branches.
         render(CommentRow(comment: Comment(commentId: "c1", author: "@me", commentText: "Nice", thumbnail: nil, likeCount: 3, commentedTime: "1d", verified: true, pinned: true)))
@@ -244,6 +305,18 @@ final class ViewRenderTests: XCTestCase {
         renderLive(NavigationStack { DetailView(videoId: "v1", player: p) })
     }
 
+    /// Drives PlaylistView's loader with a stubbed playlist so the loaded body
+    /// (header + Play All + video rows) renders, not just the spinner.
+    func testRenderPlaylistViewLoaded() {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: """
+        {"name":"Mix","thumbnailUrl":"t","uploader":"U","relatedStreams":[{"url":"/watch?v=p1","title":"One","thumbnail":"t","duration":30,"uploaderName":"U","uploadedDate":"1 day ago","uploaded":1}]}
+        """)
+        let (p, _, _) = makeStores()
+        renderLive(NavigationStack { PlaylistView(playlistId: "PL1", title: "Mix", player: p, saved: makeSavedPlaylists()) })
+    }
+
     /// Drives FeedView's loader with a followed channel + stubbed streams.
     func testRenderFeedViewLoaded() {
         PipedAPI.session = MockURLProtocol.makeSession()
@@ -277,7 +350,7 @@ final class ViewRenderTests: XCTestCase {
     func testRenderChannelRow() { render(ChannelRow(item: searchChannel())) }
 
     func testRenderChannelRowVerifiedWithSubscribers() {
-        let item = SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Big Chan", uploadedDate: nil, verified: true, subscribers: 505_000_000)
+        let item = SearchItem(url: "/channel/c1", type: "channel", title: nil, thumbnail: "t", uploaderName: nil, uploaderUrl: nil, duration: nil, name: "Big Chan", uploadedDate: nil, verified: true, subscribers: 505_000_000, videos: nil)
         render(ChannelRow(item: item))
     }
 

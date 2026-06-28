@@ -13,11 +13,18 @@ struct SearchItem: Codable, Identifiable, Hashable {
     let uploadedDate: String?
     let verified: Bool?
     let subscribers: Int?
+    let videos: Int?
 
     var id: String { url }
     var isChannel: Bool { type == "channel" }
+    var isPlaylist: Bool { type == "playlist" }
     var videoId: String { url.replacingOccurrences(of: "/watch?v=", with: "") }
     var channelId: String { url.replacingOccurrences(of: "/channel/", with: "") }
+    var playlistId: String { PlaylistLogic.id(fromURL: url) }
+    /// Project a playlist search result into a PlaylistItem for PlaylistRow.
+    var asPlaylistItem: PlaylistItem {
+        PlaylistItem(url: url, name: name ?? title, thumbnail: thumbnail, uploaderName: uploaderName, videos: videos)
+    }
     var displayTitle: String { name ?? title ?? "Unknown" }
     var displayUploader: String { uploaderName ?? "" }
     var displayThumbnail: String { thumbnail ?? "" }

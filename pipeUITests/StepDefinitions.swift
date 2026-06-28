@@ -330,6 +330,51 @@ enum StepDefinitions {
                           "Up Next list should be shown")
         }
 
+        // MARK: Playlists
+        r.define("I have opened a channel with playlists") { w in openChannel(w) }
+        r.define("I select the \"Playlists\" tab") { w in
+            let tab = w.app.buttons["Playlists"]
+            XCTAssertTrue(tab.waitForExistence(timeout: long), "Playlists tab should be present")
+            tab.tap()
+        }
+        r.define("I should see a list of playlists") { w in
+            XCTAssertTrue(w.app.cells.firstMatch.waitForExistence(timeout: long), "A playlist row should be present")
+        }
+        r.define("I tap the first playlist") { w in
+            let row = w.app.cells.firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: long), "A playlist row should be present")
+            row.tap()
+        }
+        r.define("I should see the playlist's videos") { w in
+            XCTAssertTrue(w.app.buttons["playAllButton"].waitForExistence(timeout: long) ||
+                          w.app.staticTexts[searchStreamTitle].waitForExistence(timeout: long),
+                          "Playlist videos should render")
+        }
+        r.define("I have opened a playlist") { w in openFirstPlaylist(w) }
+        // "I tap \"Play All\"" / "I tap \"Save Playlist\"" reuse the generic
+        // `I tap "(.+)"` step (matched by the buttons' labels).
+        r.define("I open Saved Playlists from the Feed") { w in
+            w.app.buttons["Feed"].tap()
+            let button = w.app.buttons["savedPlaylistsButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: medium))
+            button.tap()
+        }
+        r.define("I should see the saved playlist") { w in
+            XCTAssertTrue(w.app.cells.firstMatch.waitForExistence(timeout: long), "Saved playlist should be listed")
+        }
+        r.define("I should see a playlist result") { w in
+            let row = w.app.buttons["playlistRow"].firstMatch
+            if !row.waitForExistence(timeout: long) {
+                // The playlist result may be below the fold — scroll to it.
+                w.app.swipeUp()
+            }
+            XCTAssertTrue(row.waitForExistence(timeout: medium),
+                          "A playlist search result should be present")
+        }
+        r.define("I tap the first playlist result") { w in
+            w.app.buttons["playlistRow"].firstMatch.tap()
+        }
+
         // MARK: Play Next
         r.define("I long-press the first result") { w in
             // The first cell is a channel result (no media menu); long-press the
@@ -391,6 +436,29 @@ enum StepDefinitions {
     private static func firstStreamRow(_ w: GherkinWorld) -> XCUIElement {
         // Stream rows carry a "playButton"; the channel row carries "followButton".
         return w.app.cells.containing(.button, identifier: "playButton").firstMatch
+    }
+
+    /// Search for the fixture channel and open its channel screen (tapping the
+    /// channel result row, not the suggestion — the suggestion only runs a search).
+    private static func openChannel(_ w: GherkinWorld) {
+        w.app.buttons["Search"].tap()
+        performSearch(w, channelName)
+        let row = w.app.buttons["channelRow"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: long), "Channel result should be present")
+        row.tap()
+        XCTAssertTrue(w.app.buttons["Videos"].waitForExistence(timeout: long), "Channel screen should render")
+    }
+
+    /// Open a channel's first playlist, leaving PlaylistView on screen.
+    private static func openFirstPlaylist(_ w: GherkinWorld) {
+        openChannel(w)
+        let tab = w.app.buttons["Playlists"]
+        XCTAssertTrue(tab.waitForExistence(timeout: long), "Playlists tab should be present")
+        tab.tap()
+        let row = w.app.cells.firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: long), "A playlist row should be present")
+        row.tap()
+        XCTAssertTrue(w.app.buttons["playAllButton"].waitForExistence(timeout: long), "Playlist should open")
     }
 
     /// Search, then play the first stream result, leaving the mini player active.
