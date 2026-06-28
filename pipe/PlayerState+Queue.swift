@@ -2,11 +2,20 @@ import Foundation
 
 /// Queue management for PlayerState: add/remove/move/persist/restore.
 extension PlayerState {
+    /// Append to the end of the queue.
     func addToQueue(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
-        // Don't add a video that's already queued.
-        guard !queue.contains(where: { $0.videoId == videoId }) else { return }
-        let item = QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
-        queue.append(item)
+        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate), playNext: false)
+    }
+
+    /// Insert right after the current item so it plays next.
+    func playNextInQueue(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate), playNext: true)
+    }
+
+    private func enqueue(_ item: QueueItem, playNext: Bool) {
+        guard !queue.contains(where: { $0.videoId == item.videoId }) else { return }
+        let insertAt = playNext && currentIndex >= 0 ? min(currentIndex + 1, queue.count) : queue.count
+        queue.insert(item, at: insertAt)
         persistQueue()
         if currentIndex == -1 { playIndex(0) }
     }
@@ -67,29 +76,5 @@ extension PlayerState {
     
     func removeFromQueue(at offsets: IndexSet) {
         offsets.sorted(by: >).forEach { removeFromQueue(at: $0) }
-    }
-    
-    func moveQueueItem(from source: IndexSet, to destination: Int) {
-        guard let sourceIndex = source.first else { return }
-        let item = queue[sourceIndex]
-        queue.remove(at: sourceIndex)
-        let newIndex = destination > sourceIndex ? destination - 1 : destination
-        queue.insert(item, at: newIndex)
-        // Adjust currentIndex
-        if sourceIndex == currentIndex {
-            currentIndex = newIndex
-        } else if sourceIndex < currentIndex && destination > currentIndex {
-            currentIndex -= 1
-        } else if sourceIndex > currentIndex && destination <= currentIndex {
-            currentIndex += 1
-        }
-        persistQueue()
-    }
-
-    func clearQueue() {
-        queue.removeAll()
-        currentIndex = -1
-        persistQueue()
-        stop()
     }
 }

@@ -9,12 +9,14 @@ func mediaContextMenu(
     videoId: String,
     onPlay: (() -> Void)?,
     onQueue: (() -> Void)?,
+    onPlayNext: (() -> Void)? = nil,
     isSaved: Bool,
     onToggleSave: (() -> Void)?,
     isDownloaded: Bool,
     onToggleDownload: (() -> Void)?
 ) -> some View {
     if let onPlay { Button { onPlay() } label: { Label("Play", systemImage: "play.fill") } }
+    if let onPlayNext { Button { onPlayNext() } label: { Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") } }
     if let onQueue { Button { onQueue() } label: { Label("Add to Queue", systemImage: "text.badge.plus") } }
     if let onToggleSave {
         Button { onToggleSave() } label: {

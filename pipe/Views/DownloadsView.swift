@@ -7,6 +7,14 @@ struct DownloadsView: View {
 
     var body: some View {
         List {
+            if !downloads.items.isEmpty {
+                Section {
+                    EmptyView()
+                } footer: {
+                    Text("\(downloads.items.count) downloaded · \(DownloadFormat.storageText(bytes: downloads.totalStorageBytes())) used")
+                        .accessibilityIdentifier("storageFooter")
+                }
+            }
             ForEach(downloads.items) { item in
                 HStack(spacing: 12) {
                     AsyncImage(url: URL(string: item.thumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }

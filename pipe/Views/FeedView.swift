@@ -19,17 +19,19 @@ struct FeedView: View {
     }
 
     var body: some View {
-        Group {
+        List {
+            ContinueListeningShelf(recents: recents) { resume($0) }
+                .listRowInsets(EdgeInsets()).listRowSeparator(.hidden)
             if loading {
-                ProgressView("Loading feed...")
+                ProgressView("Loading feed...").frame(maxWidth: .infinity)
             } else if arranged.isEmpty {
                 ContentUnavailableView("No Feed", systemImage: "rectangle.stack", description: Text("Follow channels to see their videos here"))
             } else {
-                List(arranged) { row($0) }
-                    .listStyle(.plain)
-                    .refreshable { await loadFeed() }
+                ForEach(arranged) { row($0) }
             }
         }
+        .listStyle(.plain)
+        .refreshable { await loadFeed() }
         .navigationTitle("Feed")
         .navigationDestination(for: String.self) { dest in
             if dest == "downloads" {
@@ -49,6 +51,7 @@ struct FeedView: View {
         VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId),
                  resumeTime: recents.resumeTime(videoId: v.videoId),
                  onPlay: { playVideo(v) }, onQueue: { queueVideo(v) },
+                 onPlayNext: { playNextVideo(v) },
                  isSaved: saved.isSaved(v.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(v)) },
                  isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(v) })
     }
@@ -77,6 +80,14 @@ struct FeedView: View {
 
     private func queueVideo(_ v: RelatedStream) {
         Task { await Playback.run(videoId: v.videoId, action: .queue, player: player) }
+    }
+
+    private func playNextVideo(_ v: RelatedStream) {
+        Task { await Playback.run(videoId: v.videoId, action: .playNext, player: player) }
+    }
+
+    private func resume(_ item: RecentItem) {  // playItem seeks to saved position
+        Task { await Playback.run(videoId: item.videoId, action: .play, player: player) }
     }
 
     private func toggleDownload(_ v: RelatedStream) {

@@ -10,8 +10,10 @@ struct PlaybackTests {
     @Test func loadingAndSuccessMessages() {
         #expect(Playback.loadingMessage(for: .play) == "Loading...")
         #expect(Playback.loadingMessage(for: .queue) == "Adding...")
+        #expect(Playback.loadingMessage(for: .playNext) == "Adding...")
         #expect(Playback.successMessage(for: .play) == "Now Playing")
         #expect(Playback.successMessage(for: .queue) == "Added to Queue")
+        #expect(Playback.successMessage(for: .playNext) == "Playing Next")
     }
 
     @Test func resolveMapsStreamFields() {

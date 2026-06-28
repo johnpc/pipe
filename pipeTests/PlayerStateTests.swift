@@ -341,6 +341,32 @@ struct PlayerStateTests {
         #expect(player.queue.first?.title == "A")
     }
 
+    @Test func playNextInsertsAfterCurrent() {
+        let player = isolatedPlayer()
+        // a (current, index 0), b, c appended.
+        player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+        player.addToQueue(videoId: "b", url: "bad://b", title: "B", artist: "x", thumbnail: "", duration: 10)
+        player.addToQueue(videoId: "c", url: "bad://c", title: "C", artist: "x", thumbnail: "", duration: 10)
+        // Play "z" next → should land right after the current item (index 1).
+        player.playNextInQueue(videoId: "z", url: "bad://z", title: "Z", artist: "x", thumbnail: "", duration: 10)
+        #expect(player.queue.map(\.videoId) == ["a", "z", "b", "c"])
+        #expect(player.currentIndex == 0) // current unchanged
+    }
+
+    @Test func playNextDeduplicates() {
+        let player = isolatedPlayer()
+        player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+        player.playNextInQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+        #expect(player.queue.count == 1)
+    }
+
+    @Test func playNextOnEmptyQueueStartsPlaying() {
+        let player = isolatedPlayer()
+        player.playNextInQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
+        #expect(player.queue.count == 1)
+        #expect(player.currentIndex == 0)
+    }
+
     // MARK: - error path
 
     @Test func playItemSetsErrorOnUnplayableURL() {

@@ -83,6 +83,17 @@ final class ViewRenderTests: XCTestCase {
         render(NavigationStack { FeedView(player: p, following: f, recents: r, saved: makeSaved(), downloads: makeDownloads(), cache: FeedCache(defaults: UserDefaults(suiteName: "render-feed-\(UUID().uuidString)")!)) })
     }
 
+    func testRenderContinueListeningShelf() {
+        let (_, _, r) = makeStores()
+        r.add(videoId: "a", title: "In Progress", artist: "A", thumbnail: "t", timestamp: 50, duration: 100)
+        render(ContinueListeningShelf(recents: r) { _ in })
+    }
+
+    func testRenderContinueListeningShelfEmpty() {
+        let (_, _, r) = makeStores()
+        render(ContinueListeningShelf(recents: r) { _ in })
+    }
+
     func testRenderSearchViewEmptyState() {
         let (p, f, r) = makeStores()
         render(NavigationStack { SearchView(player: p, following: f, recents: r, settings: makeSettings(), saved: makeSaved(), downloads: makeDownloads()) })

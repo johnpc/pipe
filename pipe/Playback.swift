@@ -7,7 +7,7 @@ import Foundation
 /// Keeping it here means the views only render and this logic is unit-testable.
 enum Playback {
     /// What to do with a resolved stream.
-    enum Action { case play, queue }
+    enum Action { case play, queue, playNext }
 
     /// Build the metadata a player call needs from a decoded stream, resolving
     /// both the video and audio-only URLs. Pure and synchronous so it can be
@@ -36,6 +36,8 @@ enum Playback {
             player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         case .queue:
             player.addToQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+        case .playNext:
+            player.playNextInQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         }
     }
 
@@ -45,7 +47,11 @@ enum Playback {
     }
 
     static func successMessage(for action: Action) -> String {
-        action == .play ? "Now Playing" : "Added to Queue"
+        switch action {
+        case .play: return "Now Playing"
+        case .queue: return "Added to Queue"
+        case .playNext: return "Playing Next"
+        }
     }
 
     /// Full async flow used by the views: fetch, resolve, apply, toast.

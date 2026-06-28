@@ -33,6 +33,15 @@ struct MiniPlayerBar: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { showFull = true }
+        .gesture(
+            DragGesture(minimumDistance: 20)
+                .onEnded { value in handleSwipe(value.translation) }
+        )
         .sheet(isPresented: $showFull) { FullPlayerSheet(player: player) }
+    }
+
+    private func handleSwipe(_ t: CGSize) {
+        let action = SwipeAction.from(translationWidth: t.width, translationHeight: t.height)
+        if action.apply(to: player) { Haptics.tap() }
     }
 }
