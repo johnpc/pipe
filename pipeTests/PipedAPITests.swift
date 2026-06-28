@@ -312,8 +312,10 @@ struct PipedAPITests {
         defer { PipedAPI.session = .shared }
         let player = isolatedPlayer()
         await PlaylistCoordinator.playAll([relatedStream("a"), relatedStream("b"), relatedStream("c")], player: player, toast: SpyToast())
-        #expect(player.currentVideoId == "a")
-        #expect(player.queue.count == 2)
+        // The first video plays (becomes the current item) and the whole playlist
+        // ends up in the queue in order.
+        #expect(player.queue.map(\.videoId) == ["a", "b", "c"])
+        #expect(player.currentIndex == 0)
     }
 
     @Test func playAllWithNoVideosIsNoOp() async {
