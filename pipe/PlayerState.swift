@@ -31,6 +31,7 @@ class PlayerState: ObservableObject {
     var currentVideoId: String?
     var timeObserver: Any?
     var endObserver: Any?
+    var stallObserver: Any?
     var statusObserver: NSKeyValueObservation?
     /// One-shot start position (seconds) applied on the next playItem, e.g. when
     /// jumping to a chapter. Overrides the saved-resume position for that play.
@@ -86,7 +87,7 @@ class PlayerState: ObservableObject {
     }
 
     func stop() {
-        statusObserver?.invalidate(); statusObserver = nil
+        teardownPlaybackObservers()
         player?.pause()
         isPlaying = false
         currentTitle = nil

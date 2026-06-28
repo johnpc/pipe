@@ -95,6 +95,10 @@ extension AcceptanceTests {
         runScenario(feature: "picture_in_picture.feature", scenario: "Video mode presents a PiP-capable player")
     }
 
+    func test_Pausing_the_video_mode_player_pauses_playback() {
+        runScenario(feature: "picture_in_picture.feature", scenario: "Pausing the video-mode player pauses playback")
+    }
+
 
     // MARK: - Play Next
 
