@@ -80,7 +80,24 @@ enum MockMode {
     /// makes `/streams/` requests error, for the error-recovery UI test.
     static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
         guard isEnabled(args) else { return }
+        resetPersistedState()
         FixtureURLProtocol.failStreams = args.contains(failArgument)
         activate()
+    }
+
+    /// Wipe persisted app state so every UI-test launch starts hermetic — no
+    /// downloads, follows, saves, or history bleeding across scenarios (which
+    /// flip conditional UI like the "Download" vs "Remove Download" menu).
+    static func resetPersistedState() {
+        reset(defaults: .standard,
+              domain: Bundle.main.bundleIdentifier,
+              downloads: DownloadStore.defaultDirectory())
+    }
+
+    /// Injectable core of the reset, so it's unit-testable against a scratch
+    /// defaults suite and temp directory without touching global state.
+    static func reset(defaults: UserDefaults, domain: String?, downloads: URL) {
+        if let domain { defaults.removePersistentDomain(forName: domain) }
+        try? FileManager.default.removeItem(at: downloads)
     }
 }
