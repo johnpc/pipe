@@ -12,7 +12,9 @@ struct DownloadButton: View {
         let inProgress = downloads.inProgress.contains(videoId)
         Button { toggle(isDownloaded: isDownloaded) } label: {
             if inProgress {
-                ProgressView()
+                // Determinate ring showing real download progress.
+                ProgressView(value: downloads.progress[videoId] ?? 0)
+                    .progressViewStyle(.circular)
             } else {
                 Image(systemName: isDownloaded ? "arrow.down.circle.fill" : "arrow.down.circle")
             }

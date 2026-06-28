@@ -12,12 +12,17 @@ extension DownloadStore {
               let remote = URL(string: source) else { return }
 
         inProgress.insert(videoId)
-        defer { inProgress.remove(videoId) }
+        progress[videoId] = 0
+        defer { inProgress.remove(videoId); progress[videoId] = nil }
 
         let fileName = DownloadLogic.fileName(for: videoId)
         let dest = directory.appendingPathComponent(fileName)
         do {
-            try await downloader(remote, dest)
+            try await downloader(remote, dest) { [weak self] fraction in
+                // Delivered on the main actor by the downloader; set directly so
+                // ordering vs the defer's clear is deterministic.
+                MainActor.assumeIsolated { self?.progress[videoId] = fraction }
+            }
             let item = DownloadedItem(videoId: videoId, title: title, artist: artist,
                                       thumbnail: thumbnail, duration: duration, fileName: fileName)
             items.insert(item, at: 0)

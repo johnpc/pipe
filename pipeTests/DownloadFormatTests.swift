@@ -28,7 +28,7 @@ struct DownloadStorageTests {
     @Test func totalStorageSumsFileSizes() async {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("dlstore-\(UUID().uuidString)", isDirectory: true)
         let defaults = UserDefaults(suiteName: "dlstore-\(UUID().uuidString)")!
-        let store = DownloadStore(defaults: defaults, directory: dir) { _, dest in
+        let store = DownloadStore(defaults: defaults, directory: dir) { _, dest, _ in
             try Data(repeating: 0, count: 1024).write(to: dest)  // 1 KB each
         }
         await store.download(videoId: "a", title: "A", artist: "x", thumbnail: "", duration: 1, audioUrl: "https://x/a", videoUrl: "")
@@ -38,7 +38,7 @@ struct DownloadStorageTests {
 
     @Test func totalStorageZeroWhenEmpty() {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("dlempty-\(UUID().uuidString)", isDirectory: true)
-        let store = DownloadStore(defaults: UserDefaults(suiteName: "dlempty-\(UUID().uuidString)")!, directory: dir) { _, _ in }
+        let store = DownloadStore(defaults: UserDefaults(suiteName: "dlempty-\(UUID().uuidString)")!, directory: dir) { _, _, _ in }
         #expect(store.totalStorageBytes() == 0)
     }
 }

@@ -11,7 +11,7 @@ struct DownloadStoreTests {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("dltest-\(UUID().uuidString)", isDirectory: true)
         let defaults = UserDefaults(suiteName: "dl-\(UUID().uuidString)")!
-        let store = DownloadStore(defaults: defaults, directory: dir) { _, dest in
+        let store = DownloadStore(defaults: defaults, directory: dir) { _, dest, _ in
             if failing { throw URLError(.notConnectedToInternet) }
             try "media".data(using: .utf8)!.write(to: dest)
         }
@@ -24,6 +24,20 @@ struct DownloadStoreTests {
         #expect(store.isDownloaded("v"))
         #expect(store.items.first?.videoId == "v")
         #expect(store.localURLString(for: "v") != nil)
+    }
+
+    @Test func downloadReportsProgressThenClearsIt() async {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("dlprog-\(UUID().uuidString)", isDirectory: true)
+        let defaults = UserDefaults(suiteName: "dlprog-\(UUID().uuidString)")!
+        // Stub downloader emits a few progress fractions before finishing.
+        let store = DownloadStore(defaults: defaults, directory: dir) { _, dest, onProgress in
+            onProgress(0.25); onProgress(0.5); onProgress(1.0)
+            try "media".data(using: .utf8)!.write(to: dest)
+        }
+        await store.download(videoId: "v", title: "T", artist: "A", thumbnail: "", duration: 1, audioUrl: "https://x/a", videoUrl: "")
+        // Recorded as downloaded, and progress is cleared once finished.
+        #expect(store.isDownloaded("v"))
+        #expect(store.progress["v"] == nil)
     }
 
     @Test func downloadIsIdempotent() async {
@@ -67,7 +81,7 @@ struct DownloadStoreTests {
     @Test func metadataPersistsAcrossInstancesWhenFilePresent() async {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("dlp-\(UUID().uuidString)", isDirectory: true)
         let defaults = UserDefaults(suiteName: "dlp-\(UUID().uuidString)")!
-        let writer: (URL, URL) async throws -> Void = { _, dest in try "m".data(using: .utf8)!.write(to: dest) }
+        let writer: DownloadOperation = { _, dest, _ in try "m".data(using: .utf8)!.write(to: dest) }
         let s1 = DownloadStore(defaults: defaults, directory: dir, downloader: writer)
         await s1.download(videoId: "v", title: "T", artist: "A", thumbnail: "", duration: 1, audioUrl: "https://x/a", videoUrl: "")
         let s2 = DownloadStore(defaults: defaults, directory: dir, downloader: writer)

@@ -11,19 +11,22 @@ class DownloadStore: ObservableObject {
     @Published var items: [DownloadedItem] = []
     /// Video ids currently downloading (for in-progress UI).
     @Published var inProgress: Set<String> = []
+    /// Live download progress (0...1) keyed by video id, while in progress.
+    @Published var progress: [String: Double] = [:]
 
     private let key = "downloadedItems"
     private let defaults: UserDefaults
     let directory: URL
-    /// Downloads a remote URL to a destination file. Injected for tests.
-    let downloader: (URL, URL) async throws -> Void
+    /// Downloads a remote URL to a destination file, reporting progress.
+    /// Injected for tests.
+    let downloader: DownloadOperation
 
     init(defaults: UserDefaults = .standard,
          directory: URL? = nil,
-         downloader: ((URL, URL) async throws -> Void)? = nil) {
+         downloader: DownloadOperation? = nil) {
         self.defaults = defaults
         self.directory = directory ?? DownloadStore.defaultDirectory()
-        self.downloader = downloader ?? DownloadStore.urlSessionDownloader
+        self.downloader = downloader ?? ProgressDownloader.operation
         try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
         load()
     }
@@ -34,12 +37,6 @@ class DownloadStore: ObservableObject {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         return base.appendingPathComponent("Downloads", isDirectory: true)
-    }
-
-    private static func urlSessionDownloader(_ remote: URL, _ dest: URL) async throws {
-        let (tmp, _) = try await URLSession.shared.download(from: remote)
-        try? FileManager.default.removeItem(at: dest)
-        try FileManager.default.moveItem(at: tmp, to: dest)
     }
 
     private func load() {
