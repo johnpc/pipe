@@ -54,7 +54,7 @@ final class ViewRenderTests: XCTestCase {
 
     private func makeDownloads() -> DownloadStore {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("render-dl-\(UUID().uuidString)", isDirectory: true)
-        return DownloadStore(defaults: UserDefaults(suiteName: "render-dl-\(UUID().uuidString)")!, directory: dir) { _, dest in
+        return DownloadStore(defaults: UserDefaults(suiteName: "render-dl-\(UUID().uuidString)")!, directory: dir) { _, dest, _ in
             try Data("m".utf8).write(to: dest)
         }
     }
