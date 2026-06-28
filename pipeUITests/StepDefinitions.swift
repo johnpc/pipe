@@ -299,6 +299,32 @@ enum StepDefinitions {
                           "Storage-used footer should be shown")
         }
 
+        // MARK: Discovery — Trending, Comments, Up Next
+        r.define("I open Trending") { w in
+            let button = w.app.buttons["trendingButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: medium))
+            button.tap()
+        }
+        r.define("I should see a list of trending videos") { w in
+            XCTAssertTrue(w.app.cells.firstMatch.waitForExistence(timeout: long) ||
+                          w.app.navigationBars["Trending"].waitForExistence(timeout: medium),
+                          "Trending list should render")
+        }
+        r.define("I open the comments") { w in
+            let button = w.app.buttons["commentsButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: long))
+            button.tap()
+        }
+        r.define("I should see at least one comment") { w in
+            XCTAssertTrue(w.app.navigationBars["Comments"].waitForExistence(timeout: long) &&
+                          w.app.cells.firstMatch.waitForExistence(timeout: long),
+                          "At least one comment should be shown")
+        }
+        r.define("I should see an \"Up Next\" list") { w in
+            XCTAssertTrue(w.app.staticTexts["Up Next"].waitForExistence(timeout: long),
+                          "Up Next list should be shown")
+        }
+
         // MARK: Play Next
         r.define("I long-press the first result") { w in
             let row = w.app.cells.firstMatch

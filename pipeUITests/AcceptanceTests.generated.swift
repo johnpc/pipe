@@ -38,6 +38,13 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Comments
+
+    func test_Opening_comments_shows_them() {
+        runScenario(feature: "comments.feature", scenario: "Opening comments shows them")
+    }
+
+
     // MARK: - Offline Downloads
 
     func test_Empty_downloads_state() {
@@ -187,6 +194,20 @@ extension AcceptanceTests {
 
     func test_All_tabs_are_reachable() {
         runScenario(feature: "tab_navigation.feature", scenario: "All tabs are reachable")
+    }
+
+
+    // MARK: - Trending
+
+    func test_Opening_Trending_shows_videos() {
+        runScenario(feature: "trending.feature", scenario: "Opening Trending shows videos")
+    }
+
+
+    // MARK: - Up Next
+
+    func test_A_video_s_detail_shows_related_videos() {
+        runScenario(feature: "up_next.feature", scenario: "A video's detail shows related videos")
     }
 
 

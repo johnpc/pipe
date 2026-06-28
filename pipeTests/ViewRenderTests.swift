@@ -147,7 +147,7 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderDownloadButton() {
         let d = makeDownloads()
-        let stream = StreamResponse(title: "T", description: nil, uploader: "U", uploaderUrl: nil, duration: 10, hls: nil, audioStreams: [], videoStreams: [], thumbnailUrl: "t", uploadDate: nil, chapters: nil)
+        let stream = StreamResponse(title: "T", description: nil, uploader: "U", uploaderUrl: nil, duration: 10, hls: nil, audioStreams: [], videoStreams: [], thumbnailUrl: "t", uploadDate: nil, chapters: nil, relatedStreams: nil)
         render(DownloadButton(videoId: "v1", stream: stream, downloads: d))
     }
 
@@ -181,6 +181,33 @@ final class ViewRenderTests: XCTestCase {
     func testRenderDetailView() {
         let (p, _, _) = makeStores()
         render(NavigationStack { DetailView(videoId: "v1", player: p) })
+    }
+
+    func testRenderRelatedVideosView() {
+        let (p, _, _) = makeStores()
+        render(RelatedVideosView(related: [relatedStream(), relatedStream()], player: p))
+    }
+
+    func testRenderTrendingView() {
+        let (p, _, _) = makeStores()
+        render(NavigationStack { TrendingView(player: p) })
+    }
+
+    func testRenderFeedDestinationRoutes() {
+        let (p, _, _) = makeStores()
+        for dest in ["downloads", "trending", "saved"] {
+            render(NavigationStack { FeedDestination(dest: dest, player: p, saved: makeSaved(), downloads: makeDownloads()) })
+        }
+    }
+
+    func testRenderCommentsView() {
+        render(CommentsView(videoId: "v1"))
+    }
+
+    func testRenderCommentRowVariants() {
+        // Verified + pinned + likes, and the plain variant — covers the branches.
+        render(CommentRow(comment: Comment(commentId: "c1", author: "@me", commentText: "Nice", thumbnail: nil, likeCount: 3, commentedTime: "1d", verified: true, pinned: true)))
+        render(CommentRow(comment: Comment(commentId: "c2", author: "@you", commentText: "Plain", thumbnail: nil, likeCount: nil, commentedTime: nil, verified: false, pinned: false)))
     }
 
     func testRenderChaptersView() {

@@ -9,6 +9,8 @@ enum FixtureRouter {
         if path.hasPrefix("/channels/tabs") { return "channelTab" }
         if path.hasPrefix("/channel/") { return "channel" }
         if path.hasPrefix("/streams/") { return "streams" }
+        if path.hasPrefix("/trending") { return "trending" }
+        if path.hasPrefix("/comments/") { return "comments" }
         return nil
     }
 }

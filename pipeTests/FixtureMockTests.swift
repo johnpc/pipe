@@ -24,7 +24,12 @@ struct FixtureMockTests {
     }
 
     @Test func unknownPathReturnsNil() {
-        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/comments/abc")!) == nil)
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/playlists/abc")!) == nil)
+    }
+
+    @Test func routesTrendingAndComments() {
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/trending?region=US")!) == "trending")
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/comments/abc")!) == "comments")
     }
 
     // MARK: - MockMode

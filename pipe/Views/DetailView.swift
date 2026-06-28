@@ -4,6 +4,7 @@ struct DetailView: View {
     let videoId: String
     @ObservedObject var player: PlayerState
     @State private var state: LoadState<StreamResponse> = .loading
+    @State private var showComments = false
 
     var body: some View {
         Group {
@@ -18,6 +19,8 @@ struct DetailView: View {
         }
         .navigationTitle("Episode")
         .toolbar {
+            Button { showComments = true } label: { Image(systemName: "text.bubble") }
+                .accessibilityIdentifier("commentsButton")
             if case .loaded(let s) = state, let downloads = player.downloads {
                 DownloadButton(videoId: videoId, stream: s, downloads: downloads)
             }
@@ -26,7 +29,16 @@ struct DetailView: View {
                     .accessibilityIdentifier("shareButton")
             }
         }
+        .sheet(isPresented: $showComments) { CommentsView(videoId: videoId) }
+        .environment(\.openURL, OpenURLAction { url in handleLink(url) })
         .task { await load() }
+    }
+
+    /// Intercept pipe-seek:// links from the description to seek the player.
+    private func handleLink(_ url: URL) -> OpenURLAction.Result {
+        guard let secs = DescriptionLinks.seekSeconds(from: url) else { return .systemAction }
+        player.seek(to: secs)
+        return .handled
     }
 
     @ViewBuilder
@@ -58,7 +70,10 @@ struct DetailView: View {
                 ChaptersView(chapters: chapters) { seekToChapter($0, in: s) }
             }
             if let d = s.description {
-                Text(htmlToAttributedString(d)).font(.body)
+                Text(DescriptionLinks.attributed(d)).font(.body).tint(.accentColor)
+            }
+            if let related = s.relatedStreams, !related.isEmpty {
+                RelatedVideosView(related: related, player: player)
             }
         }
     }
@@ -73,7 +88,6 @@ struct DetailView: View {
         state = .loading
         state = LoadState.from(try? await PipedAPI.streams(videoId))
     }
-
 
     private func playNow(_ s: StreamResponse) {
         Playback.apply(Playback.resolve(s, videoId: videoId), action: .play, to: player)

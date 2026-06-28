@@ -1,38 +1,11 @@
 import Foundation
 
-/// Base URL of the Piped API instance. Mutable so Settings can repoint it.
-var pipedBase = "https://pipedapi.jpc.io"
-
-/// Decides whether a failed request should be retried and how long to wait.
-/// Pure and synchronous so the policy is unit-testable without real delays.
-enum RetryPolicy {
-    static let maxAttempts = 3
-
-    /// Whether an error is worth retrying (transient connectivity, not a 4xx/decode).
-    static func shouldRetry(_ error: Error, attempt: Int) -> Bool {
-        guard attempt < maxAttempts else { return false }
-        guard let urlError = error as? URLError else { return false }
-        switch urlError.code {
-        case .timedOut, .cannotConnectToHost, .networkConnectionLost,
-             .notConnectedToInternet, .dnsLookupFailed, .cannotFindHost,
-             .resourceUnavailable:
-            return true
-        default:
-            return false
-        }
-    }
-
-    /// Backoff in nanoseconds before the given (1-based) attempt: 0, 0.4s, 0.8s…
-    static func backoffNanos(beforeAttempt attempt: Int) -> UInt64 {
-        guard attempt > 1 else { return 0 }
-        return UInt64(attempt - 1) * 400_000_000
-    }
-}
-
 enum PipedAPI {
     /// Injectable session so tests can stub responses via a custom URLProtocol.
-    /// Defaults to a session with a sensible request timeout.
-    static var session: URLSession = {
+    /// Defaults to a session with a sensible request timeout. Tests mutate this;
+    /// the test target runs non-parallel (see pipe.xctestplan) so the shared
+    /// mutation can't race across suites.
+    nonisolated(unsafe) static var session: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 20
         config.waitsForConnectivity = false
@@ -40,7 +13,7 @@ enum PipedAPI {
     }()
 
     /// Test seam for the inter-attempt delay so retry tests don't actually sleep.
-    static var sleep: (UInt64) async -> Void = { try? await Task.sleep(nanoseconds: $0) }
+    nonisolated(unsafe) static var sleep: (UInt64) async -> Void = { try? await Task.sleep(nanoseconds: $0) }
 
     /// Fetch + decode with bounded retry on transient network errors.
     static func fetch<T: Decodable>(_ type: T.Type, from url: URL) async throws -> T {

@@ -79,8 +79,11 @@ the code, never the gate.
 - **No force-unwraps in logic, no `as!`, no `try!` outside tests.** Handle the
   optional/error path. (Test fixtures may use `try!`/`!` for brevity.)
 - **Every source file ≤ 100 lines** (`scripts/check_file_lines.sh`) — views *and*
-  logic/stores. Over the limit → extract a focused helper or split the type
-  across `Type+Feature.swift` extension files. **Never raise the limit.**
+  logic/stores. The limit is a proxy for **one file, one purpose**: when a file
+  goes over, **split it** — extract a focused helper, a subview, or another type
+  across `Type+Feature.swift` extension files — so each piece does one thing.
+  **Do not** squeak under the limit by deleting comments or collapsing lines;
+  that defeats the purpose. **Never raise the limit.**
 - **≥ 80% line coverage** across the app target (`scripts/coverage_check.py`). Fix by
   **writing tests** — never by adding exclusions. 80% is a floor; push to 90%+.
 - **CRAP ≤ 15 per function** (`scripts/crap_check.py`, decision-point based). Over →

@@ -196,4 +196,83 @@ struct PipedAPITests {
         #expect(page.content.first?.videoId == "v9")
         #expect(page.nextpage == "tok2")
     }
+
+    @Test func trendingDecodes() async throws {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"[{"url":"/watch?v=t1","title":"Trend","thumbnail":"t","duration":60,"uploaderName":"U","uploadedDate":null,"uploaded":1}]"#)
+        let videos = try await PipedAPI.trending(region: "US")
+        #expect(videos.first?.videoId == "t1")
+    }
+
+    @Test func commentsDecode() async throws {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"{"comments":[{"commentId":"c1","author":"@me","commentText":"Nice","likeCount":5,"verified":true,"pinned":false}],"disabled":false}"#)
+        let response = try await PipedAPI.comments("v")
+        #expect(response.comments.first?.author == "@me")
+        #expect(response.comments.first?.likeCount == 5)
+        #expect(response.disabled == false)
+    }
+
+    @Test func streamsDecodeRelatedStreams() async throws {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"{"title":"T","description":null,"uploader":"U","uploaderUrl":null,"duration":10,"hls":null,"audioStreams":[],"videoStreams":[],"thumbnailUrl":"t","uploadDate":null,"chapters":null,"relatedStreams":[{"url":"/watch?v=r1","title":"Related","thumbnail":"t","duration":20,"uploaderName":"U","uploadedDate":null,"uploaded":1}]}"#)
+        let s = try await PipedAPI.streams("v")
+        #expect(s.relatedStreams?.first?.videoId == "r1")
+    }
+
+    // MARK: - FeedLoader (mutates the shared session, hence here in the one
+    // serialized session suite)
+
+    @Test func feedLoaderSortsNewestFirst() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"{"id":"c","name":"C","avatarUrl":null,"description":null,"relatedStreams":[{"url":"/watch?v=old","title":"Old","thumbnail":"t","duration":1,"uploaderName":"U","uploadedDate":null,"uploaded":100},{"url":"/watch?v=new","title":"New","thumbnail":"t","duration":1,"uploaderName":"U","uploadedDate":null,"uploaded":900}],"tabs":null,"nextpage":null}"#)
+        let result = await FeedLoader.fetch(channels: [FollowedChannel(id: "c", name: "C", thumbnail: "")])
+        #expect(result?.first?.videoId == "new")
+        #expect(result?.last?.videoId == "old")
+    }
+
+    @Test func feedLoaderNilWhenNetworkYieldsNothing() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+        let result = await FeedLoader.fetch(channels: [FollowedChannel(id: "c", name: "C", thumbnail: "")])
+        #expect(result == nil)
+    }
+
+    // MARK: - DownloadCoordinator (also mutates the shared session)
+
+    private func makeCoordDownloads() -> DownloadStore {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("coord-\(UUID().uuidString)", isDirectory: true)
+        return DownloadStore(defaults: UserDefaults(suiteName: "coord-\(UUID().uuidString)")!, directory: dir) { _, dest, _ in
+            try Data("m".utf8).write(to: dest)
+        }
+    }
+
+    @Test func coordinatorDownloadsThenRemoves() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stub(json: Self.streamJSON)
+        defer { PipedAPI.session = .shared }
+        let downloads = makeCoordDownloads()
+        let toast = SpyToast()
+        await DownloadCoordinator.toggle(videoId: "v", title: "Row", artist: "A", thumbnail: "t", duration: 10, downloads: downloads, toast: toast)
+        #expect(downloads.isDownloaded("v"))
+        await DownloadCoordinator.toggle(videoId: "v", title: "Row", artist: "A", thumbnail: "t", duration: 10, downloads: downloads, toast: toast)
+        #expect(downloads.isDownloaded("v") == false)
+        #expect(toast.events.contains("success:Removed Download"))
+    }
+
+    @Test func coordinatorHidesToastWhenStreamFails() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+        defer { PipedAPI.session = .shared }
+        let downloads = makeCoordDownloads()
+        let toast = SpyToast()
+        await DownloadCoordinator.toggle(videoId: "v", title: "", artist: "", thumbnail: "", duration: 0, downloads: downloads, toast: toast)
+        #expect(downloads.isDownloaded("v") == false)
+        #expect(toast.events.contains("hide"))
+    }
 }

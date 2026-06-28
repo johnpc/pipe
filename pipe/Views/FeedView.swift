@@ -34,11 +34,7 @@ struct FeedView: View {
         .refreshable { await loadFeed() }
         .navigationTitle("Feed")
         .navigationDestination(for: String.self) { dest in
-            if dest == "downloads" {
-                DownloadsView(player: player, downloads: downloads)
-            } else {
-                SavedView(player: player, saved: saved)
-            }
+            FeedDestination(dest: dest, player: player, saved: saved, downloads: downloads)
         }
         .toolbar { FeedToolbar(sort: $sort, hideWatched: $hideWatched) }
         .task { await loadFeed() }
