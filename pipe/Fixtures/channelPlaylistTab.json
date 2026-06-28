@@ -1,0 +1,18 @@
+{
+  "content": [
+    {
+      "url": "/playlist?list=PLbestvideos",
+      "name": "MrBeast Best Videos",
+      "thumbnail": "https://pipedproxy.jpc.io/vi/gar4U3n-ILY/hq720.jpg?host=i.ytimg.com",
+      "uploaderName": "MrBeast",
+      "videos": 3
+    },
+    {
+      "url": "/playlist?list=PLchallenges",
+      "name": "Challenge Videos",
+      "thumbnail": "https://pipedproxy.jpc.io/vi/6Zy5VLcEbZc/hq720.jpg?host=i.ytimg.com",
+      "uploaderName": "MrBeast",
+      "videos": 12
+    }
+  ]
+}

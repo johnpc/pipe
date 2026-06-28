@@ -24,12 +24,23 @@ struct FixtureMockTests {
     }
 
     @Test func unknownPathReturnsNil() {
-        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/playlists/abc")!) == nil)
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/subscriptions/abc")!) == nil)
     }
 
     @Test func routesTrendingAndComments() {
         #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/trending?region=US")!) == "trending")
         #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/comments/abc")!) == "comments")
+    }
+
+    @Test func routesPlaylistDetail() {
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/playlists/PLabc")!) == "playlist")
+    }
+
+    @Test func routesPlaylistTabByDataToken() {
+        // A channels/tabs request whose data token mentions "playlist" serves the
+        // playlist-tab fixture; any other tab serves the video tab fixture.
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/channels/tabs?data=%7B%22contentFilters%22:%5B%22playlists%22%5D%7D")!) == "channelPlaylistTab")
+        #expect(FixtureRouter.fixtureName(for: URL(string: "https://x/channels/tabs?data=shorts")!) == "channelTab")
     }
 
     // MARK: - MockMode

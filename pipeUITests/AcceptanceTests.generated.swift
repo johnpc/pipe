@@ -114,6 +114,29 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Playlists
+
+    func test_A_channel_s_Playlists_tab_lists_its_playlists() {
+        runScenario(feature: "playlists.feature", scenario: "A channel's Playlists tab lists its playlists")
+    }
+
+    func test_Opening_a_playlist_shows_its_videos() {
+        runScenario(feature: "playlists.feature", scenario: "Opening a playlist shows its videos")
+    }
+
+    func test_Play_All_queues_the_playlist() {
+        runScenario(feature: "playlists.feature", scenario: "Play All queues the playlist")
+    }
+
+    func test_Saving_a_playlist_keeps_it_in_Saved_Playlists() {
+        runScenario(feature: "playlists.feature", scenario: "Saving a playlist keeps it in Saved Playlists")
+    }
+
+    func test_Playlist_results_appear_in_search() {
+        runScenario(feature: "playlists.feature", scenario: "Playlist results appear in search")
+    }
+
+
     // MARK: - Playback Queue
 
     func test_Queueing_a_result_adds_it_to_the_queue() {

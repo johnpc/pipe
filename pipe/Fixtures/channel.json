@@ -54,6 +54,10 @@
     {
       "name": "shorts",
       "data": "{\"originalUrl\":\"https://www.youtube.com/UCX6OQ3DkcsbYNE6H8uQQuVA/shorts\",\"url\":\"https://www.youtube.com/UCX6OQ3DkcsbYNE6H8uQQuVA/shorts\",\"id\":\"UCX6OQ3DkcsbYNE6H8uQQuVA\",\"contentFilters\":[\"shorts\"],\"sortFilter\":\"\",\"baseUrl\":\"https://www.youtube.com\"}"
+    },
+    {
+      "name": "playlists",
+      "data": "{\"contentFilters\":[\"playlists\"],\"id\":\"UCX6OQ3DkcsbYNE6H8uQQuVA\"}"
     }
   ]
 }

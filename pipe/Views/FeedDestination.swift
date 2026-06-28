@@ -13,6 +13,7 @@ struct FeedDestination: View {
         switch dest {
         case "downloads": DownloadsView(player: player, downloads: downloads)
         case "trending": TrendingView(player: player)
+        case "playlists": SavedPlaylistsView(player: player, saved: .shared)
         default: SavedView(player: player, saved: saved)
         }
     }

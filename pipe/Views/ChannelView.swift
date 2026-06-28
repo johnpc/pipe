@@ -5,11 +5,12 @@ struct ChannelView: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var following: FollowingStore
     @ObservedObject var recents: RecentsStore
-    @State private var channel: ChannelResponse?
-    @State private var failed = false
+    @State var channel: ChannelResponse?
+    @State var failed = false
     @State private var selectedTab = "videos"
-    @State private var tabContent: [RelatedStream] = []
-    @State private var loadingTab = false
+    @State var tabContent: [RelatedStream] = []
+    @State var tabPlaylists: [PlaylistItem] = []
+    @State var loadingTab = false
 
     var body: some View {
         Group {
@@ -24,7 +25,7 @@ struct ChannelView: View {
                                 ForEach(tabs, id: \.name) { tab in
                                     TabPill(title: tab.name.capitalized, isSelected: selectedTab == tab.name) {
                                         selectedTab = tab.name
-                                        loadTab(tab.data)
+                                        loadTab(tab.name, data: tab.data)
                                     }
                                 }
                             }
@@ -38,6 +39,8 @@ struct ChannelView: View {
                         // Paginated main videos list.
                         ChannelVideoList(channelId: channelId, player: player, recents: recents, videos: ch.relatedStreams, nextpage: ch.nextpage)
                             .id(ch.id)
+                    } else if selectedTab == "playlists" {
+                        ChannelPlaylistsTab(playlists: tabPlaylists, player: player)
                     } else {
                         List(tabContent) { v in
                             NavigationLink(value: v) {
@@ -57,15 +60,6 @@ struct ChannelView: View {
         .task { await load() }
     }
 
-    private func load() async {
-        failed = false
-        if let result = try? await PipedAPI.channel(channelId) {
-            channel = result
-        } else if channel == nil {
-            failed = true
-        }
-    }
-
     private func followButton(_ ch: ChannelResponse) -> some View {
         Button {
             if following.isFollowing(channelId) {
@@ -76,17 +70,6 @@ struct ChannelView: View {
         } label: {
             Image(systemName: following.isFollowing(channelId) ? "heart.fill" : "heart")
                 .foregroundColor(following.isFollowing(channelId) ? .red : .primary)
-        }
-    }
-
-    private func loadTab(_ data: String) {
-        loadingTab = true
-        Task {
-            let response = try? await PipedAPI.channelTab(data)
-            await MainActor.run {
-                tabContent = response?.content ?? []
-                loadingTab = false
-            }
         }
     }
 

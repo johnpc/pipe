@@ -7,30 +7,30 @@ struct ModelsTests {
     // MARK: - SearchItem computed properties
 
     @Test func searchItemVideoIdAndChannelId() {
-        let video = SearchItem(url: "/watch?v=abc123", type: "stream", title: "T", thumbnail: "th", uploaderName: "U", uploaderUrl: nil, duration: 10, name: nil, uploadedDate: nil, verified: nil, subscribers: nil)
+        let video = SearchItem(url: "/watch?v=abc123", type: "stream", title: "T", thumbnail: "th", uploaderName: "U", uploaderUrl: nil, duration: 10, name: nil, uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(video.videoId == "abc123")
         #expect(video.isChannel == false)
 
-        let chan = SearchItem(url: "/channel/UC1", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "ChanName", uploadedDate: nil, verified: nil, subscribers: nil)
+        let chan = SearchItem(url: "/channel/UC1", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "ChanName", uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(chan.channelId == "UC1")
         #expect(chan.isChannel == true)
     }
 
     @Test func searchItemDisplayFallbacks() {
-        let withName = SearchItem(url: "/channel/c", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "TheName", uploadedDate: nil, verified: nil, subscribers: nil)
+        let withName = SearchItem(url: "/channel/c", type: "channel", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: "TheName", uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(withName.displayTitle == "TheName")
 
-        let withTitle = SearchItem(url: "/watch?v=v", type: "stream", title: "TheTitle", thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: nil, uploadedDate: nil, verified: nil, subscribers: nil)
+        let withTitle = SearchItem(url: "/watch?v=v", type: "stream", title: "TheTitle", thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: nil, uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(withTitle.displayTitle == "TheTitle")
 
-        let neither = SearchItem(url: "/watch?v=v", type: "stream", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: nil, uploadedDate: nil, verified: nil, subscribers: nil)
+        let neither = SearchItem(url: "/watch?v=v", type: "stream", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: nil, uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(neither.displayTitle == "Unknown")
         #expect(neither.displayUploader == "")
         #expect(neither.displayThumbnail == "")
     }
 
     @Test func searchItemIdIsURL() {
-        let item = SearchItem(url: "/watch?v=x", type: "stream", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: nil, uploadedDate: nil, verified: nil, subscribers: nil)
+        let item = SearchItem(url: "/watch?v=x", type: "stream", title: nil, thumbnail: nil, uploaderName: nil, uploaderUrl: nil, duration: nil, name: nil, uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
         #expect(item.id == "/watch?v=x")
     }
 

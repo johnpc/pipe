@@ -45,11 +45,10 @@ THEMES = {
     "discovery": [
         "search.feature",
         "search_as_you_type.feature",
-        "search_history.feature",
         "trending.feature",
         "comments.feature",
         "up_next.feature",
-        "feed_sorting.feature",
+        "playlists.feature",
     ],
     "library": [
         "downloads.feature",
@@ -64,6 +63,8 @@ THEMES = {
         "channel_metadata.feature",
         "settings.feature",
         "error_recovery.feature",
+        "search_history.feature",
+        "feed_sorting.feature",
     ],
 }
 

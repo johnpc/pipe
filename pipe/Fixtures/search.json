@@ -67,6 +67,20 @@
       "duration": 2971,
       "name": null,
       "uploadedDate": "2 months ago"
+    },
+    {
+      "url": "/playlist?list=PLbestvideos",
+      "type": "playlist",
+      "title": null,
+      "thumbnail": "https://pipedproxy.jpc.io/vi/gar4U3n-ILY/hq720.jpg?host=i.ytimg.com",
+      "uploaderName": "MrBeast",
+      "uploaderUrl": "/channel/UCX6OQ3DkcsbYNE6H8uQQuVA",
+      "duration": null,
+      "name": "MrBeast Best Videos",
+      "uploadedDate": null,
+      "verified": null,
+      "subscribers": null,
+      "videos": 3
     }
   ]
 }

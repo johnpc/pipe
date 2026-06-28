@@ -15,6 +15,8 @@ struct FeedToolbar: ToolbarContent {
                 .accessibilityIdentifier("downloadsButton")
             NavigationLink(value: "saved") { Image(systemName: "bookmark") }
                 .accessibilityIdentifier("savedButton")
+            NavigationLink(value: "playlists") { Image(systemName: "square.stack") }
+                .accessibilityIdentifier("savedPlaylistsButton")
         }
     }
 }
