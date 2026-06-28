@@ -52,6 +52,10 @@ extension AcceptanceTests {
         runScenario(feature: "downloads.feature", scenario: "Downloading from a search result's context menu")
     }
 
+    func test_Downloads_screen_shows_storage_used() {
+        runScenario(feature: "downloads.feature", scenario: "Downloads screen shows storage used")
+    }
+
 
     // MARK: - Error Recovery
 
@@ -82,6 +86,13 @@ extension AcceptanceTests {
 
     func test_Video_mode_presents_a_PiP_capable_player() {
         runScenario(feature: "picture_in_picture.feature", scenario: "Video mode presents a PiP-capable player")
+    }
+
+
+    // MARK: - Play Next
+
+    func test_Play_Next_is_offered_in_a_result_s_context_menu() {
+        runScenario(feature: "play_next.feature", scenario: "Play Next is offered in a result's context menu")
     }
 
 
@@ -133,6 +144,13 @@ extension AcceptanceTests {
 
     func test_Tapping_a_suggestion_runs_a_search() {
         runScenario(feature: "search.feature", scenario: "Tapping a suggestion runs a search")
+    }
+
+
+    // MARK: - Search As You Type
+
+    func test_Typing_a_query_shows_results_without_submitting() {
+        runScenario(feature: "search_as_you_type.feature", scenario: "Typing a query shows results without submitting")
     }
 
 

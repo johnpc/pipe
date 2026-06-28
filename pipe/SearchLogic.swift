@@ -18,6 +18,18 @@ enum SearchLogic {
     static func isSubmittable(_ query: String) -> Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
+
+    /// Minimum query length before auto-searching as the user types (avoids
+    /// firing on a single stray character).
+    static let autoSearchMinLength = 2
+
+    /// Whether a typed query should trigger an automatic (debounced) search.
+    static func shouldAutoSearch(_ query: String) -> Bool {
+        query.trimmingCharacters(in: .whitespacesAndNewlines).count >= autoSearchMinLength
+    }
+
+    /// Debounce delay (nanoseconds) between keystrokes and an auto-search.
+    static let autoSearchDebounceNanos: UInt64 = 350_000_000
 }
 
 /// Pure helpers for Settings: instance-URL normalization and search history.

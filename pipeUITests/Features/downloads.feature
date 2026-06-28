@@ -19,3 +19,9 @@ Feature: Offline Downloads
     When I download the first result from its context menu
     And I open the Downloads screen from the Feed
     Then I should see the downloaded video
+
+  Scenario: Downloads screen shows storage used
+    Given I have searched and opened a video
+    When I tap the download button
+    And I open the Downloads screen from the Feed
+    Then I should see the storage used

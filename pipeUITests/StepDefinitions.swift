@@ -293,6 +293,22 @@ enum StepDefinitions {
                           w.app.cells.count > 0,
                           "Downloaded video should be listed")
         }
+        r.define("I should see the storage used") { w in
+            XCTAssertTrue(w.app.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS[c] 'used'")).firstMatch.waitForExistence(timeout: long),
+                          "Storage-used footer should be shown")
+        }
+
+        // MARK: Play Next
+        r.define("I long-press the first result") { w in
+            let row = w.app.cells.firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: long), "A result row should be present")
+            row.press(forDuration: 1.1)
+        }
+        r.define("I should see a \"Play Next\" option") { w in
+            XCTAssertTrue(w.app.buttons["Play Next"].waitForExistence(timeout: medium),
+                          "Play Next should appear in the context menu")
+        }
 
         // MARK: Channel metadata
         r.define("the channel result should show a subscriber count") { w in

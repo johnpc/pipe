@@ -25,6 +25,7 @@ struct VideoRow: View {
     var resumeTime: Double? = nil
     let onPlay: () -> Void
     let onQueue: () -> Void
+    var onPlayNext: (() -> Void)? = nil
     var isSaved: Bool = false
     var onToggleSave: (() -> Void)? = nil
     var isDownloaded: Bool = false
@@ -34,7 +35,7 @@ struct VideoRow: View {
         content
             .contextMenu {
                 mediaContextMenu(videoId: v.videoId, onPlay: onPlay, onQueue: onQueue,
-                                 isSaved: isSaved, onToggleSave: onToggleSave,
+                                 onPlayNext: onPlayNext, isSaved: isSaved, onToggleSave: onToggleSave,
                                  isDownloaded: isDownloaded, onToggleDownload: onToggleDownload)
             }
     }

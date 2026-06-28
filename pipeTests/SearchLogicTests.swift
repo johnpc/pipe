@@ -21,4 +21,12 @@ struct SearchLogicTests {
         #expect(SearchLogic.isSubmittable("cats") == true)
         #expect(SearchLogic.isSubmittable("  cats  ") == true)
     }
+
+    @Test func shouldAutoSearchNeedsMinLength() {
+        #expect(SearchLogic.shouldAutoSearch("") == false)
+        #expect(SearchLogic.shouldAutoSearch("a") == false)
+        #expect(SearchLogic.shouldAutoSearch("ab") == true)
+        #expect(SearchLogic.shouldAutoSearch("  a  ") == false) // trims first
+        #expect(SearchLogic.shouldAutoSearch("cats") == true)
+    }
 }

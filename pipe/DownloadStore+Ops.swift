@@ -39,4 +39,13 @@ extension DownloadStore {
             remove(videoId: items[index].videoId)
         }
     }
+
+    /// Total bytes used by downloaded media files on disk.
+    func totalStorageBytes() -> Int64 {
+        items.reduce(0) { sum, item in
+            let path = localURL(for: item).path
+            let size = (try? FileManager.default.attributesOfItem(atPath: path)[.size] as? Int64) ?? 0
+            return sum + (size ?? 0)
+        }
+    }
 }
