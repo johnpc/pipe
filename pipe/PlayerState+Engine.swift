@@ -23,9 +23,7 @@ extension PlayerState {
         duration = 0
         updateCurrentChapter(for: item.videoId, at: 0)
         
-        if let old = timeObserver, let p = player { p.removeTimeObserver(old); timeObserver = nil }
-        if let old = endObserver { NotificationCenter.default.removeObserver(old); endObserver = nil }
-        statusObserver?.invalidate(); statusObserver = nil
+        teardownPlaybackObservers()
 
         player = AVPlayer(url: url)
 
@@ -39,6 +37,12 @@ extension PlayerState {
 
         // Recover from involuntary stalls (audio stream buffer underruns) that
         // otherwise leave playback frozen until the user manually seeks.
+        stallObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemPlaybackStalled, object: player?.currentItem, queue: .main) { [weak self] _ in
+            self?.handlePlaybackStalled()
+        }
+
+        // Adopt the player's real play/pause state so external pauses (PiP, lock
+        // screen, Control Center) stay in sync with our UI.
         statusObserver = player?.observe(\.timeControlStatus, options: [.new]) { [weak self] p, _ in
             Task { @MainActor in self?.handleTimeControlStatus(p.timeControlStatus) }
         }
@@ -65,6 +69,15 @@ extension PlayerState {
         updateNowPlaying()
     }
     
+    /// Tear down all player observers (time, end-of-item, stall, status). Shared
+    /// by `playItem` (before building a new player) and `stop()`.
+    func teardownPlaybackObservers() {
+        if let old = timeObserver, let p = player { p.removeTimeObserver(old); timeObserver = nil }
+        if let old = endObserver { NotificationCenter.default.removeObserver(old); endObserver = nil }
+        if let old = stallObserver { NotificationCenter.default.removeObserver(old); stallObserver = nil }
+        statusObserver?.invalidate(); statusObserver = nil
+    }
+
     /// Handle a periodic playback-time update: publish the current time, adopt a
     /// valid item duration, and persist progress. Extracted from the time
     /// observer closure so it is directly unit-testable.

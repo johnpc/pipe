@@ -206,6 +206,20 @@ enum StepDefinitions {
             XCTAssertTrue(w.app.buttons["Audio Only"].waitForExistence(timeout: short),
                           "Video surface (PiP-capable) should be active in video mode")
         }
+        r.define("I tap pause") { w in
+            let button = w.app.buttons["playPauseButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: long), "Play/pause control should be present")
+            // Ensure we start from a playing state so the tap pauses (not resumes).
+            if button.label == "Play" { return }
+            button.tap()
+        }
+        r.define("playback should be paused") { w in
+            // After pausing, the control offers Play — and must stay that way (the
+            // bug was the player nudging itself straight back to playing).
+            let resume = w.app.buttons["playPauseButton"]
+            XCTAssertTrue(resume.waitForExistence(timeout: long))
+            XCTAssertEqual(resume.label, "Play", "Pausing should leave the player paused")
+        }
         r.define("the control should switch to \"(.+)\"") { w in
             XCTAssertTrue(w.app.buttons[w.capture()].waitForExistence(timeout: short),
                           "Toggle should flip to \(w.capture())")

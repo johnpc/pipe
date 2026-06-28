@@ -25,15 +25,26 @@ extension PlayerState {
         }
     }
 
-    /// React to AVPlayer's timeControlStatus changing. When we intend to keep
-    /// playing but the player has involuntarily stopped (a buffer-underrun
-    /// stall), nudge it back to playing so audio doesn't freeze until a manual
-    /// seek. Decision is delegated to the pure `StallPolicy` for testability.
+    /// Adopt AVPlayer's real play/pause state when `timeControlStatus` changes,
+    /// so an external pause (Picture-in-Picture, lock screen, Control Center) —
+    /// which pauses the AVPlayer directly without calling `pause()` — keeps our
+    /// `isPlaying` and now-playing info in sync instead of being fought.
+    /// Decision is delegated to the pure `PlaybackStatusPolicy` for testability.
     func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
-        if StallPolicy.shouldNudge(intendingToPlay: isPlaying, status: status) {
-            player?.play()
-            if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
-        }
+        let nowPlaying = PlaybackStatusPolicy.isPlaying(for: status, current: isPlaying)
+        guard nowPlaying != isPlaying else { return }
+        isPlaying = nowPlaying
+        updateNowPlaying()
+    }
+
+    /// Recover from an involuntary buffer-underrun stall (surfaced by the
+    /// `AVPlayerItemPlaybackStalled` notification, not by `.paused`). Only nudge
+    /// when we still intend to be playing — a user/external pause leaves
+    /// `isPlaying` false, so this is a no-op then.
+    func handlePlaybackStalled() {
+        guard isPlaying else { return }
+        player?.play()
+        if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
     }
 
     func play(videoId: String, urlString: String, audioUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {

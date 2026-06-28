@@ -11,3 +11,14 @@ Feature: Picture in Picture
     And I have opened the full player
     When I enable "Show Video"
     Then the video surface should be shown (PiP-capable)
+
+  # Regression: pausing the PiP-capable player must actually pause and stay
+  # paused (the PiP pause button drove AVPlayer directly while our stall-recovery
+  # nudged it straight back on). Driven here via the full player's pause control
+  # in video mode, which shares the same timeControlStatus-sync path.
+  Scenario: Pausing the video-mode player pauses playback
+    Given a video is playing
+    And I have opened the full player
+    When I enable "Show Video"
+    And I tap pause
+    Then playback should be paused

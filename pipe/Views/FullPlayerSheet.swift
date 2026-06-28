@@ -60,6 +60,8 @@ struct FullPlayerSheet: View {
                     Button { player.togglePlayPause() } label: {
                         Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill").font(.system(size: 60))
                     }
+                    .accessibilityIdentifier("playPauseButton")
+                    .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
                     Button { player.skip(10) } label: { Image(systemName: "goforward.10").font(.title2) }
                     Button { player.playNext() } label: { Image(systemName: "forward.fill").font(.title2) }
                         .disabled(player.currentIndex >= player.queue.count - 1)
