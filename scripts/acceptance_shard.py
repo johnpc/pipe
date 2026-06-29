@@ -41,6 +41,7 @@ THEMES = {
         "audio_video_mode.feature",
         "picture_in_picture.feature",
         "sleep_timer.feature",
+        "full_player.feature",
     ],
     "discovery": [
         "search.feature",

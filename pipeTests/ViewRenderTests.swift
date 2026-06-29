@@ -220,6 +220,33 @@ final class ViewRenderTests: XCTestCase {
         render(CommentsView(videoId: "v1"))
     }
 
+    func testRenderCommentsList() {
+        render(NavigationStack { CommentsList(videoId: "v1") })
+    }
+
+    // MARK: - Full-player tabs
+
+    private func streamWithExtras() -> StreamResponse {
+        StreamResponse(title: "T", description: "Intro 1:23 jump", uploader: "U", uploaderUrl: nil, duration: 100, hls: nil, audioStreams: [], videoStreams: [], thumbnailUrl: "t", uploadDate: nil,
+                       chapters: [Chapter(title: "Intro", start: 0, image: nil), Chapter(title: "Part 2", start: 60, image: nil)],
+                       relatedStreams: [relatedStream(), relatedStream()])
+    }
+
+    func testRenderPlayerInfoTab() {
+        let (p, _, _) = makeStores()
+        render(PlayerInfoTab(stream: streamWithExtras(), player: p))
+        // Empty variant (no chapters, no description) shows the unavailable state.
+        let empty = StreamResponse(title: "T", description: nil, uploader: "U", uploaderUrl: nil, duration: 1, hls: nil, audioStreams: [], videoStreams: [], thumbnailUrl: "t", uploadDate: nil, chapters: nil, relatedStreams: nil)
+        render(PlayerInfoTab(stream: empty, player: p))
+    }
+
+    func testRenderPlayerTabsView() {
+        let (p, _, _) = makeStores()
+        p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "A", thumbnail: "t", duration: 100)
+        p.addToQueue(videoId: "v2", url: "bad://2", title: "Next", artist: "A", thumbnail: "t", duration: 60)
+        render(NavigationStack { PlayerTabsView(player: p, detail: NowPlayingDetail()) })
+    }
+
     // MARK: - Playlists
 
     private func playlistItem() -> PlaylistItem {

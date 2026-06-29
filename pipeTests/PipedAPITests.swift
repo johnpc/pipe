@@ -323,4 +323,36 @@ struct PipedAPITests {
         await PlaylistCoordinator.playAll([], player: player, toast: SpyToast())
         #expect(player.currentVideoId == nil)
     }
+
+    // MARK: - NowPlayingDetail (mutates the shared session)
+
+    @Test func nowPlayingDetailLoadsStream() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stub(json: Self.streamJSON)
+        defer { PipedAPI.session = .shared }
+        let detail = NowPlayingDetail()
+        await detail.load(videoId: "v")
+        #expect(detail.state.value?.title == "Song")
+        #expect(detail.loadedVideoId == "v")
+    }
+
+    @Test func nowPlayingDetailNilIdClearsState() async {
+        let detail = NowPlayingDetail()
+        await detail.load(videoId: nil)
+        #expect(detail.state.value == nil)
+        #expect(detail.loadedVideoId == nil)
+    }
+
+    @Test func nowPlayingDetailSkipsReloadForSameId() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stub(json: Self.streamJSON)
+        defer { PipedAPI.session = .shared }
+        let detail = NowPlayingDetail()
+        await detail.load(videoId: "v")
+        // Point the session at an error; a same-id reload must be a no-op (keeps
+        // the already-loaded stream rather than refetching and failing).
+        MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+        await detail.load(videoId: "v")
+        #expect(detail.state.value?.title == "Song")
+    }
 }

@@ -89,6 +89,17 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Full Player Tabs
+
+    func test_Up_Next_is_reachable_from_the_full_player() {
+        runScenario(feature: "full_player.feature", scenario: "Up Next is reachable from the full player")
+    }
+
+    func test_Comments_are_reachable_from_the_full_player() {
+        runScenario(feature: "full_player.feature", scenario: "Comments are reachable from the full player")
+    }
+
+
     // MARK: - Offline Mode
 
     func test_Enabling_offline_mode_opens_Downloads() {

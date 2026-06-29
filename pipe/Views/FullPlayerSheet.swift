@@ -3,7 +3,8 @@ import AVKit
 
 struct FullPlayerSheet: View {
     @ObservedObject var player: PlayerState
-    
+    @StateObject private var detail = NowPlayingDetail()
+
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
@@ -79,7 +80,7 @@ struct FullPlayerSheet: View {
                     }
                 }.font(.footnote)
                 
-                QueueSection(player: player)
+                PlayerTabsView(player: player, detail: detail)
             }
             .padding(.bottom, 30)
         }
