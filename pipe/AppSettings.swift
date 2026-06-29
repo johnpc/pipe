@@ -6,15 +6,18 @@ import Combine
 class AppSettings: ObservableObject {
     @Published var instanceURL: String { didSet { persistInstance() } }
     @Published private(set) var searchHistory: [String] = []
+    @Published var offlineMode: Bool { didSet { defaults.set(offlineMode, forKey: offlineKey) } }
 
     private let defaults: UserDefaults
     private let instanceKey = "pipedInstanceURL"
     private let historyKey = "searchHistory"
+    private let offlineKey = "offlineMode"
     static let maxHistory = 10
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.instanceURL = defaults.string(forKey: instanceKey) ?? AppSettings.defaultInstance
+        self.offlineMode = defaults.bool(forKey: offlineKey)
         if let saved = defaults.stringArray(forKey: historyKey) {
             searchHistory = saved
         }

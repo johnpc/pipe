@@ -89,6 +89,21 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Offline Mode
+
+    func test_Enabling_offline_mode_opens_Downloads() {
+        runScenario(feature: "offline_mode.feature", scenario: "Enabling offline mode opens Downloads")
+    }
+
+    func test_Search_shows_an_offline_state_when_offline_mode_is_on() {
+        runScenario(feature: "offline_mode.feature", scenario: "Search shows an offline state when offline mode is on")
+    }
+
+    func test_Following_still_works_offline() {
+        runScenario(feature: "offline_mode.feature", scenario: "Following still works offline")
+    }
+
+
     // MARK: - Picture in Picture
 
     func test_Video_mode_presents_a_PiP_capable_player() {
