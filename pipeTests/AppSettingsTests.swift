@@ -66,4 +66,16 @@ struct AppSettingsTests {
         #expect(s2.instanceURL == "https://saved.test")
         pipedBase = AppSettings.defaultInstance
     }
+
+    @Test func offlineModeDefaultsOff() {
+        #expect(makeSettings().offlineMode == false)
+    }
+
+    @Test func offlineModePersistsAcrossInstances() {
+        let suite = UserDefaults(suiteName: "settings-offline-\(UUID().uuidString)")!
+        let s1 = AppSettings(defaults: suite)
+        s1.offlineMode = true
+        let s2 = AppSettings(defaults: suite)
+        #expect(s2.offlineMode == true)
+    }
 }

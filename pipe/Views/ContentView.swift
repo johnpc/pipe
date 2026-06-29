@@ -14,28 +14,8 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                Group {
-                    switch selectedTab {
-                    case 0:
-                        NavigationStack {
-                            FeedView(player: player, following: following, recents: recents, saved: saved, downloads: downloads)
-                        }
-                    case 1:
-                        NavigationStack {
-                            SearchView(player: player, following: following, recents: recents, settings: settings, saved: saved, downloads: downloads)
-                        }
-                    case 2:
-                        NavigationStack {
-                            RecentsView(player: player, recents: recents)
-                        }
-                    case 3:
-                        NavigationStack {
-                            FollowingView(player: player, following: following, recents: recents)
-                        }
-                    default:
-                        EmptyView()
-                    }
-                }
+                MainTabContent(selectedTab: selectedTab, player: player, following: following,
+                               recents: recents, settings: settings, saved: saved, downloads: downloads)
                 
                 // Unified bottom bar
                 VStack(spacing: 0) {
@@ -66,9 +46,14 @@ struct ContentView: View {
                 player.error = nil
             }
         }
+        .onChange(of: settings.offlineMode) { _, isOffline in
+            // Enabling offline mode drops the user on the home tab so they land
+            // on Downloads instead of a now-empty network tab.
+            if isOffline { selectedTab = OfflineLogic.homeTab }
+        }
         .sheet(isPresented: $showSettings) {
             NavigationStack {
-                SettingsView(settings: settings, player: player, recents: recents)
+                SettingsView(settings: settings, player: player, recents: recents) { showSettings = false }
             }
         }
     }

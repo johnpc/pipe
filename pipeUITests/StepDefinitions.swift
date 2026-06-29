@@ -194,6 +194,37 @@ enum StepDefinitions {
                           "Performed search should be remembered in history")
         }
 
+        // MARK: Offline mode
+        r.define("I open Settings") { w in
+            w.app.buttons["Settings"].tap()
+            XCTAssertTrue(w.app.navigationBars["Settings"].waitForExistence(timeout: medium), "Settings should open")
+        }
+        r.define("I turn on Offline Mode") { w in enableOfflineMode(w) }
+        r.define("offline mode is on") { w in
+            w.app.buttons["Settings"].tap()
+            enableOfflineMode(w)
+        }
+        r.define("the home tab should show Downloads") { w in
+            w.app.buttons["Feed"].tap()
+            // After the hermetic reset there are no downloads, so the Downloads
+            // screen shows its "No Downloads" empty state. Accept the nav bar or
+            // the empty-state copy.
+            XCTAssertTrue(w.app.navigationBars["Downloads"].waitForExistence(timeout: long) ||
+                          w.app.staticTexts["No Downloads"].waitForExistence(timeout: short),
+                          "Home tab should show Downloads while offline")
+        }
+        r.define("I open the Search tab") { w in
+            // The tab-bar Search button label collides with the search-field
+            // placeholder; target the bottom tab button explicitly.
+            let tab = w.app.buttons["Search"].firstMatch
+            XCTAssertTrue(tab.waitForExistence(timeout: medium))
+            tab.tap()
+        }
+        r.define("I should see the offline placeholder") { w in
+            XCTAssertTrue(w.app.staticTexts["You're Offline"].waitForExistence(timeout: long),
+                          "Search should show the offline placeholder")
+        }
+
         // MARK: Audio / video mode
         r.define("I enable \"(.+)\"") { w in
             let button = w.app.buttons[w.capture()]
@@ -432,6 +463,35 @@ enum StepDefinitions {
     }
 
     // MARK: - Helpers
+
+    /// Turn on the Offline Mode toggle in the open Settings sheet, then dismiss
+    /// the sheet so the tabs underneath are interactive again.
+    private static func enableOfflineMode(_ w: GherkinWorld) {
+        let toggle = w.app.switches["offlineModeToggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: medium), "Offline Mode toggle should be present")
+        // SwiftUI toggles don't reliably flip from a plain .tap() on the switch
+        // frame; tapping its center coordinate does. Confirm the flip committed
+        // before dismissing (a lost tap leaves the app online).
+        if toggle.value as? String != "1" {
+            // In a SwiftUI List the Switch element spans the whole row but the
+            // interactive control sits on the trailing edge, so a center tap
+            // misses. Tap near the right edge.
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+            let on = NSPredicate(format: "value == '1'")
+            let exp = XCTNSPredicateExpectation(predicate: on, object: toggle)
+            XCTAssertEqual(XCTWaiter().wait(for: [exp], timeout: medium), .completed,
+                           "Offline Mode toggle should switch on")
+        }
+        // Dismiss the sheet via its Done button so the tabs underneath are
+        // interactive again (a swipe-to-dismiss on the List is unreliable).
+        let done = w.app.buttons["settingsDone"]
+        XCTAssertTrue(done.waitForExistence(timeout: medium), "Settings Done button should be present")
+        done.tap()
+        let gone = NSPredicate(format: "exists == false")
+        let exp = XCTNSPredicateExpectation(predicate: gone, object: w.app.navigationBars["Settings"])
+        _ = XCTWaiter().wait(for: [exp], timeout: medium)
+        XCTAssertTrue(w.app.buttons["Feed"].waitForExistence(timeout: long), "Tabs should be visible after dismissing Settings")
+    }
 
     private static func searchField(_ w: GherkinWorld) -> XCUIElement {
         w.app.searchFields.firstMatch.exists ? w.app.searchFields.firstMatch : w.app.textFields.firstMatch

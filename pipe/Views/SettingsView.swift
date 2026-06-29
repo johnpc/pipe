@@ -4,12 +4,22 @@ struct SettingsView: View {
     @ObservedObject var settings: AppSettings
     @ObservedObject var player: PlayerState
     @ObservedObject var recents: RecentsStore
+    var onDone: (() -> Void)? = nil
     @State private var instanceDraft = ""
 
     private let sleepOptions = [15, 30, 45, 60]
 
     var body: some View {
         List {
+            Section {
+                Toggle("Offline Mode", isOn: $settings.offlineMode)
+                    .accessibilityIdentifier("offlineModeToggle")
+            } header: {
+                Text("Playback")
+            } footer: {
+                Text("Show your downloads and hide tabs that need a connection.")
+            }
+
             Section("Piped Instance") {
                 TextField("https://pipedapi…", text: $instanceDraft)
                     .textInputAutocapitalization(.never)
@@ -73,6 +83,13 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("Settings")
+        .toolbar {
+            if let onDone {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done", action: onDone).accessibilityIdentifier("settingsDone")
+                }
+            }
+        }
         .onAppear { instanceDraft = settings.instanceURL }
     }
 }

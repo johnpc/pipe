@@ -65,6 +65,7 @@ THEMES = {
         "error_recovery.feature",
         "search_history.feature",
         "feed_sorting.feature",
+        "offline_mode.feature",
     ],
 }
 

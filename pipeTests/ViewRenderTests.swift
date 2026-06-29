@@ -76,6 +76,22 @@ final class ViewRenderTests: XCTestCase {
     func testRenderContentView() { render(ContentView()) }
     func testRenderTabButton() { render(TabButton(icon: "clock", label: "Recents", isSelected: true) {}) }
 
+    // MARK: - Offline mode
+
+    func testRenderOfflinePlaceholder() { render(OfflinePlaceholderView()) }
+
+    func testRenderMainTabContentOnlineAndOffline() {
+        let (p, f, r) = makeStores()
+        func content(tab: Int, offline: Bool) -> some View {
+            let s = makeSettings(); s.offlineMode = offline
+            return MainTabContent(selectedTab: tab, player: p, following: f, recents: r, settings: s, saved: makeSaved(), downloads: makeDownloads())
+        }
+        // Online: each tab renders its screen.
+        for tab in 0...3 { render(content(tab: tab, offline: false)) }
+        // Offline: Feed→Downloads, Search→placeholder, Recents/Following unchanged.
+        for tab in 0...3 { render(content(tab: tab, offline: true)) }
+    }
+
     // MARK: - Feed / Search / Recents / Following
 
     func testRenderFeedView() {
