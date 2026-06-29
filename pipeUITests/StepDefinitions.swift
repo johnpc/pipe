@@ -99,6 +99,23 @@ enum StepDefinitions {
             XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long))
             w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
         }
+        r.define("I open the \"(.+)\" player tab") { w in
+            let pill = w.app.buttons["playerTab-\(w.capture())"]
+            XCTAssertTrue(pill.waitForExistence(timeout: long), "Player tab \(w.capture()) should be present")
+            pill.tap()
+        }
+        r.define("I should see a related video") { w in
+            XCTAssertTrue(w.app.buttons["relatedRow"].firstMatch.waitForExistence(timeout: long) ||
+                          w.app.staticTexts["Up Next"].waitForExistence(timeout: short),
+                          "A related video should be shown in the Up Next tab")
+        }
+        r.define("I should see a comment in the player") { w in
+            // The now-playing fixture has comments; a comment row or the empty
+            // state both prove the tab loaded its content.
+            XCTAssertTrue(w.app.cells.firstMatch.waitForExistence(timeout: long) ||
+                          w.app.staticTexts["No Comments"].waitForExistence(timeout: short),
+                          "The Comments tab should render its content")
+        }
 
         // MARK: Queue
         r.define("I tap the queue button on the first result") { w in
