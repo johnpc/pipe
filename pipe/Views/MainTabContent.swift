@@ -14,21 +14,30 @@ struct MainTabContent: View {
     @ObservedObject var downloads: DownloadStore
 
     var body: some View {
+        // Each tab gets its own NavigationStack (keyed by tab) so a pushed
+        // detail view never bleeds across tab switches and each screen keeps its
+        // own toolbar.
         NavigationStack {
-            switch OfflineLogic.screen(forTab: selectedTab, offline: settings.offlineMode) {
-            case .feed:
-                FeedView(player: player, following: following, recents: recents, saved: saved, downloads: downloads)
-            case .search:
-                SearchView(player: player, following: following, recents: recents, settings: settings, saved: saved, downloads: downloads)
-            case .recents:
-                RecentsView(player: player, recents: recents)
-            case .following:
-                FollowingView(player: player, following: following, recents: recents)
-            case .downloads:
-                DownloadsView(player: player, downloads: downloads)
-            case .offlinePlaceholder:
-                OfflinePlaceholderView()
-            }
+            screen
+        }
+        .id(selectedTab)
+    }
+
+    @ViewBuilder
+    private var screen: some View {
+        switch OfflineLogic.screen(forTab: selectedTab, offline: settings.offlineMode) {
+        case .feed:
+            FeedView(player: player, following: following, recents: recents, saved: saved, downloads: downloads)
+        case .search:
+            SearchView(player: player, following: following, recents: recents, settings: settings, saved: saved, downloads: downloads)
+        case .recents:
+            RecentsView(player: player, recents: recents)
+        case .following:
+            FollowingView(player: player, following: following, recents: recents)
+        case .downloads:
+            DownloadsView(player: player, downloads: downloads)
+        case .offlinePlaceholder:
+            OfflinePlaceholderView()
         }
     }
 }
