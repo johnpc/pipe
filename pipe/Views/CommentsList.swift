@@ -5,6 +5,9 @@ import SwiftUI
 /// keyed by videoId.
 struct CommentsList: View {
     let videoId: String
+    /// Seek the live player when a comment's timestamp link is tapped. Nil in
+    /// contexts without a relevant playing video (links then open normally).
+    var onSeek: ((Double) -> Void)? = nil
     @State private var state: LoadState<[Comment]> = .loading
     @State private var disabled = false
 
@@ -21,6 +24,11 @@ struct CommentsList: View {
                 }
             }
         }
+        .environment(\.openURL, OpenURLAction { url in
+            guard let secs = DescriptionLinks.seekSeconds(from: url), let onSeek else { return .systemAction }
+            onSeek(secs)
+            return .handled
+        })
         .task(id: videoId) { await load() }
     }
 

@@ -35,4 +35,19 @@ struct DescriptionLinksTests {
         let hasWebLink = attr.runs.contains { $0.link?.host?.contains("example.com") == true }
         #expect(hasWebLink)
     }
+
+    @Test func autoLinkedPreservesExistingLinks() {
+        // A run already carrying an <a href> link must not be overwritten by the
+        // bare-URL/timestamp auto-linker.
+        var styled = AttributedString("watch 0:30")
+        if let r = styled.range(of: "0:30") { styled[r].link = URL(string: "https://manual.example") }
+        let result = DescriptionLinks.autoLinked(styled)
+        let run = result.runs.first { String(result[$0.range].characters).contains("0:30") }
+        #expect(run?.link == URL(string: "https://manual.example"))
+    }
+
+    @Test func autoLinkedAddsSeekToBareTimestamp() {
+        let result = DescriptionLinks.autoLinked(AttributedString("jump to 2:00"))
+        #expect(result.runs.contains { $0.link?.scheme == DescriptionLinks.seekScheme })
+    }
 }
