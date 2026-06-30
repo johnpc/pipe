@@ -13,7 +13,7 @@ struct PlayerInfoTab: View {
             }
             if let description = stream.description, !description.isEmpty {
                 Text("About").font(.headline)
-                Text(DescriptionLinks.attributed(description)).font(.body).tint(.accentColor)
+                Text(HTMLText.attributed(description)).font(.body).tint(.accentColor)
             } else if !ChaptersLogic.hasChapters(stream.chapters) {
                 ContentUnavailableView("No Details", systemImage: "doc.plaintext")
             }
