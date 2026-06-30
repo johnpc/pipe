@@ -14,3 +14,9 @@ Feature: Full Player Tabs
     And I open the full player
     When I open the "Comments" player tab
     Then I should see a comment in the player
+
+  Scenario: Info tab shows the description as readable text
+    Given a video is playing
+    And I open the full player
+    When I open the "Info" player tab
+    Then I should see the video description without raw HTML

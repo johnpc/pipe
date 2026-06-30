@@ -99,6 +99,10 @@ extension AcceptanceTests {
         runScenario(feature: "full_player.feature", scenario: "Comments are reachable from the full player")
     }
 
+    func test_Info_tab_shows_the_description_as_readable_text() {
+        runScenario(feature: "full_player.feature", scenario: "Info tab shows the description as readable text")
+    }
+
 
     // MARK: - Offline Mode
 

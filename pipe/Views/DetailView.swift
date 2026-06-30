@@ -70,7 +70,7 @@ struct DetailView: View {
                 ChaptersView(chapters: chapters) { seekToChapter($0, in: s) }
             }
             if let d = s.description {
-                Text(DescriptionLinks.attributed(d)).font(.body).tint(.accentColor)
+                Text(HTMLText.attributed(d)).font(.body).tint(.accentColor)
             }
             if let related = s.relatedStreams, !related.isEmpty {
                 RelatedVideosView(related: related, player: player)

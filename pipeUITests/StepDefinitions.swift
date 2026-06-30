@@ -109,6 +109,14 @@ enum StepDefinitions {
                           w.app.staticTexts["Up Next"].waitForExistence(timeout: short),
                           "A related video should be shown in the Up Next tab")
         }
+        r.define("I should see the video description without raw HTML") { w in
+            // The Info tab's "About" header proves the description section rendered;
+            // asserting no literal "<br>" leaks proves HTML was decoded, not shown raw.
+            XCTAssertTrue(w.app.staticTexts["About"].waitForExistence(timeout: long),
+                          "The Info tab should show the description's About header")
+            let raw = w.app.staticTexts.containing(NSPredicate(format: "label CONTAINS '<br>'")).firstMatch
+            XCTAssertFalse(raw.exists, "Description must not display raw HTML tags")
+        }
         r.define("I should see a comment in the player") { w in
             // The now-playing fixture has comments; a comment row or the empty
             // state both prove the tab loaded its content.
