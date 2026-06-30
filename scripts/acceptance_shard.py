@@ -42,6 +42,7 @@ THEMES = {
         "picture_in_picture.feature",
         "sleep_timer.feature",
         "full_player.feature",
+        "sponsorblock.feature",
     ],
     "discovery": [
         "search.feature",

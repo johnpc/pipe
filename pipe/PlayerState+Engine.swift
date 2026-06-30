@@ -46,7 +46,10 @@ extension PlayerState {
         statusObserver = player?.observe(\.timeControlStatus, options: [.new]) { [weak self] p, _ in
             Task { @MainActor in self?.handleTimeControlStatus(p.timeControlStatus) }
         }
-        
+
+        // Fetch + auto-skip SponsorBlock segments for this video.
+        loadSponsorSegments(for: item.videoId)
+
         // Resume from saved position
         let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
         
@@ -76,6 +79,7 @@ extension PlayerState {
         if let old = endObserver { NotificationCenter.default.removeObserver(old); endObserver = nil }
         if let old = stallObserver { NotificationCenter.default.removeObserver(old); stallObserver = nil }
         statusObserver?.invalidate(); statusObserver = nil
+        removeSponsorObserver()
     }
 
     /// Handle a periodic playback-time update: publish the current time, adopt a

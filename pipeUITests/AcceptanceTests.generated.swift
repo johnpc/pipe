@@ -251,6 +251,13 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - SponsorBlock
+
+    func test_SponsorBlock_is_on_by_default_and_can_be_turned_off() {
+        runScenario(feature: "sponsorblock.feature", scenario: "SponsorBlock is on by default and can be turned off")
+    }
+
+
     // MARK: - Tab Navigation
 
     func test_All_tabs_are_reachable() {

@@ -355,4 +355,23 @@ struct PipedAPITests {
         await detail.load(videoId: "v")
         #expect(detail.state.value?.title == "Song")
     }
+
+    // MARK: - SponsorBlock (session-mutating → kept in this serialized suite)
+
+    @Test func sponsorSegmentsDecode() async throws {
+        try await withStub("""
+        [{"segment":[1.0,5.0],"category":"sponsor"},{"segment":[10.0,12.0],"category":"intro"}]
+        """) {
+            let segs = await PipedAPI.sponsorSegments("v")
+            #expect(segs == [SponsorSegment(start: 1, end: 5), SponsorSegment(start: 10, end: 12)])
+        }
+    }
+
+    @Test func sponsorSegmentsEmptyOnError() async throws {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+        defer { PipedAPI.session = .shared }
+        let segs = await PipedAPI.sponsorSegments("v")
+        #expect(segs.isEmpty)
+    }
 }

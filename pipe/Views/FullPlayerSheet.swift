@@ -33,6 +33,8 @@ struct FullPlayerSheet: View {
                         .background(Color.secondary.opacity(0.2))
                         .cornerRadius(20)
                 }
+
+                SponsorBlockToggle(player: player)
                 
                 VStack {
                     Slider(value: Binding(

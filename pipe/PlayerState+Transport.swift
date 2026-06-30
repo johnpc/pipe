@@ -72,4 +72,16 @@ extension PlayerState {
         if isPlaying { player?.rate = speed }
         updateNowPlaying()
     }
+
+    func stop() {
+        teardownPlaybackObservers()
+        player?.pause()
+        isPlaying = false
+        currentTitle = nil
+        currentArtist = nil
+        currentThumbnail = nil
+        currentTime = 0
+        duration = 0
+        currentChapterTitle = nil
+    }
 }
