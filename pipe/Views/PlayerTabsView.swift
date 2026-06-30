@@ -36,7 +36,7 @@ struct PlayerTabsView: View {
             infoContent.padding(.horizontal)
         case .comments:
             if let id = player.currentVideoId {
-                CommentsList(videoId: id).frame(minHeight: 300)
+                CommentsList(videoId: id) { player.seek(to: $0) }.frame(minHeight: 300)
             } else { emptyTab("No Comments", "text.bubble") }
         }
     }

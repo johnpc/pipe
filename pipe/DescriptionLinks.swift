@@ -29,9 +29,18 @@ enum DescriptionLinks {
 
     /// Build an AttributedString with timestamp + URL links applied.
     static func attributed(_ description: String) -> AttributedString {
-        var result = AttributedString(description)
-        applyTimestamps(&result, in: description)
-        applyURLs(&result, in: description)
+        autoLinked(AttributedString(description))
+    }
+
+    /// Apply timestamp (`pipe-seek://`) and plain-URL links over an existing
+    /// (possibly already-styled) AttributedString, without disturbing links it
+    /// already carries (e.g. `<a href>` from HTML). Lets rich HTML text still
+    /// get tappable bare timestamps and URLs.
+    static func autoLinked(_ attr: AttributedString) -> AttributedString {
+        var result = attr
+        let source = String(attr.characters)
+        applyTimestamps(&result, in: source)
+        applyURLs(&result, in: source)
         return result
     }
 
@@ -41,7 +50,8 @@ enum DescriptionLinks {
         for match in regex.matches(in: source, range: NSRange(source.startIndex..., in: source)).reversed() {
             guard let r = Range(match.range, in: source),
                   let secs = seconds(fromTimestamp: String(source[r])),
-                  let ar = attr.range(of: String(source[r])) else { continue }
+                  let ar = attr.range(of: String(source[r])),
+                  attr[ar].link == nil else { continue }
             attr[ar].link = URL(string: "\(seekScheme)://\(secs)")
         }
     }
@@ -50,7 +60,8 @@ enum DescriptionLinks {
         let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
         detector?.matches(in: source, range: NSRange(source.startIndex..., in: source)).forEach { m in
             guard let url = m.url, let r = Range(m.range, in: source),
-                  let ar = attr.range(of: String(source[r])) else { return }
+                  let ar = attr.range(of: String(source[r])),
+                  attr[ar].link == nil else { return }
             attr[ar].link = url
         }
     }
