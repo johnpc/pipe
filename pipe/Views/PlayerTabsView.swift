@@ -8,13 +8,18 @@ struct PlayerTabsView: View {
     @ObservedObject var detail: NowPlayingDetail
     @State private var tab: PlayerTab = .queue
 
-    enum PlayerTab: String, CaseIterable { case queue = "Queue", upNext = "Up Next", info = "Info", comments = "Comments" }
+    enum PlayerTab: String, CaseIterable { case queue = "Queue", upNext = "Up Next", chapters = "Chapters", info = "Info", comments = "Comments" }
+
+    /// Chapters tab only appears when the now-playing video actually has them.
+    private var visibleTabs: [PlayerTab] {
+        PlayerTab.allCases.filter { $0 != .chapters || ChaptersLogic.hasChapters(detail.state.value?.chapters) }
+    }
 
     var body: some View {
         VStack(spacing: 12) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(PlayerTab.allCases, id: \.self) { t in
+                    ForEach(visibleTabs, id: \.self) { t in
                         TabPill(title: t == .comments ? "💬" : t.rawValue, isSelected: tab == t) { tab = t }
                             .accessibilityIdentifier("playerTab-\(t.rawValue)")
                     }
@@ -32,6 +37,8 @@ struct PlayerTabsView: View {
             QueueSection(player: player)
         case .upNext:
             relatedContent
+        case .chapters:
+            chaptersContent.padding(.horizontal)
         case .info:
             infoContent.padding(.horizontal)
         case .comments:
@@ -49,6 +56,21 @@ struct PlayerTabsView: View {
             ProgressView().padding()
         } else {
             emptyTab("Nothing Up Next", "rectangle.stack")
+        }
+    }
+
+    @ViewBuilder
+    private var chaptersContent: some View {
+        if let chapters = detail.state.value?.chapters, ChaptersLogic.hasChapters(chapters) {
+            VStack(alignment: .leading) {
+                // Same video is playing; seek in place rather than reloading.
+                ChaptersView(chapters: chapters) { player.seek(to: Double($0.start)) }
+                Spacer()
+            }
+        } else if detail.state.isLoading {
+            ProgressView().padding()
+        } else {
+            emptyTab("No Chapters", "list.bullet")
         }
     }
 
