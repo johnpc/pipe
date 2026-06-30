@@ -19,7 +19,7 @@ struct CommentRow: View {
                     Label("\(likes)", systemImage: "hand.thumbsup").font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            Text(htmlToAttributedString(comment.commentText)).font(.subheadline)
+            Text(HTMLText.plainText(comment.commentText)).font(.subheadline)
         }
         .padding(.vertical, 2)
     }

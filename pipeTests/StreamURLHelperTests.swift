@@ -117,13 +117,6 @@ struct StreamURLHelperTests {
         #expect(formatUploadDate("3 weeks ago") == "3 weeks ago")
     }
 
-    // MARK: - htmlToAttributedString
-
-    @Test func htmlToAttributedStringParsesMarkup() {
-        let result = htmlToAttributedString("<b>Hello</b>")
-        #expect(String(result.characters).contains("Hello"))
-    }
-
     // MARK: - Helpers
 
     private func makeStream(videoStreams: [VideoStream] = [], audioStreams: [AudioStream] = []) -> StreamResponse {
