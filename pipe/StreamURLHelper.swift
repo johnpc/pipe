@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 
 /// Rewrites a Piped proxy URL to point directly at the upstream host carried in
 /// its `host=` query param, and strips that param. Generalized to any proxy
@@ -63,16 +62,4 @@ func formatTime(_ s: Double) -> String {
     guard s.isFinite, s >= 0 else { return "0:00" }
     let m = Int(s) / 60, sec = Int(s) % 60
     return String(format: "%d:%02d", m, sec)
-}
-
-func htmlToAttributedString(_ html: String) -> AttributedString {
-    let data = Data(html.utf8)
-    if let nsAttr = try? NSAttributedString(
-        data: data,
-        options: [.documentType: NSAttributedString.DocumentType.html, .characterEncoding: String.Encoding.utf8.rawValue],
-        documentAttributes: nil
-    ) {
-        return AttributedString(nsAttr)
-    }
-    return AttributedString(html)
 }

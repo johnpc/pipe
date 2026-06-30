@@ -224,6 +224,19 @@ final class ViewRenderTests: XCTestCase {
         render(NavigationStack { CommentsList(videoId: "v1") })
     }
 
+    /// Regression: the Comments tab crashed on every real video because an
+    /// unbounded `List` (a scroll container) was nested inside the Full Player's
+    /// vertical `ScrollView`, which offers it infinite height. Reproduce by
+    /// loading real comments into the exact embedding the player uses.
+    func testRenderCommentsListLoadedInScrollView() {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: """
+        {"disabled":false,"comments":[{"commentId":"c1","author":"@a","commentText":"Great video <b>thanks</b>","thumbnail":null,"likeCount":12,"commentedTime":"1d","verified":true,"pinned":true},{"commentId":"c2","author":"@b","commentText":"Plain comment","thumbnail":null,"likeCount":null,"commentedTime":"2d","verified":false,"pinned":false}]}
+        """)
+        renderLive(ScrollView { CommentsList(videoId: "v1").frame(minHeight: 300) })
+    }
+
     // MARK: - Full-player tabs
 
     private func streamWithExtras() -> StreamResponse {
