@@ -14,6 +14,8 @@ class PlayerState: ObservableObject {
     @Published var queue: [QueueItem] = []
     @Published var currentIndex: Int = -1
     @Published var videoMode = false
+    /// Auto-skip SponsorBlock segments; on by default, persisted across launches.
+    @Published var sponsorBlockEnabled = true { didSet { defaults.set(sponsorBlockEnabled, forKey: sponsorKey) } }
     @Published var sleepMinutesRemaining: Int?  // nil = no timer
     /// Stop at the end of the current item ("sleep at end of episode").
     @Published var stopAfterCurrentEpisode = false
@@ -33,6 +35,9 @@ class PlayerState: ObservableObject {
     var endObserver: Any?
     var stallObserver: Any?
     var statusObserver: NSKeyValueObservation?
+    var sponsorObserver: Any?
+    /// Sponsor segments to auto-skip for the current item.
+    var sponsorSegments: [SponsorSegment] = []
     /// One-shot start position (seconds) applied on the next playItem, e.g. when
     /// jumping to a chapter. Overrides the saved-resume position for that play.
     var pendingSeek: Double?
@@ -42,6 +47,7 @@ class PlayerState: ObservableObject {
     let indexKey = "savedQueueIndex"
 
     let speedKey = "playbackSpeed"
+    let sponsorKey = "sponsorBlockEnabled"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -52,6 +58,8 @@ class PlayerState: ObservableObject {
         // Restore the user's preferred playback speed (podcast-app behavior).
         let savedSpeed = defaults.float(forKey: speedKey)
         if savedSpeed > 0 { playbackSpeed = savedSpeed }
+        // Default ON; only an explicit stored `false` disables it.
+        if defaults.object(forKey: sponsorKey) != nil { sponsorBlockEnabled = defaults.bool(forKey: sponsorKey) }
     }
 
     // Opt the deinit out of MainActor isolation to avoid a crashing async
@@ -84,17 +92,5 @@ class PlayerState: ObservableObject {
         player?.seek(to: CMTime(seconds: time, preferredTimescale: 1))
         currentTime = time
         updateNowPlaying()
-    }
-
-    func stop() {
-        teardownPlaybackObservers()
-        player?.pause()
-        isPlaying = false
-        currentTitle = nil
-        currentArtist = nil
-        currentThumbnail = nil
-        currentTime = 0
-        duration = 0
-        currentChapterTitle = nil
     }
 }

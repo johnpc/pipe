@@ -281,6 +281,22 @@ enum StepDefinitions {
                           "Toggle should flip to \(w.capture())")
         }
 
+        // MARK: SponsorBlock
+        r.define("I tap the SponsorBlock toggle") { w in
+            let toggle = w.app.buttons["sponsorBlockToggle"]
+            XCTAssertTrue(toggle.waitForExistence(timeout: long), "SponsorBlock toggle should be present")
+            toggle.tap()
+        }
+        r.define("SponsorBlock should be (on|off)") { w in
+            let expected = w.capture()
+            let toggle = w.app.buttons["sponsorBlockToggle"]
+            XCTAssertTrue(toggle.waitForExistence(timeout: long), "SponsorBlock toggle should be present")
+            let matches = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "value == %@", expected), object: toggle)
+            XCTAssertEqual(XCTWaiter().wait(for: [matches], timeout: short), .completed,
+                           "SponsorBlock toggle should be \(expected)")
+        }
+
         // MARK: Chapters (streams fixture includes a chapters list)
         r.define("I have searched and opened a video that has chapters") { w in
             w.app.buttons["Search"].tap()
