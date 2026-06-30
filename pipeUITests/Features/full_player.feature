@@ -20,3 +20,11 @@ Feature: Full Player Tabs
     And I open the full player
     When I open the "Info" player tab
     Then I should see the video description without raw HTML
+
+  Scenario: Chapters tab lists chapters and seeks on tap
+    Given a video is playing
+    And I open the full player
+    When I open the "Chapters" player tab
+    Then I should see a "Chapters" list
+    When I tap a chapter
+    Then playback should jump to that chapter's start

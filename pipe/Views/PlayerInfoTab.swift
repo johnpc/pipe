@@ -8,13 +8,11 @@ struct PlayerInfoTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if ChaptersLogic.hasChapters(stream.chapters), let chapters = stream.chapters {
-                ChaptersView(chapters: chapters) { seek(to: Double($0.start)) }
-            }
+            // Chapters live in their own player tab now; Info shows the description.
             if let description = stream.description, !description.isEmpty {
                 Text("About").font(.headline)
                 Text(HTMLText.attributed(description)).font(.body).tint(.accentColor)
-            } else if !ChaptersLogic.hasChapters(stream.chapters) {
+            } else {
                 ContentUnavailableView("No Details", systemImage: "doc.plaintext")
             }
         }

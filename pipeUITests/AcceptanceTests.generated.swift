@@ -103,6 +103,10 @@ extension AcceptanceTests {
         runScenario(feature: "full_player.feature", scenario: "Info tab shows the description as readable text")
     }
 
+    func test_Chapters_tab_lists_chapters_and_seeks_on_tap() {
+        runScenario(feature: "full_player.feature", scenario: "Chapters tab lists chapters and seeks on tap")
+    }
+
 
     // MARK: - Offline Mode
 
