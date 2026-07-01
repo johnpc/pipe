@@ -5,9 +5,18 @@ import MediaPlayer
 /// progress. End-of-item, stall, and status handling live in +Transport; the
 /// observer wiring lives in +Observers.
 extension PlayerState {
-    func playItem(_ item: QueueItem) {
+    func playItem(_ item: QueueItem, skipRefresh: Bool = false) {
         error = nil
         setupAudioSession()
+
+        let isLocal = downloads?.localURLString(for: item.videoId) != nil
+        // Stream URLs are time-limited; re-resolve a stale one before playing so
+        // an item paused overnight (or a long video whose URL expired) doesn't
+        // load a dead URL. Local files never expire.
+        if !skipRefresh, StreamFreshness.needsRefresh(resolvedAt: item.resolvedAt, now: Date(), isLocal: isLocal) {
+            refreshAndPlay(item)
+            return
+        }
 
         // Prefer a downloaded local file (offline playback) over streaming.
         let source = downloads?.localURLString(for: item.videoId) ?? item.playbackURL(videoMode: videoMode)
@@ -33,7 +42,6 @@ extension PlayerState {
         teardownPlaybackObservers()
         releaseCurrentPlayer()
 
-        let isLocal = downloads?.localURLString(for: item.videoId) != nil
         log.event("play", "start", fields: [
             "videoId": item.videoId,
             "source": isLocal ? "local" : "stream",
@@ -68,14 +76,6 @@ extension PlayerState {
         if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
         isPlaying = true
         updateNowPlaying()
-    }
-
-    /// Pause and drop the current AVPlayer so it stops producing audio. Observers
-    /// must already be torn down (they hold time observers on this player).
-    func releaseCurrentPlayer() {
-        guard let old = player else { return }
-        old.pause()
-        player = nil
     }
 
     /// Handle a periodic playback-time update: publish the current time, adopt a
