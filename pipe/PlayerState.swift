@@ -32,6 +32,8 @@ class PlayerState: ObservableObject {
     var log: PlaybackLog = .shared
     /// Whether the opt-in remote diagnostics sink has been attached this launch.
     var remoteDiagnosticsAttached = false
+    /// Whether the one-shot session-start event has been logged this launch.
+    var sessionStartLogged = false
     var recents: RecentsStore?
     var downloads: DownloadStore?
     var currentVideoId: String?
@@ -50,6 +52,9 @@ class PlayerState: ObservableObject {
     /// How many times we've reloaded the current item to recover a premature
     /// end, so recovery is bounded and never loops forever.
     var prematureEndRetries = 0
+    /// Last 30s bucket for which a progress heartbeat was logged (dedupes the
+    /// 5s time-observer ticks down to ~one heartbeat per 30s).
+    var lastHeartbeatBucket = -1
     /// One-shot start position (seconds) applied on the next playItem, e.g. when
     /// jumping to a chapter. Overrides the saved-resume position for that play.
     var pendingSeek: Double?

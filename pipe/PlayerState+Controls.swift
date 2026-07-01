@@ -15,10 +15,16 @@ extension PlayerState {
         player?.play()
         if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
         isPlaying = true
+        log.event("transport", "resume", fields: ["at": String(Int(currentTime))])
         updateNowPlaying()
     }
 
-    func pause() { player?.pause(); isPlaying = false; updateNowPlaying() }
+    func pause() {
+        player?.pause()
+        isPlaying = false
+        log.event("transport", "pause", fields: ["at": String(Int(currentTime))])
+        updateNowPlaying()
+    }
 
     func play(videoId: String, urlString: String, audioUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
         let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
@@ -40,6 +46,7 @@ extension PlayerState {
 
     func seek(to time: Double) {
         player?.seek(to: CMTime(seconds: time, preferredTimescale: 1))
+        log.event("transport", "seek", fields: ["from": String(Int(currentTime)), "to": String(Int(time))])
         currentTime = time
         updateNowPlaying()
     }

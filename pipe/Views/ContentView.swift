@@ -10,7 +10,7 @@ struct ContentView: View {
     @StateObject private var toast = ToastManager.shared
     @State private var selectedTab = 0
     @State private var showSettings = false
-    
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
@@ -41,6 +41,7 @@ struct ContentView: View {
         }
         .onAppear {
             player.recents = recents; player.downloads = downloads
+            player.logSessionStart(instance: settings.instanceURL)
             player.syncDiagnosticsUpload(enabled: settings.diagnosticsUpload)
         }
         .onChange(of: settings.diagnosticsUpload) { _, on in
@@ -48,6 +49,7 @@ struct ContentView: View {
         }
         .onChange(of: player.error) { _, newError in
             if let msg = newError {
+                player.log.event("error", "surfaced", fields: ["message": msg])
                 toast.showError(msg)
                 player.error = nil
             }
@@ -57,6 +59,8 @@ struct ContentView: View {
             // on Downloads instead of a now-empty network tab.
             if isOffline { selectedTab = OfflineLogic.homeTab }
         }
+        .diagnosticsLogging(player: player, selectedTab: selectedTab,
+                            showSettings: showSettings, offlineMode: settings.offlineMode)
         .sheet(isPresented: $showSettings) {
             NavigationStack {
                 SettingsView(settings: settings, player: player, recents: recents) { showSettings = false }

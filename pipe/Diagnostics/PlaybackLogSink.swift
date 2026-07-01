@@ -6,6 +6,13 @@ import os
 /// + Lambda → S3) are interchangeable without touching any instrumentation.
 protocol PlaybackLogSink: AnyObject {
     func write(_ entry: PlaybackLogEntry)
+    /// Force any buffered entries to their destination now. No-op for sinks that
+    /// write immediately (buffer, unified logging); the remote sink uploads.
+    func flush()
+}
+
+extension PlaybackLogSink {
+    func flush() {}
 }
 
 /// Mirrors every entry to Apple's unified logging so it's visible in Console.app

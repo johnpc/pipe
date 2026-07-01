@@ -21,6 +21,16 @@ struct DiagnosticsSection: View {
             }
             .accessibilityIdentifier("sharePlaybackLog")
 
+            Button {
+                // Always emit a marker so a tap is visible server-side even when
+                // nothing else happened, then force an immediate upload.
+                log.event("diagnostics", "send logs tapped", fields: ["uploadOn": String(settings.diagnosticsUpload)])
+                log.flush()
+            } label: {
+                Label("Send Logs Now", systemImage: "paperplane")
+            }
+            .accessibilityIdentifier("sendLogsNow")
+
             Button(role: .destructive) {
                 log.buffer.clear()
             } label: {
@@ -30,7 +40,7 @@ struct DiagnosticsSection: View {
         } header: {
             Text("Diagnostics")
         } footer: {
-            Text("Capture playback issues, then share this log so they can be diagnosed.")
+            Text("Capture playback issues, then Send Logs (if upload is on) or Share them so they can be diagnosed.")
         }
         .sheet(isPresented: Binding(get: { shareText != nil }, set: { if !$0 { shareText = nil } })) {
             if let shareText {
@@ -38,15 +48,4 @@ struct DiagnosticsSection: View {
             }
         }
     }
-}
-
-/// Minimal UIActivityViewController wrapper for sharing the exported log text.
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
