@@ -34,6 +34,7 @@
 		72A238017A49D96426B04048 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		924372965022C3C1863CD736 /* pipeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = pipeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A615CA8F2F2C0D6900F36993 /* pipe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = pipe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0001CA0D6A00F36993FF01 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = pipe/Config.xcconfig; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -468,6 +469,7 @@
 		};
 		A615CA9B2F2C0D6A00F36993 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA0001CA0D6A00F36993FF01 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -504,6 +506,7 @@
 		};
 		A615CA9C2F2C0D6A00F36993 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = AA0001CA0D6A00F36993FF01 /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

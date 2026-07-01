@@ -28,16 +28,28 @@ class PlayerState: ObservableObject {
     var wasPlayingBeforeInterruption = false
     
     var player: AVPlayer?
+    /// Diagnostic logger (injectable so tests can capture emitted events).
+    var log: PlaybackLog = .shared
+    /// Whether the opt-in remote diagnostics sink has been attached this launch.
+    var remoteDiagnosticsAttached = false
     var recents: RecentsStore?
     var downloads: DownloadStore?
     var currentVideoId: String?
     var timeObserver: Any?
     var endObserver: Any?
+    var failedEndObserver: Any?
     var stallObserver: Any?
     var statusObserver: NSKeyValueObservation?
+    var itemStatusObserver: NSKeyValueObservation?
     var sponsorObserver: Any?
     /// Sponsor segments to auto-skip for the current item.
     var sponsorSegments: [SponsorSegment] = []
+    /// Piped-reported duration (seconds) of the current item, used to detect an
+    /// end-of-item that fires suspiciously early (a truncated/expired stream).
+    var expectedDuration: Double?
+    /// How many times we've reloaded the current item to recover a premature
+    /// end, so recovery is bounded and never loops forever.
+    var prematureEndRetries = 0
     /// One-shot start position (seconds) applied on the next playItem, e.g. when
     /// jumping to a chapter. Overrides the saved-resume position for that play.
     var pendingSeek: Double?
@@ -66,31 +78,4 @@ class PlayerState: ObservableObject {
     // executor hop on deallocation. Observers capture self weakly, so letting
     // ARC release them here is safe.
     nonisolated deinit {}
-    
-    func togglePlayPause() { if isPlaying { pause() } else { resume() } }
-
-    func resume() {
-        // After a cold launch the queue is restored but no AVPlayer exists yet;
-        // start the current item instead of a silent no-op.
-        if player == nil, currentIndex >= 0, currentIndex < queue.count {
-            playItem(queue[currentIndex])
-            return
-        }
-        player?.play()
-        isPlaying = true
-        updateNowPlaying()
-    }
-
-    func pause() { player?.pause(); isPlaying = false; updateNowPlaying() }
-    
-    func skip(_ seconds: Double) {
-        let newTime = max(0, min(currentTime + seconds, duration))
-        seek(to: newTime)
-    }
-    
-    func seek(to time: Double) {
-        player?.seek(to: CMTime(seconds: time, preferredTimescale: 1))
-        currentTime = time
-        updateNowPlaying()
-    }
 }

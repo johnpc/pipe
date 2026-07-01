@@ -81,6 +81,8 @@ struct SettingsView: View {
                         .foregroundColor(.red)
                 }
             }
+
+            DiagnosticsSection(settings: settings, log: player.log)
         }
         .navigationTitle("Settings")
         .toolbar {

@@ -1,0 +1,6 @@
+// Committed base build config. Defines a safe default for the diagnostics API
+// key and optionally overlays the local, gitignored Secrets.xcconfig (present
+// on dev machines, absent on CI). The `?` makes the include optional so a fresh
+// checkout / CI build succeeds without the secret.
+PIPE_LOGS_API_KEY =
+#include? "Secrets.xcconfig"

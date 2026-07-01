@@ -144,6 +144,19 @@ xcodebuild test -scheme pipe -destination 'platform=iOS Simulator,name=iPhone 17
 - **iOS bundle id:** `com.johncorser.pipe`. Apple **team id `JW5SC3NYUV`**.
   `ITSAppUsesNonExemptEncryption=NO` (no encryption prompt on upload).
 - **Piped instance:** `https://pipedapi.jpc.io` (configurable in Settings).
+- **Diagnostics/telemetry:** structured playback logs live on-device (share via
+  Settings → Diagnostics) and, when the user opts in, upload to the **pipe-logs**
+  backend (private repo `johnpc/pipe-logs`; AWS profile `personal`, us-west-2:
+  API Gateway → Lambda → S3). To read a device's logs, see that repo's
+  `CLAUDE.md`. The ingest API key is injected at build time from
+  `pipe/Secrets.xcconfig` (gitignored) as `$(PIPE_LOGS_API_KEY)` → `Info.plist`
+  → `DiagnosticsConfig.apiKey`. **Set it up locally** (never commit it):
+  ```bash
+  cp pipe/Secrets.example.xcconfig pipe/Secrets.xcconfig
+  KEY=$(aws apigateway get-api-key --api-key 9kowamshy4 --include-value \
+    --profile personal --region us-west-2 --query value --output text)
+  printf 'PIPE_LOGS_API_KEY = %s\n' "$KEY" >> pipe/Secrets.xcconfig
+  ```
 - **CI:** `.github/workflows/quality-gates.yml` blocks PRs (build, view-line limit,
   unit tests + coverage, CRAP, Gherkin acceptance) and deploys to App Store Connect
   on push to `main`. Repo secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_CONTENT`,

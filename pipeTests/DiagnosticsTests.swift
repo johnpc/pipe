@@ -1,0 +1,107 @@
+import Testing
+import Foundation
+@testable import pipe
+
+struct DiagnosticsTests {
+    // MARK: - structured entry rendering
+
+    @Test func lineRendersSortedFields() {
+        let entry = PlaybackLogEntry(
+            time: Date(timeIntervalSince1970: 0),
+            category: "end", message: "fired",
+            fields: ["expected": "3600", "reached": "1800"]
+        )
+        // Fields are appended in key order for stable, greppable lines.
+        #expect(entry.line.contains("[end] fired expected=3600 reached=1800"))
+    }
+
+    @Test func lineWithoutFieldsHasNoTrailingSpace() {
+        let entry = PlaybackLogEntry(time: Date(timeIntervalSince1970: 0), category: "c", message: "m", fields: [:])
+        #expect(entry.line.hasSuffix("[c] m"))
+    }
+
+    // MARK: - device identity
+
+    @Test func deviceIdPersistsAcrossInstances() {
+        let suite = UserDefaults(suiteName: "ident-\(UUID().uuidString)")!
+        let first = DeviceIdentity(defaults: suite, sessionId: "s1")
+        let second = DeviceIdentity(defaults: suite, sessionId: "s2")
+        #expect(first.deviceId == second.deviceId) // stable per install
+        #expect(first.sessionId != second.sessionId) // fresh per launch
+    }
+
+    // MARK: - remote payload shape
+
+    @Test func remotePayloadCarriesIdentityAndRecords() {
+        let identity = DeviceIdentity(defaults: UserDefaults(suiteName: "p-\(UUID().uuidString)")!, sessionId: "sess")
+        let entries = [
+            PlaybackLogEntry(time: Date(timeIntervalSince1970: 1), category: "play", message: "start", fields: ["videoId": "v"]),
+        ]
+        let payload = RemoteLogSink.payload(entries, identity: identity)
+        #expect(payload["deviceId"] as? String == identity.deviceId)
+        #expect(payload["sessionId"] as? String == "sess")
+        let records = payload["records"] as? [[String: Any]]
+        #expect(records?.count == 1)
+        #expect(records?.first?["category"] as? String == "play")
+        #expect(records?.first?["ts"] as? Int == 1000) // epoch millis
+        let fields = records?.first?["fields"] as? [String: String]
+        #expect(fields?["videoId"] == "v")
+    }
+
+    @Test func payloadEncodesToValidJSON() {
+        let identity = DeviceIdentity(defaults: UserDefaults(suiteName: "j-\(UUID().uuidString)")!, sessionId: "s")
+        let entries = [PlaybackLogEntry(time: Date(timeIntervalSince1970: 0), category: "c", message: "m", fields: [:])]
+        let payload = RemoteLogSink.payload(entries, identity: identity)
+        #expect(JSONSerialization.isValidJSONObject(payload))
+    }
+
+    // MARK: - remote sink upload (mocked network)
+
+    @Test func flushPostsBatchWithApiKeyHeader() async throws {
+        let captured = Captured()
+        MockURLProtocol.requestHandler = { req in
+            captured.request = req
+            // URLProtocol strips httpBody; read the stream to capture the payload.
+            captured.body = req.httpBodyStream.map { Captured.read($0) } ?? req.httpBody
+            let resp = HTTPURLResponse(url: req.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (resp, Data("{\"ok\":true}".utf8))
+        }
+        let identity = DeviceIdentity(defaults: UserDefaults(suiteName: "u-\(UUID().uuidString)")!, sessionId: "sess")
+        let sink = RemoteLogSink(
+            endpoint: URL(string: "https://example.test/logs")!,
+            apiKey: "test-key", identity: identity,
+            session: MockURLProtocol.makeSession(), batchSize: 2
+        )
+        // Two writes hit the batch threshold and trigger an automatic flush.
+        sink.write(PlaybackLogEntry(time: Date(timeIntervalSince1970: 0), category: "play", message: "start", fields: ["videoId": "v"]))
+        sink.write(PlaybackLogEntry(time: Date(timeIntervalSince1970: 1), category: "end", message: "fired", fields: [:]))
+
+        try await Task.sleep(nanoseconds: 300_000_000)
+        let req = try #require(captured.request)
+        #expect(req.httpMethod == "POST")
+        #expect(req.value(forHTTPHeaderField: "x-api-key") == "test-key")
+        let body = try #require(captured.body)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect(json["deviceId"] as? String == identity.deviceId)
+        #expect((json["records"] as? [Any])?.count == 2)
+    }
+}
+
+/// Thread-safe capture box for the mocked request (URLProtocol runs off-thread).
+final class Captured: @unchecked Sendable {
+    var request: URLRequest?
+    var body: Data?
+    static func read(_ stream: InputStream) -> Data {
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        let size = 4096
+        var buffer = [UInt8](repeating: 0, count: size)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: size)
+            if read <= 0 { break }
+            data.append(buffer, count: read)
+        }
+        return data
+    }
+}

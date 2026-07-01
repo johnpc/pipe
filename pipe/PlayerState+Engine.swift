@@ -1,8 +1,9 @@
 import AVFoundation
 import MediaPlayer
 
-/// Core playback engine for PlayerState: load item, observers, progress,
-/// chapters, end-of-item, stall recovery.
+/// Core playback engine for PlayerState: load an item, wire observers, publish
+/// progress. End-of-item, stall, and status handling live in +Transport; the
+/// observer wiring lives in +Observers.
 extension PlayerState {
     func playItem(_ item: QueueItem) {
         error = nil
@@ -12,6 +13,7 @@ extension PlayerState {
         let source = downloads?.localURLString(for: item.videoId) ?? item.playbackURL(videoMode: videoMode)
         guard let url = URL(string: source) else {
             error = "Couldn't play \(item.title)"
+            log.event("play", "bad url", fields: ["videoId": item.videoId, "result": "failed"])
             return
         }
 
@@ -21,48 +23,43 @@ extension PlayerState {
         currentThumbnail = item.thumbnail
         currentTime = 0
         duration = 0
+        expectedDuration = item.duration > 0 ? Double(item.duration) : nil
         updateCurrentChapter(for: item.videoId, at: 0)
-        
+
+        // Fully retire the previous player before building a new one; otherwise
+        // the old AVPlayer (still retained by the video view) keeps playing and
+        // two items overlap in audio. Teardown alone only removes observers.
         teardownPlaybackObservers()
+        releaseCurrentPlayer()
+
+        let isLocal = downloads?.localURLString(for: item.videoId) != nil
+        log.event("play", "start", fields: [
+            "videoId": item.videoId,
+            "source": isLocal ? "local" : "stream",
+            "expectedDuration": String(item.duration),
+        ])
 
         player = AVPlayer(url: url)
-
-        timeObserver = player?.addPeriodicTimeObserver(forInterval: CMTime(seconds: 5, preferredTimescale: 1), queue: .main) { [weak self] time in
-            self?.handleProgress(currentTime: time.seconds, itemDuration: self?.player?.currentItem?.duration.seconds)
-        }
-
-        endObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player?.currentItem, queue: .main) { [weak self] _ in
-            self?.handlePlaybackEnded()
-        }
-
-        // Recover from involuntary stalls (audio stream buffer underruns) that
-        // otherwise leave playback frozen until the user manually seeks.
-        stallObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemPlaybackStalled, object: player?.currentItem, queue: .main) { [weak self] _ in
-            self?.handlePlaybackStalled()
-        }
-
-        // Adopt the player's real play/pause state so external pauses (PiP, lock
-        // screen, Control Center) stay in sync with our UI.
-        statusObserver = player?.observe(\.timeControlStatus, options: [.new]) { [weak self] p, _ in
-            Task { @MainActor in self?.handleTimeControlStatus(p.timeControlStatus) }
-        }
+        installPlaybackObservers()
 
         // Fetch + auto-skip SponsorBlock segments for this video.
         loadSponsorSegments(for: item.videoId)
 
         // Resume from saved position
         let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
-        
+
         // Add to recents
         recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
-        
+
         // A pending chapter seek takes precedence over the saved-resume position.
         if let target = pendingSeek {
             pendingSeek = nil
             currentTime = target
             player?.seek(to: CMTime(seconds: target, preferredTimescale: 1))
+            log.event("play", "pendingSeek", fields: ["to": String(Int(target))])
         } else if savedPos > 10 {
             player?.seek(to: CMTime(seconds: savedPos, preferredTimescale: 1))
+            log.event("play", "resume", fields: ["from": String(Int(savedPos))])
         }
 
         player?.play()
@@ -71,15 +68,13 @@ extension PlayerState {
         isPlaying = true
         updateNowPlaying()
     }
-    
-    /// Tear down all player observers (time, end-of-item, stall, status). Shared
-    /// by `playItem` (before building a new player) and `stop()`.
-    func teardownPlaybackObservers() {
-        if let old = timeObserver, let p = player { p.removeTimeObserver(old); timeObserver = nil }
-        if let old = endObserver { NotificationCenter.default.removeObserver(old); endObserver = nil }
-        if let old = stallObserver { NotificationCenter.default.removeObserver(old); stallObserver = nil }
-        statusObserver?.invalidate(); statusObserver = nil
-        removeSponsorObserver()
+
+    /// Pause and drop the current AVPlayer so it stops producing audio. Observers
+    /// must already be torn down (they hold time observers on this player).
+    func releaseCurrentPlayer() {
+        guard let old = player else { return }
+        old.pause()
+        player = nil
     }
 
     /// Handle a periodic playback-time update: publish the current time, adopt a

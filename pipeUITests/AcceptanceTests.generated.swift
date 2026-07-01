@@ -45,6 +45,17 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Diagnostics log
+
+    func test_Settings_exposes_a_diagnostics_section() {
+        runScenario(feature: "diagnostics.feature", scenario: "Settings exposes a diagnostics section")
+    }
+
+    func test_Diagnostics_upload_is_off_by_default_and_can_be_turned_on() {
+        runScenario(feature: "diagnostics.feature", scenario: "Diagnostics upload is off by default and can be turned on")
+    }
+
+
     // MARK: - Offline Downloads
 
     func test_Empty_downloads_state() {

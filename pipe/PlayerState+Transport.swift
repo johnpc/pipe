@@ -3,6 +3,37 @@ import AVFoundation
 /// End-of-item advancement, stall recovery, and play() entry point.
 extension PlayerState {
     func handlePlaybackEnded() {
+        // Distinguish a genuine finish from a stream that died early (the
+        // "1-hour video ends at 30 min" bug). Recover in place when premature.
+        let outcome = EndOfItemPolicy.outcome(reached: currentTime, expected: expectedDuration, retries: prematureEndRetries)
+        log.event("end", "fired", fields: [
+            "reached": String(Int(currentTime)),
+            "expected": expectedDuration.map { String(Int($0)) } ?? "unknown",
+            "outcome": "\(outcome)",
+        ])
+        if outcome != .finished { handlePrematureEnd(giveUp: outcome == .giveUp); return }
+        prematureEndRetries = 0
+        advanceAfterFinish()
+    }
+
+    /// A premature end: reload the current item from its last position to keep
+    /// playing, or (out of retries) fall through to a normal advance.
+    func handlePrematureEnd(giveUp: Bool = false) {
+        let outcome = EndOfItemPolicy.outcome(reached: currentTime, expected: expectedDuration, retries: prematureEndRetries)
+        guard !giveUp, outcome == .recover, currentIndex >= 0, currentIndex < queue.count else {
+            prematureEndRetries = 0
+            advanceAfterFinish()
+            return
+        }
+        prematureEndRetries += 1
+        log.event("end", "recover reload", fields: ["attempt": String(prematureEndRetries), "from": String(Int(currentTime))])
+        pendingSeek = currentTime
+        playItem(queue[currentIndex])
+    }
+
+    /// Mark the finished item complete, drop it from the queue, and advance
+    /// (honoring an "end of episode" sleep request).
+    private func advanceAfterFinish() {
         if let vid = currentVideoId {
             recents?.updateTimestamp(videoId: vid, timestamp: 0)
         }
@@ -10,7 +41,6 @@ extension PlayerState {
         guard finishedIndex >= 0, finishedIndex < queue.count else { return }
         queue.remove(at: finishedIndex)
         persistQueue()
-        // Honor an "end of episode" sleep request: stop instead of advancing.
         if stopAfterCurrentEpisode {
             stopAfterCurrentEpisode = false
             currentIndex = queue.isEmpty ? -1 : min(finishedIndex, queue.count - 1)
@@ -33,6 +63,7 @@ extension PlayerState {
     func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
         let nowPlaying = PlaybackStatusPolicy.isPlaying(for: status, current: isPlaying)
         guard nowPlaying != isPlaying else { return }
+        log.event("status", "adopt", fields: ["raw": String(status.rawValue), "from": String(isPlaying), "to": String(nowPlaying)])
         isPlaying = nowPlaying
         updateNowPlaying()
     }
@@ -47,35 +78,9 @@ extension PlayerState {
         if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
     }
 
-    func play(videoId: String, urlString: String, audioUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
-        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
-        queue.insert(item, at: 0)
-        playIndex(0)
-    }
-
-    /// Jump to a video at a specific start time (used for chapter navigation).
-    /// Seeks in place if it's already the current item; otherwise starts it at
-    /// the given offset.
-    func jumpTo(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int, startAt: Double) {
-        if currentVideoId == videoId, player != nil {
-            seek(to: startAt)
-            if !isPlaying { resume() }
-            return
-        }
-        pendingSeek = startAt
-        play(videoId: videoId, urlString: url, audioUrl: audioUrl, title: title, artist: artist, thumbnail: thumbnail, duration: duration)
-    }
-
-    func setSpeed(_ speed: Float) {
-        playbackSpeed = speed
-        defaults.set(speed, forKey: speedKey)
-        if isPlaying { player?.rate = speed }
-        updateNowPlaying()
-    }
-
     func stop() {
         teardownPlaybackObservers()
-        player?.pause()
+        releaseCurrentPlayer()
         isPlaying = false
         currentTitle = nil
         currentArtist = nil

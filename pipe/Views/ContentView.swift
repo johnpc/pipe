@@ -39,7 +39,13 @@ struct ContentView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .onAppear { player.recents = recents; player.downloads = downloads }
+        .onAppear {
+            player.recents = recents; player.downloads = downloads
+            player.syncDiagnosticsUpload(enabled: settings.diagnosticsUpload)
+        }
+        .onChange(of: settings.diagnosticsUpload) { _, on in
+            player.syncDiagnosticsUpload(enabled: on)
+        }
         .onChange(of: player.error) { _, newError in
             if let msg = newError {
                 toast.showError(msg)
