@@ -64,6 +64,7 @@ THEMES = {
         "channel_browsing.feature",
         "channel_metadata.feature",
         "settings.feature",
+        "diagnostics.feature",
         "error_recovery.feature",
         "search_history.feature",
         "feed_sorting.feature",
