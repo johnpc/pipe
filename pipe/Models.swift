@@ -6,16 +6,21 @@ struct QueueItem: Identifiable, Equatable, Codable {
     let title: String
     let artist: String
     let thumbnail: String
-    /// Full A/V video stream URL.
-    let url: String
+    /// Full A/V video stream URL. Mutable so it can be re-resolved when the
+    /// Piped/googlevideo URL expires (they are time-limited).
+    var url: String
     /// Audio-only stream URL (empty when the source had no audio-only track).
-    let audioUrl: String
+    var audioUrl: String
     let duration: Int
     let uploadedDate: String?
+    /// When the stream URLs were last resolved. Used to detect a stale (expired)
+    /// URL and re-fetch before playback. `nil` for items persisted before this
+    /// field existed — treated as stale so they're refreshed on next play.
+    var resolvedAt: Date? = Date()
 
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
-        case videoId, title, artist, thumbnail, url, audioUrl, duration, uploadedDate
+        case videoId, title, artist, thumbnail, url, audioUrl, duration, uploadedDate, resolvedAt
     }
 
     /// URL to play for the given mode: audio-only when available and not in

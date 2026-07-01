@@ -24,9 +24,10 @@ struct PlayerPrematureEndTests {
         #expect(player.queue.first?.videoId == "long")
         #expect(player.prematureEndRetries == 1)
         #expect(buffer.exportText().contains("recover reload"))
-        // The reload resumes from where it died.
-        #expect(player.pendingSeek == nil) // consumed by playItem
-        #expect(player.currentTime == 1800)
+        // Recovery re-resolves the (likely expired) URL rather than reloading the
+        // dead one: the item is marked stale and it resumes from where it died.
+        #expect(player.queue.first?.resolvedAt == nil)  // forced refresh
+        #expect(player.pendingSeek == 1800)             // seek target set for reload
     }
 
     @Test func prematureEndGivesUpAfterMaxRetriesAndAdvances() {

@@ -28,6 +28,10 @@ extension PlayerState {
         prematureEndRetries += 1
         log.event("end", "recover reload", fields: ["attempt": String(prematureEndRetries), "from": String(Int(currentTime))])
         pendingSeek = currentTime
+        // Force a fresh stream URL on recovery: a premature end is usually an
+        // expired URL, so reloading the same one would just fail again. Marking
+        // it stale makes playItem re-resolve from the videoId.
+        queue[currentIndex].resolvedAt = nil
         playItem(queue[currentIndex])
     }
 
