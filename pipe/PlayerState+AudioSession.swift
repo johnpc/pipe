@@ -20,10 +20,13 @@ extension PlayerState {
         switch type {
         case .began:
             wasPlayingBeforeInterruption = isPlaying
+            log.event("interruption", "began", fields: ["wasPlaying": String(isPlaying)])
             pause()
         case .ended:
             let opts = (info[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0
-            if AudioSessionPolicy.shouldResumeAfterInterruption(optionsRawValue: opts, wasPlaying: wasPlayingBeforeInterruption) {
+            let willResume = AudioSessionPolicy.shouldResumeAfterInterruption(optionsRawValue: opts, wasPlaying: wasPlayingBeforeInterruption)
+            log.event("interruption", "ended", fields: ["resume": String(willResume)])
+            if willResume {
                 setupAudioSession()
                 resume()
             }
@@ -35,6 +38,7 @@ extension PlayerState {
     @objc func handleRouteChange(_ note: Notification) {
         guard let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt else { return }
         if AudioSessionPolicy.shouldPauseOnRouteChange(reasonRawValue: reason) {
+            log.event("route", "pause on change", fields: ["reason": String(reason)])
             pause()
         }
     }

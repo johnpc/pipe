@@ -45,6 +45,17 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Diagnostics log
+
+    func test_Settings_exposes_a_diagnostics_section() {
+        runScenario(feature: "diagnostics.feature", scenario: "Settings exposes a diagnostics section")
+    }
+
+    func test_The_playback_log_can_be_shared() {
+        runScenario(feature: "diagnostics.feature", scenario: "The playback log can be shared")
+    }
+
+
     // MARK: - Offline Downloads
 
     func test_Empty_downloads_state() {

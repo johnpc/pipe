@@ -7,17 +7,22 @@ class AppSettings: ObservableObject {
     @Published var instanceURL: String { didSet { persistInstance() } }
     @Published private(set) var searchHistory: [String] = []
     @Published var offlineMode: Bool { didSet { defaults.set(offlineMode, forKey: offlineKey) } }
+    /// Upload diagnostic playback logs to the remote collector. Off by default;
+    /// opt-in so nothing leaves the device unless the user asks.
+    @Published var diagnosticsUpload: Bool { didSet { defaults.set(diagnosticsUpload, forKey: diagnosticsKey) } }
 
     private let defaults: UserDefaults
     private let instanceKey = "pipedInstanceURL"
     private let historyKey = "searchHistory"
     private let offlineKey = "offlineMode"
+    private let diagnosticsKey = "diagnosticsUpload"
     static let maxHistory = 10
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.instanceURL = defaults.string(forKey: instanceKey) ?? AppSettings.defaultInstance
         self.offlineMode = defaults.bool(forKey: offlineKey)
+        self.diagnosticsUpload = defaults.bool(forKey: diagnosticsKey)
         if let saved = defaults.stringArray(forKey: historyKey) {
             searchHistory = saved
         }

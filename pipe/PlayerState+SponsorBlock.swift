@@ -14,6 +14,7 @@ extension PlayerState {
             await MainActor.run {
                 guard let self, self.currentVideoId == videoId else { return }
                 self.sponsorSegments = segments
+                self.log.event("sponsor", "loaded", fields: ["count": String(segments.count), "videoId": videoId])
                 self.installSponsorObserver()
             }
         }
@@ -35,7 +36,15 @@ extension PlayerState {
     /// Extracted so the decision is driven by the tested `SponsorBlockLogic`.
     func applySponsorSkip(at time: Double) {
         guard let target = SponsorBlockLogic.skipTarget(at: time, in: sponsorSegments, enabled: sponsorBlockEnabled) else { return }
-        player?.seek(to: CMTime(seconds: target, preferredTimescale: 1))
+        log.event("sponsor", "skip", fields: ["from": String(Int(time)), "to": String(Int(target))])
+        player?.seek(to: CMTime(seconds: target, preferredTimescale: 1)) { [weak self] _ in
+            // A seek can leave the player paused (rate drops to 0), which stranded
+            // playback at the segment end. Re-assert play + speed if we still
+            // intend to be playing.
+            guard let self, self.isPlaying else { return }
+            self.player?.play()
+            if self.playbackSpeed != 1.0 { self.player?.rate = self.playbackSpeed }
+        }
         currentTime = target
     }
 

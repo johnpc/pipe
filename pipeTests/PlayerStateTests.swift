@@ -315,6 +315,7 @@ struct PlayerStateTests {
     @Test func handlePlaybackEndedOnLastItemStops() {
         let player = isolatedPlayer()
         player.addToQueue(videoId: "only", url: "bad://only", title: "Only", artist: "x", thumbnail: "", duration: 10)
+        player.handleProgress(currentTime: 10, itemDuration: 10) // played to the end
         player.handlePlaybackEnded()
         #expect(player.queue.isEmpty)
         #expect(player.currentIndex == -1)
@@ -325,6 +326,7 @@ struct PlayerStateTests {
         let player = isolatedPlayer()
         player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
         player.addToQueue(videoId: "b", url: "bad://b", title: "B", artist: "x", thumbnail: "", duration: 10)
+        player.handleProgress(currentTime: 10, itemDuration: 10) // played to the end
         player.stopAfterCurrentEpisode = true
         player.handlePlaybackEnded()
         // Finished item removed, but playback stopped rather than advancing to b.

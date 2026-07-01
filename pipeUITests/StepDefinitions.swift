@@ -500,6 +500,22 @@ enum StepDefinitions {
                           "Detail view should show a Retry button when loading fails")
         }
 
+        // MARK: Diagnostics log
+        r.define("I tap \"Share Playback Log\"") { w in
+            let button = w.app.buttons["sharePlaybackLog"]
+            // The Diagnostics section is at the bottom of Settings; scroll to it.
+            if !button.waitForExistence(timeout: 3) || !button.isHittable { w.app.swipeUp(); w.app.swipeUp() }
+            XCTAssertTrue(button.waitForExistence(timeout: medium), "Share Playback Log should be present")
+            button.tap()
+        }
+        r.define("I should see the share sheet") { w in
+            // The system share sheet surfaces activity options (e.g. Copy/Close).
+            let sheet = w.app.otherElements["ActivityListView"]
+            let close = w.app.buttons["Close"]
+            XCTAssertTrue(sheet.waitForExistence(timeout: medium) || close.waitForExistence(timeout: short),
+                          "A share sheet should appear")
+        }
+
         return r
     }
 
