@@ -2,6 +2,9 @@ import Testing
 import Foundation
 @testable import pipe
 
+// Serialized: the network tests share MockURLProtocol's static requestHandler,
+// so they must not run concurrently or they clobber each other's capture box.
+@Suite(.serialized)
 struct DiagnosticsTests {
     // MARK: - structured entry rendering
 
@@ -59,24 +62,23 @@ struct DiagnosticsTests {
 
     @Test func flushPostsBatchWithApiKeyHeader() async throws {
         let captured = Captured()
-        MockURLProtocol.requestHandler = { req in
+        // Own dedicated protocol (not the shared MockURLProtocol) so this can't
+        // race the PipedAPI tests over a static handler under parallel suites.
+        CapturingURLProtocol.setHandler { req in
             captured.request = req
-            // URLProtocol strips httpBody; read the stream to capture the payload.
             captured.body = req.httpBodyStream.map { Captured.read($0) } ?? req.httpBody
-            let resp = HTTPURLResponse(url: req.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (resp, Data("{\"ok\":true}".utf8))
         }
         let identity = DeviceIdentity(defaults: UserDefaults(suiteName: "u-\(UUID().uuidString)")!, sessionId: "sess")
         let sink = RemoteLogSink(
             endpoint: URL(string: "https://example.test/logs")!,
             apiKey: "test-key", identity: identity,
-            session: MockURLProtocol.makeSession(), batchSize: 2
+            session: CapturingURLProtocol.makeSession(), batchSize: 2
         )
         // Two writes hit the batch threshold and trigger an automatic flush.
         sink.write(PlaybackLogEntry(time: Date(timeIntervalSince1970: 0), category: "play", message: "start", fields: ["videoId": "v"]))
         sink.write(PlaybackLogEntry(time: Date(timeIntervalSince1970: 1), category: "end", message: "fired", fields: [:]))
 
-        try await Task.sleep(nanoseconds: 300_000_000)
+        try await Task.sleep(nanoseconds: 500_000_000)
         let req = try #require(captured.request)
         #expect(req.httpMethod == "POST")
         #expect(req.value(forHTTPHeaderField: "x-api-key") == "test-key")
@@ -84,6 +86,30 @@ struct DiagnosticsTests {
         let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
         #expect(json["deviceId"] as? String == identity.deviceId)
         #expect((json["records"] as? [Any])?.count == 2)
+    }
+
+    @Test func flushUploadsSubThresholdBatch() async throws {
+        // Passive listening emits few events, so flush() (lifecycle/timer) must
+        // upload even when the batch threshold hasn't been reached.
+        let captured = Captured()
+        CapturingURLProtocol.setHandler { req in
+            captured.request = req
+            captured.body = req.httpBodyStream.map { Captured.read($0) } ?? req.httpBody
+        }
+        let identity = DeviceIdentity(defaults: UserDefaults(suiteName: "f-\(UUID().uuidString)")!, sessionId: "s")
+        let sink = RemoteLogSink(
+            endpoint: URL(string: "https://example.test/logs")!,
+            apiKey: "k", identity: identity,
+            session: CapturingURLProtocol.makeSession(), batchSize: 25
+        )
+        sink.write(PlaybackLogEntry(time: Date(timeIntervalSince1970: 0), category: "play", message: "start", fields: [:]))
+        sink.flush() // one event, far below the threshold
+
+        try await Task.sleep(nanoseconds: 500_000_000)
+        let req = try #require(captured.request, "flush() should POST even below batch size")
+        let body = try #require(captured.body)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        #expect((json["records"] as? [Any])?.count == 1)
     }
 }
 

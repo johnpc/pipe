@@ -38,6 +38,10 @@ final class PlaybackLog {
         for sink in sinks { sink.write(entry) }
     }
 
+    /// Force every sink to flush (e.g. the remote uploader). Called by the
+    /// "Send Logs" control and app-lifecycle transitions.
+    func flush() { for sink in sinks { sink.flush() } }
+
     /// Text of the on-device buffer, for the Settings share/copy control.
     func exportText() -> String { buffer.exportText() }
 }

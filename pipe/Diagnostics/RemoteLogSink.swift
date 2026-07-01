@@ -13,12 +13,13 @@ final class RemoteLogSink: PlaybackLogSink {
     private var pending: [PlaybackLogEntry] = []
 
     init(endpoint: URL, apiKey: String, identity: DeviceIdentity,
-         session: URLSession = .shared, batchSize: Int = 25) {
+         session: URLSession = .shared, batchSize: Int = 5) {
         self.endpoint = endpoint
         self.apiKey = apiKey
         self.identity = identity
         self.session = session
         self.batchSize = max(1, batchSize)
+        observeAppLifecycle()
     }
 
     func write(_ entry: PlaybackLogEntry) {
@@ -28,7 +29,9 @@ final class RemoteLogSink: PlaybackLogSink {
         }
     }
 
-    /// Upload whatever is buffered (e.g. when the app backgrounds).
+    /// Upload whatever is buffered (e.g. when the app backgrounds). Passive
+    /// listening emits few events, so time/lifecycle flushes — not just the
+    /// batch threshold — are what actually get logs off the device.
     func flush() { queue.async { self.flushLocked() } }
 
     private func flushLocked() {

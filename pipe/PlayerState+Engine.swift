@@ -23,6 +23,7 @@ extension PlayerState {
         currentThumbnail = item.thumbnail
         currentTime = 0
         duration = 0
+        lastHeartbeatBucket = -1
         expectedDuration = item.duration > 0 ? Double(item.duration) : nil
         updateCurrentChapter(for: item.videoId, at: 0)
 
@@ -87,5 +88,6 @@ extension PlayerState {
             recents?.updateTimestamp(videoId: vid, timestamp: time)
             updateCurrentChapter(for: vid, at: time)
         }
+        logProgressHeartbeat(at: time)
     }
 }
