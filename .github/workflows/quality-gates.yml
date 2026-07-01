@@ -142,6 +142,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Write diagnostics API key
+        run: |
+          # Injected into the app via pipe/Config.xcconfig's optional #include of
+          # Secrets.xcconfig (gitignored). Without this, the release build ships
+          # an empty key and diagnostics upload silently no-ops.
+          printf 'PIPE_LOGS_API_KEY = %s\n' "${{ secrets.PIPE_LOGS_API_KEY }}" > pipe/Secrets.xcconfig
+
       - name: Write App Store Connect API key
         run: |
           mkdir -p ~/private_keys
