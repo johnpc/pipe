@@ -6,9 +6,10 @@ Feature: Diagnostics log
   Scenario: Settings exposes a diagnostics section
     Given the app is launched
     When I open the Settings tab
-    Then I should see the "Diagnostics" section
+    Then I should see the Diagnostics section
 
-  Scenario: The playback log can be shared
+  Scenario: Diagnostics upload is off by default and can be turned on
     Given I am on the Settings tab
-    When I tap "Share Playback Log"
-    Then I should see the share sheet
+    Then diagnostics upload should be off
+    When I turn on diagnostics upload
+    Then diagnostics upload should be on

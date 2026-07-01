@@ -501,19 +501,33 @@ enum StepDefinitions {
         }
 
         // MARK: Diagnostics log
-        r.define("I tap \"Share Playback Log\"") { w in
-            let button = w.app.buttons["sharePlaybackLog"]
-            // The Diagnostics section is at the bottom of Settings; scroll to it.
-            if !button.waitForExistence(timeout: 3) || !button.isHittable { w.app.swipeUp(); w.app.swipeUp() }
-            XCTAssertTrue(button.waitForExistence(timeout: medium), "Share Playback Log should be present")
-            button.tap()
+        // The Diagnostics section sits at the bottom of the Settings list, so it
+        // is only realized once scrolled into view — hence the scroll-to helpers.
+        r.define("I should see the Diagnostics section") { w in
+            let toggle = w.app.switches["diagnosticsUploadToggle"]
+            scrollToElement(w, toggle)
+            XCTAssertTrue(toggle.waitForExistence(timeout: medium), "Diagnostics section should be present")
         }
-        r.define("I should see the share sheet") { w in
-            // The system share sheet surfaces activity options (e.g. Copy/Close).
-            let sheet = w.app.otherElements["ActivityListView"]
-            let close = w.app.buttons["Close"]
-            XCTAssertTrue(sheet.waitForExistence(timeout: medium) || close.waitForExistence(timeout: short),
-                          "A share sheet should appear")
+        r.define("diagnostics upload should be off") { w in
+            let toggle = w.app.switches["diagnosticsUploadToggle"]
+            scrollToElement(w, toggle)
+            XCTAssertTrue(toggle.waitForExistence(timeout: medium), "Upload toggle should be present")
+            XCTAssertEqual(toggle.value as? String, "0", "Diagnostics upload should be off by default")
+        }
+        r.define("I turn on diagnostics upload") { w in
+            let toggle = w.app.switches["diagnosticsUploadToggle"]
+            scrollToElement(w, toggle)
+            XCTAssertTrue(toggle.waitForExistence(timeout: medium), "Upload toggle should be present")
+            // In a SwiftUI List the switch spans the row; the control is on the
+            // trailing edge, so a trailing-edge coordinate tap is reliable where
+            // a plain .tap() is not (same pattern as the Offline Mode toggle).
+            if toggle.value as? String != "1" {
+                toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+            }
+        }
+        r.define("diagnostics upload should be on") { w in
+            let toggle = w.app.switches["diagnosticsUploadToggle"]
+            XCTAssertEqual(toggle.value as? String, "1", "Diagnostics upload should be on after toggling")
         }
 
         return r
@@ -548,6 +562,17 @@ enum StepDefinitions {
         let exp = XCTNSPredicateExpectation(predicate: gone, object: w.app.navigationBars["Settings"])
         _ = XCTWaiter().wait(for: [exp], timeout: medium)
         XCTAssertTrue(w.app.buttons["Feed"].waitForExistence(timeout: long), "Tabs should be visible after dismissing Settings")
+    }
+
+    /// Scroll the frontmost scroll view down until `element` is hittable (or a
+    /// few attempts elapse). Needed for controls in a lazy List that only
+    /// realize once scrolled into view, e.g. the Diagnostics section.
+    private static func scrollToElement(_ w: GherkinWorld, _ element: XCUIElement, maxSwipes: Int = 6) {
+        var swipes = 0
+        while !(element.exists && element.isHittable) && swipes < maxSwipes {
+            w.app.swipeUp()
+            swipes += 1
+        }
     }
 
     private static func searchField(_ w: GherkinWorld) -> XCUIElement {

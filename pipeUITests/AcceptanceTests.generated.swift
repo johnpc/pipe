@@ -51,8 +51,8 @@ extension AcceptanceTests {
         runScenario(feature: "diagnostics.feature", scenario: "Settings exposes a diagnostics section")
     }
 
-    func test_The_playback_log_can_be_shared() {
-        runScenario(feature: "diagnostics.feature", scenario: "The playback log can be shared")
+    func test_Diagnostics_upload_is_off_by_default_and_can_be_turned_on() {
+        runScenario(feature: "diagnostics.feature", scenario: "Diagnostics upload is off by default and can be turned on")
     }
 
 
