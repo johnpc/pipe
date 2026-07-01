@@ -31,7 +31,10 @@ extension PlayerState {
         currentArtist = item.artist
         currentThumbnail = item.thumbnail
         currentTime = 0
-        duration = 0
+        // Seed duration from the Piped-reported length so the lock screen shows a
+        // total time (and a working progress bar) immediately, instead of a blank
+        // until AVPlayer loads its own duration on the first ~5s progress tick.
+        duration = item.duration > 0 ? Double(item.duration) : 0
         lastHeartbeatBucket = -1
         expectedDuration = item.duration > 0 ? Double(item.duration) : nil
         updateCurrentChapter(for: item.videoId, at: 0)

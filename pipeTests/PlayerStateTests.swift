@@ -277,6 +277,15 @@ struct PlayerStateTests {
         return (player, recents)
     }
 
+    @Test func playSeedsDurationForLockScreenBeforeFirstTick() {
+        // Regression: the lock screen showed no total/elapsed time in the window
+        // before AVPlayer loaded its duration. playItem must seed duration from
+        // the Piped-reported length immediately (no progress tick yet).
+        let player = isolatedPlayer()
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 3600)
+        #expect(player.duration == 3600)
+    }
+
     @Test func handleProgressPublishesTimeAndDuration() {
         let (player, recents) = playerWithRecents()
         player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 100)
