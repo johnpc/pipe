@@ -14,6 +14,9 @@ struct PlaybackTests {
         #expect(Playback.successMessage(for: .play) == "Now Playing")
         #expect(Playback.successMessage(for: .queue) == "Added to Queue")
         #expect(Playback.successMessage(for: .playNext) == "Playing Next")
+        #expect(Playback.errorMessage(for: .play) == "Couldn't play — try again")
+        #expect(Playback.errorMessage(for: .queue) == "Couldn't add — try again")
+        #expect(Playback.errorMessage(for: .playNext) == "Couldn't add — try again")
     }
 
     @Test func resolveMapsStreamFields() {
@@ -61,5 +64,6 @@ final class SpyToast: ToastManaging {
     var events: [String] = []
     func showLoading(_ msg: String) { events.append("loading:\(msg)") }
     func showSuccess(_ msg: String) { events.append("success:\(msg)") }
+    func showError(_ msg: String) { events.append("error:\(msg)") }
     func hide() { events.append("hide") }
 }

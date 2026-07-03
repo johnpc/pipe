@@ -23,5 +23,6 @@ enum PlaylistCoordinator {
 private struct SilentToast: ToastManaging {
     func showLoading(_ message: String) {}
     func showSuccess(_ message: String) {}
+    func showError(_ message: String) {}
     func hide() {}
 }
