@@ -123,7 +123,7 @@ struct PipedAPITests {
         #expect(player.queue.count == 1)
     }
 
-    @Test func runHidesToastWhenStreamFails() async {
+    @Test func runShowsErrorToastWhenStreamFails() async {
         PipedAPI.session = MockURLProtocol.makeSession()
         MockURLProtocol.stubError(URLError(.notConnectedToInternet))
         defer { PipedAPI.session = .shared }
@@ -133,7 +133,20 @@ struct PipedAPITests {
         await Playback.run(videoId: "vid", action: .play, player: player, toast: toast)
 
         #expect(toast.events.contains("loading:Loading..."))
-        #expect(toast.events.contains("hide"))
+        #expect(toast.events.contains("error:Couldn't play — try again"))
+        #expect(player.queue.isEmpty)
+    }
+
+    @Test func runShowsErrorToastWhenQueueAddFails() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+        defer { PipedAPI.session = .shared }
+
+        let player = isolatedPlayer()
+        let toast = SpyToast()
+        await Playback.run(videoId: "vid", action: .queue, player: player, toast: toast)
+
+        #expect(toast.events.contains("error:Couldn't add — try again"))
         #expect(player.queue.isEmpty)
     }
 

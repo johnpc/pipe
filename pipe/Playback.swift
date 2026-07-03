@@ -54,6 +54,12 @@ enum Playback {
         }
     }
 
+    /// Error copy when the stream can't be fetched, so a failed add/play tells
+    /// the user instead of silently vanishing.
+    static func errorMessage(for action: Action) -> String {
+        action == .play ? "Couldn't play — try again" : "Couldn't add — try again"
+    }
+
     /// Full async flow used by the views: fetch, resolve, apply, toast.
     /// `toast` defaults to the shared manager; tests pass a spy.
     @MainActor
@@ -61,7 +67,7 @@ enum Playback {
         let toast = toast ?? ToastManager.shared
         toast.showLoading(loadingMessage(for: action))
         guard let stream = try? await PipedAPI.streams(videoId) else {
-            toast.hide()
+            toast.showError(errorMessage(for: action))
             return
         }
         apply(resolve(stream, videoId: videoId), action: action, to: player)
@@ -87,6 +93,7 @@ struct ResolvedStream: Equatable {
 protocol ToastManaging {
     func showLoading(_ msg: String)
     func showSuccess(_ msg: String)
+    func showError(_ msg: String)
     func hide()
 }
 
