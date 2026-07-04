@@ -51,4 +51,17 @@ struct SponsorBlockLogicTests {
         let segs = [SponsorSegment(start: 10, end: 20), SponsorSegment(start: 15, end: 30)]
         #expect(SponsorBlockLogic.skipTarget(at: 16, in: segs, enabled: true) == 20)
     }
+
+    // Regression: a fractional segment end drove a seek storm. Seeking with a
+    // 1s timescale truncated the target (20.828 → 20), landing back inside the
+    // segment so the 1s observer re-fired the skip forever. Verify that landing
+    // at the true fractional end clears the segment (no re-skip), while the old
+    // truncated position would still be inside it.
+    @Test func landingAtFractionalEndBreaksSkipLoop() {
+        let segs = [SponsorSegment(start: 10, end: 20.828)]
+        // Precise landing at the fractional end → no further skip.
+        #expect(SponsorBlockLogic.skipTarget(at: 20.828, in: segs, enabled: true) == nil)
+        // The old truncated position is still inside the segment → would loop.
+        #expect(SponsorBlockLogic.skipTarget(at: 20, in: segs, enabled: true) == 20.828)
+    }
 }
