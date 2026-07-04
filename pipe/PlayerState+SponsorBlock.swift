@@ -37,7 +37,11 @@ extension PlayerState {
     func applySponsorSkip(at time: Double) {
         guard let target = SponsorBlockLogic.skipTarget(at: time, in: sponsorSegments, enabled: sponsorBlockEnabled) else { return }
         log.event("sponsor", "skip", fields: ["from": String(Int(time)), "to": String(Int(target))])
-        player?.seek(to: CMTime(seconds: target, preferredTimescale: 1)) { [weak self] _ in
+        // Seek precisely (sub-second timescale, zero tolerance) to the segment's
+        // fractional end. A 1s timescale truncated `target` back inside the
+        // segment, so the 1s observer re-fired the skip forever — a seek storm
+        // (~25/s) that stuttered playback and flooded diagnostics.
+        player?.seek(to: CMTime(seconds: target, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
             // A seek can leave the player paused (rate drops to 0), which stranded
             // playback at the segment end. Re-assert play + speed if we still
             // intend to be playing.
