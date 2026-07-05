@@ -117,6 +117,13 @@ enum StepDefinitions {
             let raw = w.app.staticTexts.containing(NSPredicate(format: "label CONTAINS '<br>'")).firstMatch
             XCTAssertFalse(raw.exists, "Description must not display raw HTML tags")
         }
+        r.define("I should see the transcript or an empty state") { w in
+            // Live captions are network-dependent; a transcript row or the
+            // "No transcript available" empty state both prove the tab wired up.
+            XCTAssertTrue(w.app.buttons["transcriptRow"].firstMatch.waitForExistence(timeout: long) ||
+                          w.app.staticTexts["No transcript available"].waitForExistence(timeout: short),
+                          "The Transcript tab should render its content or empty state")
+        }
         r.define("I should see a comment in the player") { w in
             // The now-playing fixture has comments; a comment row or the empty
             // state both prove the tab loaded its content.
