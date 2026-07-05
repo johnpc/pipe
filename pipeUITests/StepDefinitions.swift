@@ -102,6 +102,13 @@ enum StepDefinitions {
         r.define("I open the \"(.+)\" player tab") { w in
             let pill = w.app.buttons["playerTab-\(w.capture())"]
             XCTAssertTrue(pill.waitForExistence(timeout: long), "Player tab \(w.capture()) should be present")
+            // The tab strip scrolls horizontally; a pill near the right edge can
+            // exist but not be hittable. Swipe the strip left until it is.
+            var tries = 0
+            while !pill.isHittable && tries < 4 {
+                w.app.swipeLeft()
+                tries += 1
+            }
             pill.tap()
         }
         r.define("I should see a related video") { w in
