@@ -102,6 +102,15 @@ enum StepDefinitions {
         r.define("I open the \"(.+)\" player tab") { w in
             let pill = w.app.buttons["playerTab-\(w.capture())"]
             XCTAssertTrue(pill.waitForExistence(timeout: long), "Player tab \(w.capture()) should be present")
+            // The tab strip scrolls horizontally; a pill near the right edge can
+            // exist but not be hittable. Swipe *within the strip* (the Queue pill
+            // is always present at the left) to scroll it into view.
+            let strip = w.app.buttons["playerTab-Queue"]
+            var tries = 0
+            while !pill.isHittable && tries < 5 {
+                if strip.exists { strip.swipeLeft() } else { w.app.swipeLeft() }
+                tries += 1
+            }
             pill.tap()
         }
         r.define("I should see a related video") { w in
@@ -116,6 +125,13 @@ enum StepDefinitions {
                           "The Info tab should show the description's About header")
             let raw = w.app.staticTexts.containing(NSPredicate(format: "label CONTAINS '<br>'")).firstMatch
             XCTAssertFalse(raw.exists, "Description must not display raw HTML tags")
+        }
+        r.define("I should see the transcript or an empty state") { w in
+            // Live captions are network-dependent; a transcript row or the
+            // "No transcript available" empty state both prove the tab wired up.
+            XCTAssertTrue(w.app.buttons["transcriptRow"].firstMatch.waitForExistence(timeout: long) ||
+                          w.app.staticTexts["No transcript available"].waitForExistence(timeout: short),
+                          "The Transcript tab should render its content or empty state")
         }
         r.define("I should see a comment in the player") { w in
             // The now-playing fixture has comments; a comment row or the empty

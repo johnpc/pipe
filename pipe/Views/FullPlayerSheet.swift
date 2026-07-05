@@ -86,5 +86,6 @@ struct FullPlayerSheet: View {
             }
             .padding(.bottom, 30)
         }
+        .toastOverlay()
     }
 }

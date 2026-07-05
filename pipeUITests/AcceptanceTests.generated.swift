@@ -276,6 +276,13 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Transcript
+
+    func test_Transcript_tab_is_reachable_from_the_full_player() {
+        runScenario(feature: "transcript.feature", scenario: "Transcript tab is reachable from the full player")
+    }
+
+
     // MARK: - Trending
 
     func test_Opening_Trending_shows_videos() {

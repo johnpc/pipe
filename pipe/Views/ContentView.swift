@@ -12,33 +12,21 @@ struct ContentView: View {
     @State private var showSettings = false
 
     var body: some View {
-        ZStack {
+        VStack(spacing: 0) {
+            MainTabContent(selectedTab: selectedTab, player: player, following: following,
+                           recents: recents, settings: settings, saved: saved, downloads: downloads)
+
+            // Unified bottom bar
             VStack(spacing: 0) {
-                MainTabContent(selectedTab: selectedTab, player: player, following: following,
-                               recents: recents, settings: settings, saved: saved, downloads: downloads)
-                
-                // Unified bottom bar
-                VStack(spacing: 0) {
-                    if player.currentTitle != nil {
-                        MiniPlayerBar(player: player)
-                    }
-                    
-                    BottomTabBar(selectedTab: $selectedTab) { showSettings = true }
+                if player.currentTitle != nil {
+                    MiniPlayerBar(player: player)
                 }
-                .background(.bar)
+
+                BottomTabBar(selectedTab: $selectedTab) { showSettings = true }
             }
-            
-            // Toast overlay
-            if let msg = toast.message {
-                VStack {
-                    Spacer()
-                    ToastView(message: msg, isLoading: toast.isLoading, isError: toast.isError)
-                        .padding(.bottom, 120)
-                }
-                .animation(.easeInOut(duration: 0.2), value: toast.message)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
+            .background(.bar)
         }
+        .toastOverlay()
         .onAppear {
             player.recents = recents; player.downloads = downloads
             player.logSessionStart(instance: settings.instanceURL)
