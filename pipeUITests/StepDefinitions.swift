@@ -102,13 +102,15 @@ enum StepDefinitions {
         r.define("I open the \"(.+)\" player tab") { w in
             let pill = w.app.buttons["playerTab-\(w.capture())"]
             XCTAssertTrue(pill.waitForExistence(timeout: long), "Player tab \(w.capture()) should be present")
-            // The tab strip scrolls horizontally; a pill near the right edge can
-            // exist but not be hittable. Swipe *within the strip* (the Queue pill
-            // is always present at the left) to scroll it into view.
-            let strip = w.app.buttons["playerTab-Queue"]
+            // The tab strip scrolls horizontally; a pill past the right edge exists
+            // but has no valid activation point, so isHittable raises. Compare its
+            // frame to the window (never raises) and swipe the always-visible Queue
+            // pill to scroll the strip until the target is on-screen.
+            let window = w.app.windows.firstMatch
+            let queue = w.app.buttons["playerTab-Queue"]
             var tries = 0
-            while !pill.isHittable && tries < 5 {
-                if strip.exists { strip.swipeLeft() } else { w.app.swipeLeft() }
+            while pill.frame.maxX > window.frame.maxX && tries < 6 {
+                (queue.exists ? queue : window).swipeLeft()
                 tries += 1
             }
             pill.tap()
