@@ -103,10 +103,12 @@ enum StepDefinitions {
             let pill = w.app.buttons["playerTab-\(w.capture())"]
             XCTAssertTrue(pill.waitForExistence(timeout: long), "Player tab \(w.capture()) should be present")
             // The tab strip scrolls horizontally; a pill near the right edge can
-            // exist but not be hittable. Swipe the strip left until it is.
+            // exist but not be hittable. Swipe *within the strip* (the Queue pill
+            // is always present at the left) to scroll it into view.
+            let strip = w.app.buttons["playerTab-Queue"]
             var tries = 0
-            while !pill.isHittable && tries < 4 {
-                w.app.swipeLeft()
+            while !pill.isHittable && tries < 5 {
+                if strip.exists { strip.swipeLeft() } else { w.app.swipeLeft() }
                 tries += 1
             }
             pill.tap()

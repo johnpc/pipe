@@ -8,7 +8,7 @@ struct PlayerTabsView: View {
     @ObservedObject var detail: NowPlayingDetail
     @State private var tab: PlayerTab = .queue
 
-    enum PlayerTab: String, CaseIterable { case queue = "Queue", upNext = "Up Next", chapters = "Chapters", info = "Info", transcript = "Transcript", comments = "Comments" }
+    enum PlayerTab: String, CaseIterable { case queue = "Queue", upNext = "Up Next", chapters = "Chapters", info = "Info", comments = "Comments", transcript = "Transcript" }
 
     /// Chapters tab only appears when the now-playing video actually has them.
     private var visibleTabs: [PlayerTab] {
