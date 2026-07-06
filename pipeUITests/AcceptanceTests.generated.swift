@@ -196,6 +196,10 @@ extension AcceptanceTests {
         runScenario(feature: "queue.feature", scenario: "Queueing a result adds it to the queue")
     }
 
+    func test_A_video_with_a_malformed_related_entry_still_plays() {
+        runScenario(feature: "queue.feature", scenario: "A video with a malformed related entry still plays")
+    }
+
 
     // MARK: - Recently Played
 

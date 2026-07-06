@@ -13,7 +13,9 @@ struct StreamResponse: Codable, Equatable {
     let thumbnailUrl: String
     let uploadDate: String?
     let chapters: [Chapter]?
-    let relatedStreams: [RelatedStream]?
+    /// Lossy: Piped sometimes includes a malformed "Mix"/playlist entry (no
+    /// title/duration) here. Skip the bad row rather than fail the whole video.
+    @LossyArray var relatedStreams: [RelatedStream]?
     /// Caption tracks (TTML) offered for the video. Decodes to nil when absent;
     /// the inline default keeps existing memberwise initializers source-stable.
     var subtitles: [Subtitle]? = nil
