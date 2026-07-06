@@ -100,6 +100,23 @@ struct PipedAPITests {
         }
     }
 
+    /// Regression: Piped includes a malformed "Mix"/playlist entry in
+    /// relatedStreams (no title, no duration). Before the lossy decode this one
+    /// bad row failed the whole StreamResponse, making a playable video
+    /// unplayable ("The data couldn't be read because it is missing.").
+    @Test func streamsDecodesDespiteMalformedRelatedStream() async throws {
+        let json = """
+        {"title":"Song","description":null,"uploader":"Artist","uploaderUrl":null,"duration":120,"hls":null,"audioStreams":[],"videoStreams":[{"url":"https://x/full.mp4","quality":"360p","mimeType":"video/mp4","videoOnly":false}],"thumbnailUrl":"t","uploadDate":null,"relatedStreams":[{"url":"/watch?v=good","title":"Good","thumbnail":"th","duration":200},{"url":"/watch?v=x&list=RDx","thumbnail":"th"},{"url":"/watch?v=good2","title":"Good2","thumbnail":"th","duration":150}]}
+        """
+        try await withStub(json) {
+            let s = try await PipedAPI.streams("v")
+            #expect(s.title == "Song")
+            // The two well-formed videos survive; the mix/playlist row is dropped.
+            #expect(s.relatedStreams?.count == 2)
+            #expect(s.relatedStreams?.map(\.title) == ["Good", "Good2"])
+        }
+    }
+
     @Test func rawTextReturnsBody() async throws {
         try await withStub("<tt>hello</tt>") {
             let text = try await PipedAPI.rawText(from: URL(string: "https://x/en.ttml")!)
