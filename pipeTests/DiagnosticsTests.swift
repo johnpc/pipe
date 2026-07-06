@@ -51,6 +51,38 @@ struct DiagnosticsTests {
         #expect(fields?["videoId"] == "v")
     }
 
+    // MARK: - session start capture
+
+    @MainActor
+    @Test func sessionStartRecordsInstanceAndReachesSinkAttachedFirst() {
+        // Mirrors ContentView's fixed order: attach the sink, THEN log session
+        // start — so the event (carrying the Piped instance) is actually
+        // uploaded rather than stranded in the on-device buffer only.
+        let player = isolatedPlayer()
+        let sink = RingBufferSink()
+        player.log = PlaybackLog(buffer: sink)
+
+        player.logSessionStart(instance: "https://pipedapi.jpc.io")
+
+        let start = sink.snapshot().first { $0.category == "session" && $0.message == "start" }
+        #expect(start != nil, "session start must reach a sink attached before it")
+        #expect(start?.fields["instance"] == "https://pipedapi.jpc.io")
+    }
+
+    @MainActor
+    @Test func sessionStartIsLoggedOnce() {
+        let player = isolatedPlayer()
+        let sink = RingBufferSink()
+        player.log = PlaybackLog(buffer: sink)
+
+        player.logSessionStart(instance: "a")
+        player.logSessionStart(instance: "b") // guarded: second call is a no-op
+
+        let starts = sink.snapshot().filter { $0.category == "session" }
+        #expect(starts.count == 1)
+        #expect(starts.first?.fields["instance"] == "a")
+    }
+
     @Test func payloadEncodesToValidJSON() {
         let identity = DeviceIdentity(defaults: UserDefaults(suiteName: "j-\(UUID().uuidString)")!, sessionId: "s")
         let entries = [PlaybackLogEntry(time: Date(timeIntervalSince1970: 0), category: "c", message: "m", fields: [:])]

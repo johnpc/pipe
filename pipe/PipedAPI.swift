@@ -22,7 +22,14 @@ enum PipedAPI {
             attempt += 1
             do {
                 let (data, _) = try await session.data(from: url)
-                return try JSONDecoder().decode(T.self, from: data)
+                do {
+                    return try JSONDecoder().decode(T.self, from: data)
+                } catch let decodeError {
+                    // Piped answers 200 with an {error,message} body when it can't
+                    // extract a video; report its real message, not "data missing".
+                    if let pipedError = PipedErrorEnvelope.error(from: data) { throw pipedError }
+                    throw decodeError
+                }
             } catch {
                 if RetryPolicy.shouldRetry(error, attempt: attempt) {
                     await sleep(RetryPolicy.backoffNanos(beforeAttempt: attempt + 1))

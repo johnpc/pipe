@@ -5,10 +5,12 @@ extension Playback {
     /// tell the user *why* instead of a generic "try again" — and so the same
     /// reason lands in the diagnostic log for later root-causing.
     static func errorReason(_ error: Error) -> String {
+        // The instance told us why it failed (throttled/broken upstream) — use
+        // its own message rather than a generic guess.
+        if let pipedError = error as? PipedError { return pipedError.message }
         guard let urlError = error as? URLError else {
-            // Non-URL errors surfacing here are JSON decode failures: the instance
-            // replied, but not with a playable stream — a private/removed video, or
-            // a Piped instance returning an error body instead of stream data.
+            // Any other non-URL error here is a genuine decode failure: the reply
+            // wasn't a playable stream and wasn't a recognizable Piped error body.
             return "video unavailable"
         }
         switch urlError.code {

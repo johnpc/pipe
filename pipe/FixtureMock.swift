@@ -44,10 +44,24 @@ final class FixtureURLProtocol: URLProtocol {
     /// results but opening a video detail fails, exercising the Retry UI.
     static var failStreams = false
 
+    /// When true, `/streams/` requests return a Piped error envelope (HTTP 200
+    /// with `{error,message}`), exercising the real-message error toast.
+    static var errorStreams = false
+
     override func startLoading() {
-        if FixtureURLProtocol.failStreams, request.url?.path.hasPrefix("/streams/") == true {
-            client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
-            return
+        if request.url?.path.hasPrefix("/streams/") == true {
+            if FixtureURLProtocol.failStreams {
+                client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+                return
+            }
+            if FixtureURLProtocol.errorStreams, let url = request.url {
+                let body = Data(#"{"error":"ParsingException","message":"JSON response is too short"}"#.utf8)
+                let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+                client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+                client?.urlProtocol(self, didLoad: body)
+                client?.urlProtocolDidFinishLoading(self)
+                return
+            }
         }
         guard let url = request.url,
               let name = FixtureRouter.fixtureName(for: url),
