@@ -36,6 +36,7 @@ final class AcceptanceTests: XCTestCase {
         // bundle doesn't link the app, so they're hardcoded here as before).
         var args = ["--uitest-mock"]
         if scenario.tags.contains("@fail-streams") { args.append("--uitest-fail-streams") }
+        if scenario.tags.contains("@error-streams") { args.append("--uitest-error-streams") }
         app.launchArguments = args
         app.launch()
 

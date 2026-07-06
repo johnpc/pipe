@@ -29,8 +29,11 @@ struct ContentView: View {
         .toastOverlay()
         .onAppear {
             player.recents = recents; player.downloads = downloads
-            player.logSessionStart(instance: settings.instanceURL)
+            // Attach the remote sink BEFORE the session-start event so the event
+            // (which records the configured Piped instance) is actually uploaded
+            // — otherwise it only ever lands in the on-device buffer.
             player.syncDiagnosticsUpload(enabled: settings.diagnosticsUpload)
+            player.logSessionStart(instance: settings.instanceURL)
         }
         .onChange(of: settings.diagnosticsUpload) { _, on in
             player.syncDiagnosticsUpload(enabled: on)

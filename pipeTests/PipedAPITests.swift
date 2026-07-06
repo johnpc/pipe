@@ -124,6 +124,17 @@ struct PipedAPITests {
         }
     }
 
+    @Test func streamsThrowsPipedErrorOnErrorBody() async throws {
+        // Piped returns 200 with an {error,message} body when it can't extract a
+        // video. streams() must surface that message, not an opaque decode error.
+        let body = #"{"error":"org.schabi...ParsingException","message":"JSON response is too short"}"#
+        try await withStub(body) {
+            await #expect(throws: PipedError(message: "JSON response is too short")) {
+                _ = try await PipedAPI.streams("v")
+            }
+        }
+    }
+
     @Test func searchThrowsOnBadJSON() async {
         PipedAPI.session = MockURLProtocol.makeSession()
         MockURLProtocol.stub(json: "not json")

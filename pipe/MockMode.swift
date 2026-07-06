@@ -17,13 +17,16 @@ enum MockMode {
     }
 
     static let failArgument = "--uitest-fail-streams"
+    static let errorArgument = "--uitest-error-streams"
 
-    /// Activate only when the launch argument is present. Also honors a flag that
-    /// makes `/streams/` requests error, for the error-recovery UI test.
+    /// Activate only when the launch argument is present. Also honors flags that
+    /// make `/streams/` requests fail (network error, for the Retry UI) or return
+    /// a Piped error envelope (for the real-message error toast).
     static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
         guard isEnabled(args) else { return }
         resetPersistedState()
         FixtureURLProtocol.failStreams = args.contains(failArgument)
+        FixtureURLProtocol.errorStreams = args.contains(errorArgument)
         activate()
     }
 

@@ -277,6 +277,13 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Stream error messages
+
+    func test_A_Piped_instance_error_surfaces_its_real_message() {
+        runScenario(feature: "stream_error_message.feature", scenario: "A Piped instance error surfaces its real message")
+    }
+
+
     // MARK: - Tab Navigation
 
     func test_All_tabs_are_reachable() {
