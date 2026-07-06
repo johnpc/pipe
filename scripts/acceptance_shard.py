@@ -67,6 +67,7 @@ THEMES = {
         "settings.feature",
         "diagnostics.feature",
         "error_recovery.feature",
+        "stream_error_message.feature",
         "search_history.feature",
         "feed_sorting.feature",
         "offline_mode.feature",
