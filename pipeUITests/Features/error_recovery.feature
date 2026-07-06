@@ -7,3 +7,8 @@ Feature: Error Recovery
   Scenario: Detail view offers retry on failure
     Given a video detail fails to load
     Then I should see a Retry button
+
+  Scenario: Queueing a failed stream explains why it couldn't be added
+    Given I have searched for "Veritasium"
+    When I tap the queue button on the first result
+    Then I should see "Couldn't add — no connection"

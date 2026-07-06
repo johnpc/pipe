@@ -14,9 +14,31 @@ struct PlaybackTests {
         #expect(Playback.successMessage(for: .play) == "Now Playing")
         #expect(Playback.successMessage(for: .queue) == "Added to Queue")
         #expect(Playback.successMessage(for: .playNext) == "Playing Next")
-        #expect(Playback.errorMessage(for: .play) == "Couldn't play — try again")
-        #expect(Playback.errorMessage(for: .queue) == "Couldn't add — try again")
-        #expect(Playback.errorMessage(for: .playNext) == "Couldn't add — try again")
+    }
+
+    // MARK: - Error reason mapping
+
+    @Test func errorReasonMapsCommonFailures() {
+        #expect(Playback.errorReason(URLError(.notConnectedToInternet)) == "no connection")
+        #expect(Playback.errorReason(URLError(.networkConnectionLost)) == "no connection")
+        #expect(Playback.errorReason(URLError(.timedOut)) == "timed out")
+        #expect(Playback.errorReason(URLError(.cannotFindHost)) == "can't reach the Piped instance")
+        #expect(Playback.errorReason(URLError(.cannotConnectToHost)) == "can't reach the Piped instance")
+        #expect(Playback.errorReason(URLError(.badServerResponse)) == "network error")
+        struct Decoding: Error {}
+        #expect(Playback.errorReason(Decoding()) == "video unavailable")
+    }
+
+    @Test func errorMessageNamesTheCause() {
+        #expect(Playback.errorMessage(for: .play, error: URLError(.timedOut)) == "Couldn't play — timed out")
+        #expect(Playback.errorMessage(for: .queue, error: URLError(.notConnectedToInternet)) == "Couldn't add — no connection")
+        #expect(Playback.errorMessage(for: .playNext, error: URLError(.notConnectedToInternet)) == "Couldn't add — no connection")
+    }
+
+    @Test func errorEventNameDistinguishesPlayFromQueue() {
+        #expect(Playback.errorEventName(for: .play) == "playFailed")
+        #expect(Playback.errorEventName(for: .queue) == "queueAddFailed")
+        #expect(Playback.errorEventName(for: .playNext) == "queueAddFailed")
     }
 
     @Test func resolveMapsStreamFields() {

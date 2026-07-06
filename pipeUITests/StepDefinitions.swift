@@ -499,10 +499,11 @@ enum StepDefinitions {
                           "Channel result should show a subscriber count")
         }
 
-        // MARK: Sleep timer (end of episode)
-        r.define("I should see \"Stops after this episode\"") { w in
-            XCTAssertTrue(w.app.staticTexts["Stops after this episode"].waitForExistence(timeout: short),
-                          "End-of-episode sleep state should be shown")
+        // MARK: Generic on-screen text assertion (sleep-timer state, toasts, …)
+        r.define("I should see \"(.+)\"") { w in
+            let text = w.capture()
+            XCTAssertTrue(w.app.staticTexts[text].waitForExistence(timeout: long),
+                          "Expected to see \"\(text)\" on screen")
         }
 
         // MARK: Error recovery (scenario launches with --uitest-fail-streams)

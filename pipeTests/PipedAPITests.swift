@@ -159,7 +159,7 @@ struct PipedAPITests {
         await Playback.run(videoId: "vid", action: .play, player: player, toast: toast)
 
         #expect(toast.events.contains("loading:Loading..."))
-        #expect(toast.events.contains("error:Couldn't play — try again"))
+        #expect(toast.events.contains("error:Couldn't play — no connection"))
         #expect(player.queue.isEmpty)
     }
 
@@ -172,8 +172,25 @@ struct PipedAPITests {
         let toast = SpyToast()
         await Playback.run(videoId: "vid", action: .queue, player: player, toast: toast)
 
-        #expect(toast.events.contains("error:Couldn't add — try again"))
+        #expect(toast.events.contains("error:Couldn't add — no connection"))
         #expect(player.queue.isEmpty)
+    }
+
+    @Test func runLogsStructuredErrorWhenQueueAddFails() async {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+        defer { PipedAPI.session = .shared }
+
+        let buffer = RingBufferSink()
+        let player = isolatedPlayer()
+        player.log = PlaybackLog(buffer: buffer)
+        await Playback.run(videoId: "vid42", action: .queue, player: player, toast: SpyToast())
+
+        let logged = buffer.snapshot()
+        #expect(logged.contains { $0.category == "playbackError" && $0.message == "queueAddFailed" })
+        let entry = logged.first { $0.category == "playbackError" }
+        #expect(entry?.fields["videoId"] == "vid42")
+        #expect(entry?.fields["reason"] == "no connection")
     }
 
     // MARK: - Retry integration (mutates global session + sleep, hence serialized here)
