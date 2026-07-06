@@ -81,6 +81,10 @@ extension AcceptanceTests {
         runScenario(feature: "error_recovery.feature", scenario: "Detail view offers retry on failure")
     }
 
+    func test_Queueing_a_failed_stream_explains_why_it_couldn_t_be_added() {
+        runScenario(feature: "error_recovery.feature", scenario: "Queueing a failed stream explains why it couldn't be added")
+    }
+
 
     // MARK: - Feed Sorting and Filtering
 

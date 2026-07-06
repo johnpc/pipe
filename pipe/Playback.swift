@@ -54,24 +54,24 @@ enum Playback {
         }
     }
 
-    /// Error copy when the stream can't be fetched, so a failed add/play tells
-    /// the user instead of silently vanishing.
-    static func errorMessage(for action: Action) -> String {
-        action == .play ? "Couldn't play — try again" : "Couldn't add — try again"
-    }
-
     /// Full async flow used by the views: fetch, resolve, apply, toast.
-    /// `toast` defaults to the shared manager; tests pass a spy.
+    /// `toast` defaults to the shared manager; tests pass a spy. On failure it
+    /// logs a structured event (so the failure is diagnosable from the exported/
+    /// uploaded log) and shows a toast naming *why* it failed.
     @MainActor
     static func run(videoId: String, action: Action, player: PlayerState, toast: ToastManaging? = nil) async {
         let toast = toast ?? ToastManager.shared
         toast.showLoading(loadingMessage(for: action))
-        guard let stream = try? await PipedAPI.streams(videoId) else {
-            toast.showError(errorMessage(for: action))
-            return
+        do {
+            let stream = try await PipedAPI.streams(videoId)
+            apply(resolve(stream, videoId: videoId), action: action, to: player)
+            toast.showSuccess(successMessage(for: action))
+        } catch {
+            player.log.event("playbackError", errorEventName(for: action),
+                             fields: ["videoId": videoId, "reason": errorReason(error),
+                                      "error": error.localizedDescription])
+            toast.showError(errorMessage(for: action, error: error))
         }
-        apply(resolve(stream, videoId: videoId), action: action, to: player)
-        toast.showSuccess(successMessage(for: action))
     }
 }
 
