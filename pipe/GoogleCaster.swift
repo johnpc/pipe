@@ -21,11 +21,18 @@ final class GoogleCaster: NSObject, Casting {
     let discovery = GCKCastContext.sharedInstance().discoveryManager
     var onStateChange: (() -> Void)?
     var onTimeChange: (() -> Void)?
+    /// Provokes the iOS Local Network permission prompt. The Cast SDK's own
+    /// discovery does not reliably trigger it, which leaves discovery silently
+    /// blocked (deviceCount 0) with no Settings toggle for the user to grant.
+    /// Not `private` so `rescan()` in the +Listeners extension can re-trigger it.
+    let localNetworkNudge = LocalNetworkNudge()
 
     override init() {
         super.init()
         sessionManager.add(self)
         discovery.add(self)
+        // Trip the Local Network permission prompt first, then start discovery.
+        localNetworkNudge.trigger()
         discovery.startDiscovery()
     }
 
@@ -44,29 +51,11 @@ final class GoogleCaster: NSObject, Casting {
         sessionManager.currentCastSession?.remoteMediaClient?.approximateStreamPosition() ?? 0
     }
 
-    func load(_ media: CastMedia) {
-        guard let client = sessionManager.currentCastSession?.remoteMediaClient else { return }
-        let options = GCKMediaLoadOptions()
-        options.autoplay = true
-        options.playPosition = media.startTime
-        client.loadMedia(CastMediaBuilder.info(from: media), with: options)
-    }
-
-    func play() { sessionManager.currentCastSession?.remoteMediaClient?.play() }
-    func pause() { sessionManager.currentCastSession?.remoteMediaClient?.pause() }
-    func stop() { sessionManager.currentCastSession?.remoteMediaClient?.stop() }
-
     func presentDevicePicker() {
         // presentCastDialog() silently no-ops when castState is
         // NoDevicesAvailable — the store logs `diagnostics` around this call so a
         // "nothing happens" tap is explained by the actual state.
         GCKCastContext.sharedInstance().presentCastDialog()
-    }
-
-    func seek(to time: Double) {
-        let options = GCKMediaSeekOptions()
-        options.interval = time
-        sessionManager.currentCastSession?.remoteMediaClient?.seek(with: options)
     }
 
     func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {

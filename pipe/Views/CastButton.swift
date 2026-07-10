@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// The cast affordance: a pure-SwiftUI button (never the SDK's UIKit
 /// `GCKUICastButton`, which crashes when hosted inside the full-player `.sheet`
@@ -36,9 +37,18 @@ struct CastButton: View {
                             isPresented: $showNoDevices,
                             titleVisibility: .visible) {
             Button("Search Again") { cast.rescan() }
+            Button("Open Settings") { openSettings() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Make sure your TV is on the same Wi-Fi network as this iPhone.")
+            Text("Make sure your TV is on the same Wi-Fi network, and that pipe has Local Network access (Settings → pipe → Local Network) — without it iOS silently hides all Cast devices.")
+        }
+    }
+
+    /// Deep-link to pipe's iOS Settings page, where the Local Network toggle
+    /// lives — the most common silent cause of "no devices found".
+    private func openSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
         }
     }
 }
