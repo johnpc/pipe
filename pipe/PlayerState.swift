@@ -43,6 +43,9 @@ class PlayerState: ObservableObject {
     var castTimeCancellable: AnyCancellable?
     /// Watches the receiver connection so the current item hands off on connect.
     var castConnectionCancellable: AnyCancellable?
+    /// Video id currently loaded on the receiver, so we don't reload (and thereby
+    /// abort/restart) an item that's already casting.
+    var castLoadedVideoId: String?
     var currentVideoId: String?
     var timeObserver: Any?
     var endObserver: Any?

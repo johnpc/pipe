@@ -15,12 +15,19 @@ extension PlayerState {
     /// playback as part of the handoff.
     func attachCast(_ store: CastStore) {
         cast = store
-        castConnectionCancellable = store.$connectionState.sink { [weak self] state in
-            guard let self, state == .connected,
-                  self.currentIndex >= 0, self.currentIndex < self.queue.count,
-                  self.currentVideoId != nil else { return }
-            self.castItem(self.queue[self.currentIndex])
-        }
+        // Only hand off on the actual transition INTO connected. `connectionState`
+        // is republished on every receiver status callback; without
+        // removeDuplicates() the sink re-fired ~15×/sec, each castItem() aborting
+        // the previous loadMedia ("replaced") so the video never finished loading
+        // and every transport press was wiped by the next reload.
+        castConnectionCancellable = store.$connectionState
+            .removeDuplicates()
+            .sink { [weak self] state in
+                guard let self, state == .connected,
+                      self.currentIndex >= 0, self.currentIndex < self.queue.count,
+                      self.currentVideoId != nil else { return }
+                self.castItem(self.queue[self.currentIndex])
+            }
     }
 
     /// Send the item to the receiver, tearing down local playback so audio never
@@ -29,6 +36,10 @@ extension PlayerState {
     /// saved position, matching local playback.
     func castItem(_ item: QueueItem) {
         guard let cast else { return }
+        // Guard against reloading the item already loaded on the receiver — a
+        // redundant loadMedia aborts the in-flight one and restarts playback.
+        if castLoadedVideoId == item.videoId { return }
+        castLoadedVideoId = item.videoId
         teardownPlaybackObservers()
         releaseCurrentPlayer()
 
@@ -46,6 +57,14 @@ extension PlayerState {
         isPlaying = true
         observeCastTime(cast)
         updateNowPlaying()
+    }
+
+    /// Stop the receiver session and clear cast state. Called from `stop()`.
+    func teardownCast() {
+        if isCasting { cast?.stop() }
+        castTimeCancellable?.cancel()
+        castTimeCancellable = nil
+        castLoadedVideoId = nil
     }
 
     /// Subscribe to the receiver's clock so the phone's scrubber and saved

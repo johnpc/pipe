@@ -86,9 +86,7 @@ extension PlayerState {
     func stop() {
         teardownPlaybackObservers()
         releaseCurrentPlayer()
-        if isCasting { cast?.stop() }
-        castTimeCancellable?.cancel()
-        castTimeCancellable = nil
+        teardownCast()
         isPlaying = false
         currentTitle = nil
         currentArtist = nil

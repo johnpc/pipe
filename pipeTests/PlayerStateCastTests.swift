@@ -71,6 +71,21 @@ struct PlayerStateCastTests {
         #expect(player.player == nil)
     }
 
+    @Test func repeatedConnectedStatusLoadsReceiverOnlyOnce() {
+        // Regression: the receiver republishes `connected` on every media-status
+        // callback. Without removeDuplicates + the loaded-id guard, each republish
+        // re-ran castItem, aborting the prior loadMedia ("replaced") so playback
+        // never started and controls were wiped. It must load exactly once.
+        let player = isolatedPlayer()
+        let caster = MockCaster(connectionState: .disconnected)
+        player.attachCast(CastStore(caster: caster))
+        player.play(videoId: "v", urlString: "https://x/v.mp4", title: "T", artist: "A", thumbnail: "th", duration: 30)
+        caster.connectionState = .connected
+        // Simulate a burst of duplicate status republishes.
+        for _ in 0..<10 { caster.connectionState = .connected }
+        #expect(caster.events.filter { $0 == "load" }.count == 1)
+    }
+
     @Test func notCastingKeepsLocalBehavior() {
         let player = isolatedPlayer()
         player.cast = CastStore(caster: MockCaster(connectionState: .disconnected))
