@@ -1,32 +1,38 @@
 import Foundation
 import Network
 
-/// Forces iOS to show the Local Network permission prompt by starting a short
-/// Bonjour browse for Cast services.
+/// Starts a raw Bonjour browse for Cast services (`_googlecast._tcp`) via Apple's
+/// Network framework. Serves two purposes:
 ///
-/// iOS only presents that prompt — and only then adds the "Local Network" toggle
-/// to the app's Settings page — once the app actually attempts local-network
-/// access via the system networking APIs. The Google Cast SDK's own discovery
-/// does NOT reliably trigger it, which leaves discovery permanently returning
-/// zero devices with no way for the user to grant access (the toggle never
-/// appears). Kicking off an `NWBrowser` for `_googlecast._tcp` reliably triggers
-/// the prompt; once granted, the Cast SDK's discovery starts seeing receivers.
+///  1. It reliably trips the iOS Local Network permission prompt (and thus adds
+///     the Settings toggle) — the Google Cast SDK's own discovery does not.
+///  2. It's an independent second opinion on discovery: the SAME mechanism
+///     `dns-sd` uses. When the Cast SDK reports zero devices, comparing against
+///     what this browser sees tells us whether the fault is the Cast SDK's
+///     resolution/filtering (browser sees devices, SDK doesn't) or the network/OS
+///     (neither sees anything). Results are reported via `onResults` for logging.
 @MainActor
 final class LocalNetworkNudge {
     private var browser: NWBrowser?
+    /// Called with the browse state and count of discovered endpoints whenever it
+    /// changes, so the caller can log an independent view of discovery.
+    var onResults: ((_ state: String, _ count: Int) -> Void)?
 
-    /// Start (or restart) a Bonjour browse to provoke the permission prompt. Safe
-    /// to call repeatedly — backs the "Search Again" affordance too.
+    /// Start (or restart) the browse. Safe to call repeatedly — backs both init
+    /// and the "Search Again" affordance.
     func trigger() {
         browser?.cancel()
         let params = NWParameters()
         params.includePeerToPeer = true
         let browser = NWBrowser(for: .bonjour(type: "_googlecast._tcp", domain: nil), using: params)
-        // Handlers are required for the browse to actually run; we don't consume
-        // the results (the Cast SDK owns real discovery) — this only exists to
-        // trip the OS permission prompt.
-        browser.stateUpdateHandler = { _ in }
-        browser.browseResultsChangedHandler = { _, _ in }
+        browser.stateUpdateHandler = { [weak self] state in
+            let desc = "\(state)"
+            Task { @MainActor in self?.onResults?(desc, 0) }
+        }
+        browser.browseResultsChangedHandler = { [weak self] results, _ in
+            let count = results.count
+            Task { @MainActor in self?.onResults?("results", count) }
+        }
         browser.start(queue: .main)
         self.browser = browser
     }
