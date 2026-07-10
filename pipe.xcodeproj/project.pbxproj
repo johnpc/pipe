@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		1D6C829330014AD500BDC0D3 /* GoogleCast.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D6C829230014AD500BDC0D3 /* GoogleCast.xcframework */; };
-		1D6C829430014AD500BDC0D3 /* GoogleCast.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 1D6C829230014AD500BDC0D3 /* GoogleCast.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4012CB05A3677D9AE2BD1197 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
 		BABD5749CE5D2838EF7E614E /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 72A238017A49D96426B04048 /* Foundation.framework */; };
 /* End PBXBuildFile section */
@@ -37,7 +36,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				1D6C829430014AD500BDC0D3 /* GoogleCast.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
