@@ -57,6 +57,9 @@ final class GoogleCaster: NSObject, Casting {
     func stop() { sessionManager.currentCastSession?.remoteMediaClient?.stop() }
 
     func presentDevicePicker() {
+        // presentCastDialog() silently no-ops when castState is
+        // NoDevicesAvailable — the store logs `diagnostics` around this call so a
+        // "nothing happens" tap is explained by the actual state.
         GCKCastContext.sharedInstance().presentCastDialog()
     }
 
@@ -83,12 +86,14 @@ final class GoogleCaster: Casting {
     var connectionState: CastConnectionState { .disconnected }
     var deviceName: String? { nil }
     var currentTime: Double { 0 }
+    var diagnostics: [String: String] { ["caster": "unlinked"] }
     func load(_ media: CastMedia) {}
     func play() {}
     func pause() {}
     func seek(to time: Double) {}
     func stop() {}
     func presentDevicePicker() {}
+    func rescan() {}
     func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {}
 }
 #endif

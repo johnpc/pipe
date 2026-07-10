@@ -36,6 +36,11 @@ protocol Casting: AnyObject {
     /// Current playback position on the receiver (seconds), for mirroring the
     /// phone's scrubber and resuming locally when the session ends.
     var currentTime: Double { get }
+    /// SDK-state snapshot for diagnostics (cast state, device count, whether
+    /// discovery is active). Logged when the user taps Cast so a "nothing
+    /// happens" report is explained by the actual state — e.g. no devices found
+    /// or local-network permission not granted. Empty for non-SDK casters.
+    var diagnostics: [String: String] { get }
 
     /// Push a media item to the receiver and start playback.
     func load(_ media: CastMedia)
@@ -45,9 +50,10 @@ protocol Casting: AnyObject {
     /// End playback on the receiver (leaves the session up for the next load).
     func stop()
     /// Present the system Cast device picker so the user can connect to a TV.
-    /// Used by the row-level "Cast" affordance (the full-player button uses the
-    /// SDK's own `GCKUICastButton`, which presents its own picker).
     func presentDevicePicker()
+    /// Restart device discovery — backs the "Search again" affordance shown when
+    /// no receivers were found.
+    func rescan()
 
     /// Called by the store on init to receive state-change and time callbacks.
     /// The impl invokes these on the main actor whenever the SDK reports a change.
@@ -63,11 +69,13 @@ final class NoopCaster: Casting {
     var connectionState: CastConnectionState { .disconnected }
     var deviceName: String? { nil }
     var currentTime: Double { 0 }
+    var diagnostics: [String: String] { ["caster": "noop"] }
     func load(_ media: CastMedia) {}
     func play() {}
     func pause() {}
     func seek(to time: Double) {}
     func stop() {}
     func presentDevicePicker() {}
+    func rescan() {}
     func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {}
 }

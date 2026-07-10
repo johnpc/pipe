@@ -6,10 +6,11 @@ import Foundation
 /// `MockSummarizer` pattern used for `TranscriptStore`.
 @MainActor
 final class MockCaster: Casting {
-    var isAvailable: Bool
+    var isAvailable: Bool { didSet { onStateChange?() } }
     var connectionState: CastConnectionState { didSet { onStateChange?() } }
     var deviceName: String?
     var currentTime: Double { didSet { onTimeChange?() } }
+    var diagnostics: [String: String] = ["caster": "mock"]
 
     /// Recorded transport calls, in order, for assertions.
     private(set) var events: [String] = []
@@ -34,6 +35,7 @@ final class MockCaster: Casting {
     func seek(to time: Double) { events.append("seek:\(time)") }
     func stop() { events.append("stop") }
     func presentDevicePicker() { events.append("presentPicker") }
+    func rescan() { events.append("rescan") }
 
     func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {
         self.onStateChange = onStateChange

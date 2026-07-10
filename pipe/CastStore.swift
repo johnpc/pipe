@@ -10,11 +10,15 @@ import Combine
 final class CastStore: ObservableObject {
     @Published private(set) var connectionState: CastConnectionState = .disconnected
     @Published private(set) var deviceName: String?
+    /// Whether any Cast receiver has been discovered on the network. Drives the
+    /// "no devices found" UI and the Search-again affordance.
+    @Published private(set) var hasDevices = false
     /// Receiver playback position, republished so the phone's scrubber can mirror
     /// the TV while casting.
     @Published private(set) var currentTime: Double = 0
 
     private let caster: Casting
+    private let log: PlaybackLog
 
     /// Production convenience: back the store with the Google Cast SDK. Under UI
     /// tests, use an inert caster so no SDK context is created (which would raise
@@ -23,8 +27,9 @@ final class CastStore: ObservableObject {
         self.init(caster: MockMode.isEnabled() ? NoopCaster() : GoogleCaster())
     }
 
-    init(caster: Casting) {
+    init(caster: Casting, log: PlaybackLog = .shared) {
         self.caster = caster
+        self.log = log
         caster.setHandlers(
             onStateChange: { [weak self] in self?.syncState() },
             onTimeChange: { [weak self] in self?.syncTime() }
@@ -52,12 +57,24 @@ final class CastStore: ObservableObject {
     func seek(to time: Double) { caster.seek(to: time) }
     func stop() { caster.stop() }
 
-    /// Open the device picker so the user can pick a TV to cast to.
-    func presentDevicePicker() { caster.presentDevicePicker() }
+    /// Open the device picker so the user can pick a TV to cast to. Logs the SDK
+    /// state at tap time so a "nothing happens" report is explained by the actual
+    /// state (no devices / discovery inactive / permission denied).
+    func presentDevicePicker() {
+        log.event("cast", "presentPicker", fields: caster.diagnostics)
+        caster.presentDevicePicker()
+    }
+
+    /// Restart discovery — backs the "Search again" button in the no-devices UI.
+    func rescan() {
+        log.event("cast", "rescan", fields: caster.diagnostics)
+        caster.rescan()
+    }
 
     private func syncState() {
         connectionState = caster.connectionState
         deviceName = caster.deviceName
+        hasDevices = caster.isAvailable
     }
 
     private func syncTime() {

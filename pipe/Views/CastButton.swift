@@ -1,23 +1,40 @@
 import SwiftUI
 
-/// The cast affordance: a plain SwiftUI button that opens the system Cast device
-/// picker via `CastStore`.
+/// The cast affordance: a pure-SwiftUI button (never the SDK's UIKit
+/// `GCKUICastButton`, which crashes when hosted inside the full-player `.sheet`
+/// on iOS 26 — see the crash-fix history). Because it renders identically in the
+/// app and under UI tests, the acceptance test exercises the real shipped path.
 ///
-/// We deliberately do NOT embed the SDK's `GCKUICastButton` (a UIKit view). Doing
-/// so inside the full-player `.sheet` crashed on iOS 26 — SwiftUI's out-of-process
-/// sheet presentation fails a dynamic cast on the hosted UIKit control
-/// (`RemoteSheetContainerVCWriter` → `swift_dynamicCast` → fatalError). A pure
-/// SwiftUI button sidesteps that entirely, and — since it renders the same in the
-/// app and under UI tests — the acceptance test exercises the real shipped path.
+/// When a receiver has been discovered, tapping opens the system Cast picker.
+/// When none is found, tapping opens a "No TVs found" dialog with a Search-again
+/// action rather than silently no-opping (`presentCastDialog()` does nothing with
+/// no devices), so the control never feels dead.
 struct CastButton: View {
     @ObservedObject var cast: CastStore
+    @State private var showNoDevices = false
 
     var body: some View {
-        Button { cast.presentDevicePicker() } label: {
-            Image(systemName: "tv.badge.wifi").font(.title3)
+        Button {
+            if cast.hasDevices {
+                cast.presentDevicePicker()
+            } else {
+                showNoDevices = true
+            }
+        } label: {
+            Image(systemName: cast.hasDevices ? "tv.badge.wifi" : "tv.badge.wifi.searchlight")
+                .font(.title3)
+                .foregroundStyle(cast.hasDevices ? Color.accentColor : .secondary)
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("castButton")
-        .accessibilityLabel("Cast to TV")
+        .accessibilityLabel(cast.hasDevices ? "Cast to TV" : "No TVs found")
+        .confirmationDialog("No TVs found",
+                            isPresented: $showNoDevices,
+                            titleVisibility: .visible) {
+            Button("Search Again") { cast.rescan() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Make sure your TV is on the same Wi-Fi network as this iPhone.")
+        }
     }
 }
