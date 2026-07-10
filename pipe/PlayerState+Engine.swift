@@ -7,16 +7,24 @@ import MediaPlayer
 extension PlayerState {
     func playItem(_ item: QueueItem, skipRefresh: Bool = false) {
         error = nil
-        setupAudioSession()
 
         let isLocal = downloads?.localURLString(for: item.videoId) != nil
         // Stream URLs are time-limited; re-resolve a stale one before playing so
         // an item paused overnight (or a long video whose URL expired) doesn't
-        // load a dead URL. Local files never expire.
+        // load a dead URL. Local files never expire. (Applies to the TV too: the
+        // Shield fetches the URL directly, so a stale one would fail on the TV.)
         if !skipRefresh, StreamFreshness.needsRefresh(resolvedAt: item.resolvedAt, now: Date(), isLocal: isLocal) {
             refreshAndPlay(item)
             return
         }
+
+        // A connected receiver owns playback: hand it the video and skip building
+        // a local AVPlayer entirely.
+        if isCasting {
+            castItem(item)
+            return
+        }
+        setupAudioSession()
 
         // Prefer a downloaded local file (offline playback) over streaming.
         let source = downloads?.localURLString(for: item.videoId) ?? item.playbackURL(videoMode: videoMode)
@@ -79,18 +87,5 @@ extension PlayerState {
         if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
         isPlaying = true
         updateNowPlaying()
-    }
-
-    /// Handle a periodic playback-time update: publish the current time, adopt a
-    /// valid item duration, and persist progress. Extracted from the time
-    /// observer closure so it is directly unit-testable.
-    func handleProgress(currentTime time: Double, itemDuration: Double?) {
-        self.currentTime = time
-        if let d = itemDuration, d.isFinite, d > 0 { self.duration = d }
-        if let vid = currentVideoId {
-            recents?.updateTimestamp(videoId: vid, timestamp: time)
-            updateCurrentChapter(for: vid, at: time)
-        }
-        logProgressHeartbeat(at: time)
     }
 }

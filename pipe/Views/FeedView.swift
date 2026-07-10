@@ -48,6 +48,7 @@ struct FeedView: View {
                  resumeTime: recents.resumeTime(videoId: v.videoId),
                  onPlay: { playVideo(v) }, onQueue: { queueVideo(v) },
                  onPlayNext: { playNextVideo(v) },
+                 onCast: { Playback.cast(videoId: v.videoId, player: player) },
                  isSaved: saved.isSaved(v.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(v)) },
                  isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(v) })
     }

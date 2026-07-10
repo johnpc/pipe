@@ -15,5 +15,15 @@
     <array>
         <string>audio</string>
     </array>
+    <!-- Google Cast discovery: iOS requires a local-network usage prompt and
+         the Bonjour service types the SDK browses (the default media receiver
+         app id CC1AD845, plus the generic googlecast service). -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>pipe uses the local network to find and cast to TVs like Chromecast and Android TV.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_googlecast._tcp</string>
+        <string>_CC1AD845._googlecast._tcp</string>
+    </array>
 </dict>
 </plist>

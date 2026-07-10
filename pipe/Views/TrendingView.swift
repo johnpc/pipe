@@ -18,7 +18,8 @@ struct TrendingView: View {
                     List(videos) { v in
                         NavigationLink(value: v) {
                             VideoRow(v: v, onPlay: { run(v, .play) }, onQueue: { run(v, .queue) },
-                                     onPlayNext: { run(v, .playNext) })
+                                     onPlayNext: { run(v, .playNext) },
+                                     onCast: { Playback.cast(videoId: v.videoId, player: player) })
                         }
                     }
                     .listStyle(.plain)

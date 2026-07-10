@@ -21,7 +21,8 @@ struct PlaylistView: View {
                     ForEach(PlaylistLogic.playableVideos(playlist)) { v in
                         NavigationLink(value: v) {
                             VideoRow(v: v, isCompleted: false, resumeTime: nil,
-                                     onPlay: { play(v) }, onQueue: { queue(v) })
+                                     onPlay: { play(v) }, onQueue: { queue(v) },
+                                     onCast: { Playback.cast(videoId: v.videoId, player: player) })
                         }
                     }
                 }

@@ -51,6 +51,7 @@ struct SearchView: View {
     }
     private var rowActions: SearchRowActions {
         SearchRowActions(play: playItem, queue: queueItem, playNext: playNextItem,
+                         cast: castItem,
                          toggleSave: { saved.toggle(savedItem($0)) },
                          toggleDownload: toggleDownload)
     }
@@ -69,6 +70,9 @@ struct SearchView: View {
     }
     private func playNextItem(_ item: SearchItem) {
         Task { await Playback.run(videoId: item.videoId, action: .playNext, player: player) }
+    }
+    private func castItem(_ item: SearchItem) {
+        Playback.cast(videoId: item.videoId, player: player)
     }
     private func savedItem(_ item: SearchItem) -> SavedItem {
         SavedItem(videoId: item.videoId, title: item.displayTitle, artist: item.displayUploader, thumbnail: item.displayThumbnail, duration: item.duration ?? 0)

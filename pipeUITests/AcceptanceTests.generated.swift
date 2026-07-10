@@ -13,6 +13,17 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Cast to TV
+
+    func test_The_full_player_offers_a_Cast_control() {
+        runScenario(feature: "cast_to_tv.feature", scenario: "The full player offers a Cast control")
+    }
+
+    func test_A_search_result_offers_a_Cast_action() {
+        runScenario(feature: "cast_to_tv.feature", scenario: "A search result offers a Cast action")
+    }
+
+
     // MARK: - Channel Browsing
 
     func test_Opening_a_channel_shows_its_videos() {

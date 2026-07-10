@@ -31,7 +31,7 @@ struct SearchResultRow: View {
                 AudioRow(item: item, isCompleted: recents.isCompleted(videoId: item.videoId),
                          resumeTime: recents.resumeTime(videoId: item.videoId),
                          onPlay: { actions.play(item) }, onQueue: { actions.queue(item) },
-                         onPlayNext: { actions.playNext(item) },
+                         onPlayNext: { actions.playNext(item) }, onCast: { actions.cast(item) },
                          isSaved: saved.isSaved(item.videoId), onToggleSave: { Haptics.tap(); actions.toggleSave(item) },
                          isDownloaded: downloads.isDownloaded(item.videoId), onToggleDownload: { Haptics.tap(); actions.toggleDownload(item) })
             }
@@ -45,6 +45,7 @@ struct SearchRowActions {
     let play: (SearchItem) -> Void
     let queue: (SearchItem) -> Void
     let playNext: (SearchItem) -> Void
+    let cast: (SearchItem) -> Void
     let toggleSave: (SearchItem) -> Void
     let toggleDownload: (SearchItem) -> Void
 }

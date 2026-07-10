@@ -6,6 +6,19 @@ extension PlayerState {
     func togglePlayPause() { if isPlaying { pause() } else { resume() } }
 
     func resume() {
+        // While casting, drive the receiver rather than a local player. If no
+        // item has been loaded onto the TV yet, load the current one.
+        if isCasting {
+            if currentVideoId == nil, currentIndex >= 0, currentIndex < queue.count {
+                playItem(queue[currentIndex])
+            } else {
+                cast?.play()
+            }
+            isPlaying = true
+            log.event("cast", "resume", fields: ["at": String(Int(currentTime))])
+            updateNowPlaying()
+            return
+        }
         // After a cold launch the queue is restored but no AVPlayer exists yet;
         // start the current item instead of a silent no-op.
         if player == nil, currentIndex >= 0, currentIndex < queue.count {
@@ -20,7 +33,7 @@ extension PlayerState {
     }
 
     func pause() {
-        player?.pause()
+        if isCasting { cast?.pause() } else { player?.pause() }
         isPlaying = false
         log.event("transport", "pause", fields: ["at": String(Int(currentTime))])
         updateNowPlaying()
@@ -45,7 +58,7 @@ extension PlayerState {
     }
 
     func seek(to time: Double) {
-        player?.seek(to: CMTime(seconds: time, preferredTimescale: 1))
+        if isCasting { cast?.seek(to: time) } else { player?.seek(to: CMTime(seconds: time, preferredTimescale: 1)) }
         log.event("transport", "seek", fields: ["from": String(Int(currentTime)), "to": String(Int(time))])
         currentTime = time
         updateNowPlaying()

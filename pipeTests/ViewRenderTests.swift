@@ -351,7 +351,7 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderSearchResultRowAllTypes() {
         let (p, f, r) = makeStores()
-        let noop = SearchRowActions(play: { _ in }, queue: { _ in }, playNext: { _ in }, toggleSave: { _ in }, toggleDownload: { _ in })
+        let noop = SearchRowActions(play: { _ in }, queue: { _ in }, playNext: { _ in }, cast: { _ in }, toggleSave: { _ in }, toggleDownload: { _ in })
         func row(_ item: SearchItem) -> some View {
             NavigationStack { SearchResultRow(item: item, player: p, following: f, recents: r, saved: makeSaved(), downloads: makeDownloads(), onToggleFollow: {}, actions: noop) }
         }
@@ -470,6 +470,17 @@ final class ViewRenderTests: XCTestCase {
         let (p, _, _) = makeStores()
         p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "Artist", thumbnail: "t", duration: 100)
         p.addToQueue(videoId: "v2", url: "bad://v2", title: "Next", artist: "A", thumbnail: "t", duration: 60)
+        render(FullPlayerSheet(player: p))
+    }
+
+    func testRenderCastButton() {
+        render(CastButton(cast: CastStore(caster: MockCaster())))
+    }
+
+    func testRenderFullPlayerSheetWithCast() {
+        let (p, _, _) = makeStores()
+        p.cast = CastStore(caster: MockCaster())
+        p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "Artist", thumbnail: "t", duration: 100)
         render(FullPlayerSheet(player: p))
     }
 
