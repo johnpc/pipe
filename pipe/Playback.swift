@@ -16,6 +16,7 @@ enum Playback {
         ResolvedStream(
             videoId: videoId,
             url: getStreamUrl(stream),
+            castURL: getCastStreamUrl(stream),
             audioUrl: getAudioStreamUrl(stream),
             title: stream.title,
             artist: stream.uploader,
@@ -33,11 +34,11 @@ enum Playback {
         player.registerChapters(resolved.chapters, for: resolved.videoId)
         switch action {
         case .play:
-            player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         case .queue:
-            player.addToQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.addToQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         case .playNext:
-            player.playNextInQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.playNextInQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         }
     }
 
@@ -73,19 +74,6 @@ enum Playback {
             toast.showError(errorMessage(for: action, error: error))
         }
     }
-}
-
-/// Value type carrying everything the player needs to start an item.
-struct ResolvedStream: Equatable {
-    let videoId: String
-    let url: String
-    let audioUrl: String
-    let title: String
-    let artist: String
-    let thumbnail: String
-    let duration: Int
-    let uploadedDate: String?
-    var chapters: [Chapter] = []
 }
 
 /// Protocol over ToastManager so playback logic can be tested without the singleton.

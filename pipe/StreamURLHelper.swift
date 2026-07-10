@@ -19,8 +19,21 @@ func rewriteProxyHost(_ url: String) -> String {
 
 /// Best progressive MP4 video stream URL (full A/V), proxy-rewritten.
 func getStreamUrl(_ s: StreamResponse) -> String {
-    let url = s.videoStreams.first { $0.mimeType.contains("mp4") && $0.videoOnly == false }?.url ?? ""
-    return rewriteProxyHost(url)
+    return rewriteProxyHost(bestProgressiveMP4URL(s))
+}
+
+/// Best progressive MP4 URL **kept in its proxied form** (no host rewrite), for
+/// casting. The Chromecast Default Media Receiver fetches media itself through a
+/// web context, so it needs a CORS-enabled source: the Piped proxy adds those
+/// headers and fetches googlevideo server-side, whereas the rewritten direct
+/// googlevideo URL sends no CORS headers and is bound to the phone's IP — which
+/// makes the receiver hang on an endless loader. Empty when there's no MP4 track.
+func getCastStreamUrl(_ s: StreamResponse) -> String {
+    bestProgressiveMP4URL(s)
+}
+
+private func bestProgressiveMP4URL(_ s: StreamResponse) -> String {
+    s.videoStreams.first { $0.mimeType.contains("mp4") && $0.videoOnly == false }?.url ?? ""
 }
 
 /// Best audio-only stream URL, proxy-rewritten. Prefers the highest-bitrate

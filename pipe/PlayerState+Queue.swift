@@ -3,13 +3,13 @@ import Foundation
 /// Queue management for PlayerState: add/remove/move/persist/restore.
 extension PlayerState {
     /// Append to the end of the queue.
-    func addToQueue(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
-        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate), playNext: false)
+    func addToQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, castUrl: castUrl, duration: duration, uploadedDate: uploadedDate), playNext: false)
     }
 
     /// Insert right after the current item so it plays next.
-    func playNextInQueue(videoId: String, url: String, audioUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
-        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate), playNext: true)
+    func playNextInQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, castUrl: castUrl, duration: duration, uploadedDate: uploadedDate), playNext: true)
     }
 
     private func enqueue(_ item: QueueItem, playNext: Bool) {
