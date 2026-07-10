@@ -484,6 +484,24 @@ final class ViewRenderTests: XCTestCase {
         render(FullPlayerSheet(player: p))
     }
 
+    /// Regression: the cast button shipped as an embedded UIKit `GCKUICastButton`,
+    /// which crashed when the full player was shown via `.sheet` on iOS 26
+    /// (SwiftUI's remote-sheet presentation fatal-cast). Present the sheet for
+    /// real (not just render the content) so a UIKit-in-sheet regression trips
+    /// here instead of in production.
+    func testPresentFullPlayerAsSheetWithCastDoesNotCrash() {
+        let (p, _, _) = makeStores()
+        p.cast = CastStore(caster: MockCaster())
+        p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "A", thumbnail: "t", duration: 100)
+        struct Host: View {
+            @ObservedObject var player: PlayerState
+            var body: some View {
+                Color.clear.sheet(isPresented: .constant(true)) { FullPlayerSheet(player: player) }
+            }
+        }
+        renderLive(Host(player: p), seconds: 1.0)
+    }
+
     func testRenderFullPlayerSheetVideoMode() {
         let (p, _, _) = makeStores()
         p.play(videoId: "v", urlString: "bad://v", title: "Song", artist: "Artist", thumbnail: "t", duration: 100)
