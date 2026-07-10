@@ -4,6 +4,23 @@ import Foundation
 import GoogleCast
 
 extension GoogleCaster {
+    /// SDK-state snapshot logged when the user taps Cast, so a "nothing happens"
+    /// tap is explained by the real state (castState 0 = no devices; discovery
+    /// inactive usually means local-network permission was denied).
+    var diagnostics: [String: String] {
+        [
+            "castState": String(GCKCastContext.sharedInstance().castState.rawValue),
+            "deviceCount": String(discovery.deviceCount),
+            "discoveryActive": String(discovery.discoveryActive),
+        ]
+    }
+
+    /// Bounce discovery to force a fresh mDNS sweep for receivers.
+    func rescan() {
+        discovery.stopDiscovery()
+        discovery.startDiscovery()
+    }
+
     /// Configure the shared Cast context. Idempotent so a repeat call (previews,
     /// tests) doesn't crash. Called once at launch from `pipeApp`.
     static func bootstrap() {
@@ -12,6 +29,10 @@ extension GoogleCaster {
         let options = GCKCastOptions(discoveryCriteria: criteria)
         // Suspend discovery when backgrounded to save battery.
         options.suspendSessionsWhenBackgrounded = true
+        // Discover receivers eagerly at launch. Without this the SDK defaults to
+        // deferring discovery until the first tap on a GCKUICastButton — which we
+        // don't use — so devices would never be found and the picker would no-op.
+        options.startDiscoveryAfterFirstTapOnCastButton = false
         GCKCastContext.setSharedInstanceWith(options)
     }
 }

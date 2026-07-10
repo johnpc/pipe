@@ -474,7 +474,10 @@ final class ViewRenderTests: XCTestCase {
     }
 
     func testRenderCastButton() {
-        render(CastButton(cast: CastStore(caster: MockCaster())))
+        // Devices available → the cast glyph.
+        render(CastButton(cast: CastStore(caster: MockCaster(isAvailable: true))))
+        // No devices → the search-again variant (different glyph + dialog path).
+        render(CastButton(cast: CastStore(caster: MockCaster(isAvailable: false))))
     }
 
     func testRenderFullPlayerSheetWithCast() {
