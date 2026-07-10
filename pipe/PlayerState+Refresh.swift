@@ -42,6 +42,7 @@ extension PlayerState {
         var copy = item
         copy.url = getStreamUrl(response)
         copy.audioUrl = getAudioStreamUrl(response)
+        copy.castUrl = getCastStreamUrl(response)
         copy.resolvedAt = Date()
         guard !copy.url.isEmpty || !copy.audioUrl.isEmpty else { return nil }
         return copy

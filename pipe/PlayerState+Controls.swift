@@ -39,8 +39,8 @@ extension PlayerState {
         updateNowPlaying()
     }
 
-    func play(videoId: String, urlString: String, audioUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
-        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, duration: duration, uploadedDate: uploadedDate)
+    func play(videoId: String, urlString: String, audioUrl: String = "", castUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
+        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, castUrl: castUrl, duration: duration, uploadedDate: uploadedDate)
         queue.insert(item, at: 0)
         playIndex(0)
     }

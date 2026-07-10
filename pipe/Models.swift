@@ -11,6 +11,10 @@ struct QueueItem: Identifiable, Equatable, Codable {
     var url: String
     /// Audio-only stream URL (empty when the source had no audio-only track).
     var audioUrl: String
+    /// Proxied MP4 URL for casting (CORS-friendly for the TV receiver). Mutable
+    /// so it's re-resolved with `url` when the stream expires. Empty → falls back
+    /// to `url` at cast time.
+    var castUrl: String = ""
     let duration: Int
     let uploadedDate: String?
     /// When the stream URLs were last resolved. Used to detect a stale (expired)
@@ -20,7 +24,7 @@ struct QueueItem: Identifiable, Equatable, Codable {
 
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
-        case videoId, title, artist, thumbnail, url, audioUrl, duration, uploadedDate, resolvedAt
+        case videoId, title, artist, thumbnail, url, audioUrl, castUrl, duration, uploadedDate, resolvedAt
     }
 
     /// URL to play for the given mode: audio-only when available and not in
@@ -28,6 +32,9 @@ struct QueueItem: Identifiable, Equatable, Codable {
     func playbackURL(videoMode: Bool) -> String {
         (!videoMode && !audioUrl.isEmpty) ? audioUrl : url
     }
+
+    /// URL to hand a Cast receiver: the proxied MP4 when available, else `url`.
+    var castPlaybackURL: String { castUrl.isEmpty ? url : castUrl }
 }
 
 struct FollowedChannel: Codable, Identifiable, Equatable, Hashable {

@@ -35,9 +35,10 @@ enum CastLogic {
     }
 
     /// Build cast media from a queued item (in-flight handoff / queue advance).
-    /// Uses the item's video URL directly regardless of the phone's audio mode.
+    /// Uses the item's proxied cast URL (CORS-friendly for the TV), falling back
+    /// to the plain video URL — never the audio-only track.
     static func media(from item: QueueItem, startTime: Double = 0) -> CastMedia {
-        media(url: item.url,
+        media(url: item.castPlaybackURL,
               title: item.title,
               artist: item.artist,
               thumbnail: item.thumbnail,

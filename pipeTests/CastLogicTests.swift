@@ -17,12 +17,20 @@ struct CastLogicTests {
         #expect(media.startTime == 0)
     }
 
-    @Test func mediaFromQueueItemUsesVideoUrl() {
-        let item = QueueItem(videoId: "v", title: "Title", artist: "Chan", thumbnail: "th", url: "https://x/v.mp4", audioUrl: "https://x/a.m4a", duration: 30, uploadedDate: nil)
+    @Test func mediaFromQueueItemPrefersProxiedCastUrl() {
+        // When a proxied cast URL is present it MUST be used (CORS-friendly for
+        // the TV receiver), not the rewritten-direct `url` that only the phone
+        // can fetch.
+        let item = QueueItem(videoId: "v", title: "Title", artist: "Chan", thumbnail: "th", url: "https://direct.googlevideo/v.mp4", audioUrl: "https://x/a.m4a", castUrl: "https://pipedproxy/v.mp4?host=gv", duration: 30, uploadedDate: nil)
         let media = CastLogic.media(from: item, startTime: 12)
-        #expect(media.url == "https://x/v.mp4")
+        #expect(media.url == "https://pipedproxy/v.mp4?host=gv")
         #expect(media.startTime == 12)
         #expect(media.contentType == "video/mp4")
+    }
+
+    @Test func mediaFromQueueItemFallsBackToVideoUrlWhenNoCastUrl() {
+        let item = QueueItem(videoId: "v", title: "T", artist: "C", thumbnail: "", url: "https://x/v.mp4", audioUrl: "https://x/a.m4a", duration: 30, uploadedDate: nil)
+        #expect(CastLogic.media(from: item).url == "https://x/v.mp4")
     }
 
     // MARK: - Start time handling
