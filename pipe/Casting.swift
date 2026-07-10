@@ -53,3 +53,21 @@ protocol Casting: AnyObject {
     /// The impl invokes these on the main actor whenever the SDK reports a change.
     func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void)
 }
+
+/// An inert caster: never available, connects to nothing, ignores transport.
+/// Used under UI tests so no Cast SDK context is created (which would raise the
+/// local-network permission alert and crash if the SDK weren't bootstrapped).
+@MainActor
+final class NoopCaster: Casting {
+    var isAvailable: Bool { false }
+    var connectionState: CastConnectionState { .disconnected }
+    var deviceName: String? { nil }
+    var currentTime: Double { 0 }
+    func load(_ media: CastMedia) {}
+    func play() {}
+    func pause() {}
+    func seek(to time: Double) {}
+    func stop() {}
+    func presentDevicePicker() {}
+    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {}
+}

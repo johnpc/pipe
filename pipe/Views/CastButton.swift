@@ -18,15 +18,25 @@ struct CastButton: View {
     @ViewBuilder
     private var content: some View {
         #if canImport(GoogleCast)
-        GCKCastButtonView()
-            .frame(width: 24, height: 24)
+        // Under UI tests the SDK is linked but discovery is disabled, so the
+        // real GCKUICastButton would be hidden (no receiver) and its identifier
+        // wouldn't reliably reach XCUITest. Render the plain, deterministic
+        // button there; use the SDK's own button in the real app.
+        if MockMode.isEnabled() {
+            fallbackButton
+        } else {
+            GCKCastButtonView().frame(width: 24, height: 24)
+        }
         #else
+        fallbackButton
+        #endif
+    }
+
+    private var fallbackButton: some View {
         Button { cast.presentDevicePicker() } label: {
-            Image(systemName: "tv.badge.wifi")
-                .font(.title3)
+            Image(systemName: "tv.badge.wifi").font(.title3)
         }
         .buttonStyle(.plain)
-        #endif
     }
 }
 

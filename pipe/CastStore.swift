@@ -16,10 +16,11 @@ final class CastStore: ObservableObject {
 
     private let caster: Casting
 
-    /// Production convenience: back the store with the Google Cast SDK. Tests use
-    /// `init(caster:)` with a `MockCaster` instead.
+    /// Production convenience: back the store with the Google Cast SDK. Under UI
+    /// tests, use an inert caster so no SDK context is created (which would raise
+    /// the local-network prompt). Unit tests pass a `MockCaster` via `init(caster:)`.
     convenience init() {
-        self.init(caster: GoogleCaster())
+        self.init(caster: MockMode.isEnabled() ? NoopCaster() : GoogleCaster())
     }
 
     init(caster: Casting) {
