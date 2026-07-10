@@ -26,11 +26,19 @@ final class GoogleCaster: NSObject, Casting {
     /// blocked (deviceCount 0) with no Settings toggle for the user to grant.
     /// Not `private` so `rescan()` in the +Listeners extension can re-trigger it.
     let localNetworkNudge = LocalNetworkNudge()
+    let log: PlaybackLog
 
-    override init() {
+    init(log: PlaybackLog = .shared) {
+        self.log = log
         super.init()
         sessionManager.add(self)
         discovery.add(self)
+        // Independent second opinion on discovery: log what a raw NWBrowser (the
+        // same mechanism as `dns-sd`) sees, so a Cast-SDK deviceCount of 0 can be
+        // told apart from a genuinely empty network.
+        localNetworkNudge.onResults = { [weak self] state, count in
+            self?.log.event("cast", "nwbrowse", fields: ["state": state, "found": String(count)])
+        }
         // Trip the Local Network permission prompt first, then start discovery.
         localNetworkNudge.trigger()
         discovery.startDiscovery()
