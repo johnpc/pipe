@@ -46,7 +46,10 @@ final class GoogleCaster: NSObject, Casting {
 
     func load(_ media: CastMedia) {
         guard let client = sessionManager.currentCastSession?.remoteMediaClient else { return }
-        client.loadMediaItem(CastMediaBuilder.item(from: media), autoplay: true, playPosition: media.startTime)
+        let options = GCKMediaLoadOptions()
+        options.autoplay = true
+        options.playPosition = media.startTime
+        client.loadMedia(CastMediaBuilder.info(from: media), with: options)
     }
 
     func play() { sessionManager.currentCastSession?.remoteMediaClient?.play() }

@@ -43,28 +43,21 @@ extension GoogleCaster: GCKSessionManagerListener, GCKDiscoveryManagerListener, 
     }
 }
 
-/// Builds the SDK's `GCKMediaInformation`/`GCKMediaQueueItem` from our pure
-/// `CastMedia`. The only place media metadata is translated into `GCK*` types.
+/// Builds the SDK's `GCKMediaInformation` from our pure `CastMedia`. The only
+/// place media metadata is translated into `GCK*` types.
 enum CastMediaBuilder {
-    static func item(from media: CastMedia) -> GCKMediaQueueItem {
+    static func info(from media: CastMedia) -> GCKMediaInformation {
         let metadata = GCKMediaMetadata(metadataType: .movie)
         metadata.setString(media.title, forKey: kGCKMetadataKeyTitle)
         metadata.setString(media.artist, forKey: kGCKMetadataKeySubtitle)
         if let thumb = URL(string: media.thumbnail) {
             metadata.addImage(GCKImage(url: thumb, width: 480, height: 360))
         }
-        let info = GCKMediaInformationBuilder(contentURL: URL(string: media.url) ?? URL(fileURLWithPath: "/"))
-        info.streamType = .buffered
-        info.contentType = media.contentType
-        info.metadata = metadata
-        return GCKMediaQueueItemBuilder().with(info.build()).build()
-    }
-}
-
-private extension GCKMediaQueueItemBuilder {
-    func with(_ info: GCKMediaInformation) -> GCKMediaQueueItemBuilder {
-        mediaInformation = info
-        return self
+        let builder = GCKMediaInformationBuilder(contentURL: URL(string: media.url) ?? URL(fileURLWithPath: "/"))
+        builder.streamType = .buffered
+        builder.contentType = media.contentType
+        builder.metadata = metadata
+        return builder.build()
     }
 }
 #endif
