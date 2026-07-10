@@ -15,8 +15,11 @@ extension GoogleCaster {
         ]
     }
 
-    /// Bounce discovery to force a fresh mDNS sweep for receivers.
+    /// Bounce discovery to force a fresh mDNS sweep for receivers. Also re-trips
+    /// the Local Network prompt, so a user who dismissed it (or never saw it) gets
+    /// another chance from the "Search Again" affordance.
     func rescan() {
+        localNetworkNudge.trigger()
         discovery.stopDiscovery()
         discovery.startDiscovery()
     }
