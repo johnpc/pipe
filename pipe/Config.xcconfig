@@ -4,3 +4,9 @@
 // checkout / CI build succeeds without the secret.
 PIPE_LOGS_API_KEY =
 #include? "Secrets.xcconfig"
+
+// The Google Cast SDK ships as a *static* xcframework, so its system-library
+// dependencies (which CocoaPods would inject via the podspec) must be linked
+// explicitly here — otherwise the linker can't resolve symbols like
+// SCNetworkReachability*. `$(inherited)` keeps any other flags intact.
+OTHER_LDFLAGS = $(inherited) -ObjC -lc++ -framework SystemConfiguration -framework AVRouting -framework MediaAccessibility -framework MediaPlayer -framework Accelerate

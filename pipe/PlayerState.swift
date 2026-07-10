@@ -36,6 +36,13 @@ class PlayerState: ObservableObject {
     var sessionStartLogged = false
     var recents: RecentsStore?
     var downloads: DownloadStore?
+    /// Cast receiver, when the user has connected to a TV. While casting,
+    /// transport drives the receiver instead of the local `AVPlayer`.
+    var cast: CastStore?
+    /// Mirrors the receiver's playback time back onto `currentTime` while casting.
+    var castTimeCancellable: AnyCancellable?
+    /// Watches the receiver connection so the current item hands off on connect.
+    var castConnectionCancellable: AnyCancellable?
     var currentVideoId: String?
     var timeObserver: Any?
     var endObserver: Any?

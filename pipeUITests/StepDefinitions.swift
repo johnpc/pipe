@@ -120,6 +120,19 @@ enum StepDefinitions {
                           w.app.staticTexts["Up Next"].waitForExistence(timeout: short),
                           "A related video should be shown in the Up Next tab")
         }
+        r.define("I should see the Cast control") { w in
+            XCTAssertTrue(w.app.buttons["castButton"].firstMatch.waitForExistence(timeout: long),
+                          "The cast control should be present in the full player")
+        }
+        r.define("I open the context menu for the first result") { w in
+            let row = firstStreamRow(w)
+            XCTAssertTrue(row.waitForExistence(timeout: long), "A stream result row should be present")
+            row.press(forDuration: 1.1)
+        }
+        r.define("I should see a \"(.+)\" action") { w in
+            XCTAssertTrue(w.app.buttons[w.capture()].waitForExistence(timeout: medium),
+                          "\(w.capture()) action should appear in the context menu")
+        }
         r.define("I should see the video description without raw HTML") { w in
             // The Info tab's "About" header proves the description section rendered;
             // asserting no literal "<br>" leaks proves HTML was decoded, not shown raw.

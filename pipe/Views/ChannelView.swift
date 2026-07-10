@@ -44,7 +44,7 @@ struct ChannelView: View {
                     } else {
                         List(tabContent) { v in
                             NavigationLink(value: v) {
-                                VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { play(v, .play) }, onQueue: { play(v, .queue) })
+                                VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId), resumeTime: recents.resumeTime(videoId: v.videoId), onPlay: { play(v, .play) }, onQueue: { play(v, .queue) }, onCast: { Playback.cast(videoId: v.videoId, player: player) })
                             }
                         }
                         .listStyle(.plain)

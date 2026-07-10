@@ -1,4 +1,5 @@
 import AVFoundation
+import Combine
 
 /// End-of-item advancement, stall recovery, and play() entry point.
 extension PlayerState {
@@ -85,6 +86,9 @@ extension PlayerState {
     func stop() {
         teardownPlaybackObservers()
         releaseCurrentPlayer()
+        if isCasting { cast?.stop() }
+        castTimeCancellable?.cancel()
+        castTimeCancellable = nil
         isPlaying = false
         currentTitle = nil
         currentArtist = nil

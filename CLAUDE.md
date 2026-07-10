@@ -161,3 +161,17 @@ xcodebuild test -scheme pipe -destination 'platform=iOS Simulator,name=iPhone 17
   unit tests + coverage, CRAP, Gherkin acceptance) and deploys to App Store Connect
   on push to `main`. Repo secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_CONTENT`,
   `TEAM_ID`.
+- **Casting (Chromecast / Android TV):** casting to a TV runs through the **Google
+  Cast SDK**, which Google ships **only** as a CocoaPod (`google-cast-sdk`) or a
+  manually-added static `GoogleCast.xcframework` — *not* as a Swift Package. The
+  whole app is built to work **with or without** it: every `GCK*` call is confined
+  to `GoogleCaster.swift`/`GoogleCaster+Listeners.swift` behind `#if canImport(GoogleCast)`,
+  with an unavailable fallback (same containment as `AppleIntelligenceSummarizer`).
+  So the app + tests build and ship green **without** the SDK; the cast button just
+  stays hidden. **To light it up:** add `GoogleCast.xcframework` (v4.8.4, from
+  `https://dl.google.com/dl/chromecast/sdk/ios/GoogleCastSDK-ios-4.8.4_static.zip`)
+  to the `pipe` target in Xcode as "Embed & Sign" (or `pod 'google-cast-sdk'`). The
+  Info.plist local-network + `_googlecast._tcp` Bonjour keys are already present.
+  The rest of the app talks to casting only through the `Casting` protocol +
+  `CastStore` (see `Casting.swift`, `CastLogic.swift`), which are fully unit-tested
+  with a `MockCaster` — no SDK needed for CI.

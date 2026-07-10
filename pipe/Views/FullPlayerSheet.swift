@@ -23,15 +23,20 @@ struct FullPlayerSheet: View {
                 Text(player.currentTitle ?? "").font(.title3).bold().lineLimit(2).multilineTextAlignment(.center).padding(.horizontal)
                 Text(player.currentArtist ?? "").foregroundStyle(.secondary)
                 
-                // Video/Audio toggle — reloads the stream at the same position
-                Button {
-                    player.toggleVideoMode()
-                } label: {
-                    Label(player.videoMode ? "Audio Only" : "Show Video", systemImage: player.videoMode ? "waveform" : "video")
-                        .font(.subheadline)
-                        .padding(.horizontal, 16).padding(.vertical, 8)
-                        .background(Color.secondary.opacity(0.2))
-                        .cornerRadius(20)
+                HStack(spacing: 16) {
+                    // Video/Audio toggle — reloads the stream at the same position
+                    Button {
+                        player.toggleVideoMode()
+                    } label: {
+                        Label(player.videoMode ? "Audio Only" : "Show Video", systemImage: player.videoMode ? "waveform" : "video")
+                            .font(.subheadline)
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                            .background(Color.secondary.opacity(0.2))
+                            .cornerRadius(20)
+                    }
+                    if let cast = player.cast {
+                        CastButton(cast: cast)
+                    }
                 }
 
                 SponsorBlockToggle(player: player)

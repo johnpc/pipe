@@ -7,6 +7,7 @@ struct ContentView: View {
     @StateObject private var settings = AppSettings()
     @StateObject private var saved = SavedStore()
     @StateObject private var downloads = DownloadStore()
+    @StateObject private var cast = CastStore()
     @StateObject private var toast = ToastManager.shared
     @State private var selectedTab = 0
     @State private var showSettings = false
@@ -29,6 +30,7 @@ struct ContentView: View {
         .toastOverlay()
         .onAppear {
             player.recents = recents; player.downloads = downloads
+            player.attachCast(cast)
             // Attach the remote sink BEFORE the session-start event so the event
             // (which records the configured Piped instance) is actually uploaded
             // — otherwise it only ever lands in the on-device buffer.
