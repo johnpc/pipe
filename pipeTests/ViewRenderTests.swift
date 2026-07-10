@@ -474,10 +474,20 @@ final class ViewRenderTests: XCTestCase {
     }
 
     func testRenderCastButton() {
-        // Devices available → the cast glyph.
+        // Devices available → active (accent) glyph.
         render(CastButton(cast: CastStore(caster: MockCaster(isAvailable: true))))
-        // No devices → the search-again variant (different glyph + dialog path).
+        // No devices → dimmed glyph + the "Search Again" dialog path.
         render(CastButton(cast: CastStore(caster: MockCaster(isAvailable: false))))
+    }
+
+    /// Regression: the no-devices state once used the SF Symbol
+    /// "tv.badge.wifi.searchlight", which does not exist — SwiftUI renders a blank
+    /// image for an unknown symbol, so the whole cast button became invisible.
+    /// Assert every symbol the button can use actually resolves.
+    func testCastButtonSymbolsExist() {
+        for name in ["tv.badge.wifi"] {
+            XCTAssertNotNil(UIImage(systemName: name), "SF Symbol \(name) must exist or the cast button renders blank")
+        }
     }
 
     func testRenderFullPlayerSheetWithCast() {

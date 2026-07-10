@@ -21,7 +21,11 @@ struct CastButton: View {
                 showNoDevices = true
             }
         } label: {
-            Image(systemName: cast.hasDevices ? "tv.badge.wifi" : "tv.badge.wifi.searchlight")
+            // Always a valid SF Symbol — an unknown name renders blank, which
+            // silently makes the whole button invisible. "tv.badge.wifi" exists
+            // on iOS; the no-devices state is conveyed by color, not a different
+            // (and previously non-existent) glyph.
+            Image(systemName: "tv.badge.wifi")
                 .font(.title3)
                 .foregroundStyle(cast.hasDevices ? Color.accentColor : .secondary)
         }
