@@ -10,3 +10,9 @@ PIPE_LOGS_API_KEY =
 // explicitly here — otherwise the linker can't resolve symbols like
 // SCNetworkReachability*. `$(inherited)` keeps any other flags intact.
 OTHER_LDFLAGS = $(inherited) -ObjC -lc++ -framework SystemConfiguration -framework AVRouting -framework MediaAccessibility -framework MediaPlayer -framework Accelerate
+
+// The "Copy Google Cast Resources" run-script phase copies the SDK's static
+// resource bundles into the app. Xcode 15+ sandboxes script phases by default,
+// which denies those file writes; disable sandboxing so the copy succeeds
+// (locally and in CI).
+ENABLE_USER_SCRIPT_SANDBOXING = NO

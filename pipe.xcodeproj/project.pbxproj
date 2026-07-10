@@ -186,6 +186,7 @@
 				A615CA8C2F2C0D6900F36993 /* Frameworks */,
 				A615CA8D2F2C0D6900F36993 /* Resources */,
 				1D6C829530014AD500BDC0D3 /* Embed Frameworks */,
+				CA57F00D0B1E4A0100CA5701 /* Copy Google Cast Resources */,
 			);
 			buildRules = (
 			);
@@ -279,6 +280,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		CA57F00D0B1E4A0100CA5701 /* Copy Google Cast Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Google Cast Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The Google Cast SDK is a *static* xcframework, so its resource bundles\n# (including GoogleCastCoreResources.bundle/CastFrameworkDB.momd, which the\n# discovery database requires) are NOT copied into the app automatically the\n# way CocoaPods would. Without them, device discovery silently finds nothing.\n# Copy the bundles from the slice matching the platform being built.\nset -e\nif [ \"${PLATFORM_NAME}\" = \"iphonesimulator\" ]; then\n  SLICE=\"ios-arm64_x86_64-simulator\"\nelse\n  SLICE=\"ios-arm64\"\nfi\nSRC=\"${SRCROOT}/Frameworks/GoogleCast.xcframework/${SLICE}/GoogleCast.framework\"\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nfor bundle in GoogleCastCoreResources GoogleCastUIResources GoogleCastOptionalUIResources MaterialDialogs GoogleSansRegular GoogleSansMedium GoogleSansBold; do\n  if [ -d \"${SRC}/${bundle}.bundle\" ]; then\n    echo \"Copying ${bundle}.bundle\"\n    cp -R \"${SRC}/${bundle}.bundle\" \"${DEST}/\"\n  fi\ndone\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		866789E77D7F8E75EBFE6051 /* Sources */ = {
