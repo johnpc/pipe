@@ -28,14 +28,9 @@ extension GoogleCaster {
     /// tests) doesn't crash. Called once at launch from `pipeApp`.
     static func bootstrap() {
         guard !GCKCastContext.isSharedInstanceInitialized() else { return }
-        // Discover by the media NAMESPACE, not by the CC1AD845 application ID.
-        // An app-ID criterion filters to devices advertising that receiver's mDNS
-        // subtype — which idle Chromecasts/Shields do NOT advertise (confirmed:
-        // the Shield publishes plain _googlecast._tcp with no CC1AD845 subtype),
-        // so discovery found nothing. Every media-capable receiver supports the
-        // standard media namespace, so this finds them all; we still launch the
-        // default media receiver on connect.
-        let criteria = GCKDiscoveryCriteria(namespaces: [castMediaNamespace])
+        // Google's documented default: discover devices that support the Default
+        // Media Receiver, which we launch on connect.
+        let criteria = GCKDiscoveryCriteria(applicationID: castDefaultReceiverAppID)
         let options = GCKCastOptions(discoveryCriteria: criteria)
         // Suspend discovery when backgrounded to save battery.
         options.suspendSessionsWhenBackgrounded = true
@@ -66,7 +61,10 @@ extension GoogleCaster: GCKSessionManagerListener, GCKDiscoveryManagerListener, 
         onStateChange?()
     }
 
-    func didUpdateDeviceList() { onStateChange?() }
+    func didUpdateDeviceList() {
+        log.event("cast", "sdkDeviceList", fields: ["deviceCount": String(discovery.deviceCount)])
+        onStateChange?()
+    }
 
     func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
         onStateChange?()
