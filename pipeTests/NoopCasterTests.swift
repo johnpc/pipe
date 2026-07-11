@@ -24,7 +24,7 @@ struct NoopCasterTests {
         caster.seek(to: 30)
         caster.stop()
         caster.presentDevicePicker()
-        caster.setHandlers(onStateChange: {}, onTimeChange: {})
+        caster.setHandlers(onStateChange: {}, onTimeChange: {}, onEnded: {})
         #expect(caster.connectionState == .disconnected)
     }
 

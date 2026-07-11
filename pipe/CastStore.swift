@@ -19,6 +19,9 @@ final class CastStore: ObservableObject {
 
     private let caster: Casting
     private let log: PlaybackLog
+    /// Set by `PlayerState` to advance the queue when the receiver finishes an
+    /// item (the cast equivalent of AVPlayerItemDidPlayToEndTime).
+    var onEnded: (() -> Void)?
 
     /// Production convenience: back the store with the Google Cast SDK. Under UI
     /// tests, use an inert caster so no SDK context is created (which would raise
@@ -32,7 +35,8 @@ final class CastStore: ObservableObject {
         self.log = log
         caster.setHandlers(
             onStateChange: { [weak self] in self?.syncState() },
-            onTimeChange: { [weak self] in self?.syncTime() }
+            onTimeChange: { [weak self] in self?.syncTime() },
+            onEnded: { [weak self] in self?.onEnded?() }
         )
         syncState()
     }

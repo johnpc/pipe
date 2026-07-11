@@ -55,9 +55,13 @@ protocol Casting: AnyObject {
     /// no receivers were found.
     func rescan()
 
-    /// Called by the store on init to receive state-change and time callbacks.
-    /// The impl invokes these on the main actor whenever the SDK reports a change.
-    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void)
+    /// Called by the store on init to receive callbacks (all on the main actor):
+    /// `onStateChange` for connection changes, `onTimeChange` for the receiver
+    /// clock, and `onEnded` when the current item finishes playing on the
+    /// receiver — which drives automatic advance to the next queue item.
+    func setHandlers(onStateChange: @escaping () -> Void,
+                     onTimeChange: @escaping () -> Void,
+                     onEnded: @escaping () -> Void)
 }
 
 /// An inert caster: never available, connects to nothing, ignores transport.
@@ -77,5 +81,5 @@ final class NoopCaster: Casting {
     func stop() {}
     func presentDevicePicker() {}
     func rescan() {}
-    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {}
+    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void, onEnded: @escaping () -> Void) {}
 }

@@ -212,7 +212,16 @@ enum StepDefinitions {
             XCTAssertTrue(w.app.navigationBars["Settings"].waitForExistence(timeout: medium))
         }
         r.define("I should see the \"(.+)\" section") { w in
-            XCTAssertTrue(w.app.staticTexts[w.capture()].waitForExistence(timeout: medium), "\(w.capture()) section")
+            let label = w.capture()
+            let element = w.app.staticTexts[label]
+            // The settings list scrolls; a section below the fold exists but isn't
+            // rendered until scrolled to. Swipe up a few times to bring it on.
+            var tries = 0
+            while !element.exists && tries < 6 {
+                w.app.swipeUp()
+                tries += 1
+            }
+            XCTAssertTrue(element.waitForExistence(timeout: medium), "\(label) section")
         }
         r.define("I tap \"(.+)\"") { w in
             let button = w.app.buttons[w.capture()]
@@ -246,7 +255,15 @@ enum StepDefinitions {
 
         // MARK: Search history
         r.define("\"(.+)\" should appear in the Search History section") { w in
-            XCTAssertTrue(w.app.staticTexts[w.capture()].waitForExistence(timeout: medium),
+            let term = w.capture()
+            let element = w.app.staticTexts[term]
+            // Search History sits below the fold in Settings; scroll it into view.
+            var tries = 0
+            while !element.exists && tries < 6 {
+                w.app.swipeUp()
+                tries += 1
+            }
+            XCTAssertTrue(element.waitForExistence(timeout: medium),
                           "Performed search should be remembered in history")
         }
 

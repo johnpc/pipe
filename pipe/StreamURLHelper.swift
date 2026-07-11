@@ -29,7 +29,7 @@ func getStreamUrl(_ s: StreamResponse) -> String {
 /// googlevideo URL sends no CORS headers and is bound to the phone's IP — which
 /// makes the receiver hang on an endless loader. Empty when there's no MP4 track.
 func getCastStreamUrl(_ s: StreamResponse) -> String {
-    bestProgressiveMP4URL(s)
+    CastQualityLogic.bestURL(from: s.videoStreams, quality: pipedCastQuality)
 }
 
 private func bestProgressiveMP4URL(_ s: StreamResponse) -> String {

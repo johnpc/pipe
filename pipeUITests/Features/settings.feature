@@ -7,6 +7,7 @@ Feature: Settings
     Given the app is launched
     When I open the Settings tab
     Then I should see the "Piped Instance" section
+    And I should see the "Cast Quality" section
     And I should see the "Sleep Timer" section
     And I should see the "Search History" section
 

@@ -18,6 +18,8 @@ final class MockCaster: Casting {
 
     private var onStateChange: (() -> Void)?
     private var onTimeChange: (() -> Void)?
+    /// Exposed so a test can simulate the receiver finishing the current item.
+    var onEnded: (() -> Void)?
 
     init(isAvailable: Bool = true,
          connectionState: CastConnectionState = .disconnected,
@@ -37,8 +39,12 @@ final class MockCaster: Casting {
     func presentDevicePicker() { events.append("presentPicker") }
     func rescan() { events.append("rescan") }
 
-    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {
+    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void, onEnded: @escaping () -> Void) {
         self.onStateChange = onStateChange
         self.onTimeChange = onTimeChange
+        self.onEnded = onEnded
     }
+
+    /// Simulate the receiver finishing the current item.
+    func fireEnded() { onEnded?() }
 }

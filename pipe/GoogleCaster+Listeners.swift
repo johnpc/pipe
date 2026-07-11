@@ -69,6 +69,14 @@ extension GoogleCaster: GCKSessionManagerListener, GCKDiscoveryManagerListener, 
     func remoteMediaClient(_ client: GCKRemoteMediaClient, didUpdate mediaStatus: GCKMediaStatus?) {
         onStateChange?()
         onTimeChange?()
+        let state = mediaStatus?.playerState ?? .unknown
+        // Fire onEnded only on the transition into idle/finished, so the queue
+        // advances once when a video completes on the receiver (not on every
+        // idle republish, and not when idle for other reasons like an error).
+        if state == .idle, lastPlayerState != .idle, mediaStatus?.idleReason == .finished {
+            onEnded?()
+        }
+        lastPlayerState = state
     }
 }
 

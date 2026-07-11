@@ -36,6 +36,8 @@ struct SettingsView: View {
                 }
             }
 
+            CastQualitySection(settings: settings)
+
             Section("Sleep Timer") {
                 if let remaining = player.sleepMinutesRemaining {
                     HStack {
