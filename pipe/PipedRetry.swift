@@ -3,6 +3,10 @@ import Foundation
 /// Base URL of the Piped API instance. Mutable so Settings can repoint it.
 var pipedBase = "https://pipedapi.jpc.io"
 
+/// Preferred maximum cast resolution, mirrored from Settings so the pure
+/// stream-selection helpers can read it without a dependency on AppSettings.
+var pipedCastQuality: CastQuality = .auto
+
 /// Decides whether a failed request should be retried and how long to wait.
 /// Pure and synchronous so the policy is unit-testable without real delays.
 enum RetryPolicy {

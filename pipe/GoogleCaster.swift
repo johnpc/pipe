@@ -16,6 +16,10 @@ final class GoogleCaster: NSObject, Casting {
     let discovery = GCKCastContext.sharedInstance().discoveryManager
     var onStateChange: (() -> Void)?
     var onTimeChange: (() -> Void)?
+    var onEnded: (() -> Void)?
+    /// Last media player state seen, so we fire `onEnded` only on the transition
+    /// into finished (idle) — not on every idle status republish.
+    var lastPlayerState: GCKMediaPlayerState = .unknown
     /// Provokes the iOS Local Network permission prompt. The Cast SDK's own
     /// discovery does not reliably trigger it, which leaves discovery silently
     /// blocked (deviceCount 0) with no Settings toggle for the user to grant.
@@ -61,9 +65,10 @@ final class GoogleCaster: NSObject, Casting {
         GCKCastContext.sharedInstance().presentCastDialog()
     }
 
-    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {
+    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void, onEnded: @escaping () -> Void) {
         self.onStateChange = onStateChange
         self.onTimeChange = onTimeChange
+        self.onEnded = onEnded
     }
 }
 #else
@@ -86,6 +91,6 @@ final class GoogleCaster: Casting {
     func stop() {}
     func presentDevicePicker() {}
     func rescan() {}
-    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void) {}
+    func setHandlers(onStateChange: @escaping () -> Void, onTimeChange: @escaping () -> Void, onEnded: @escaping () -> Void) {}
 }
 #endif

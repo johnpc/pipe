@@ -28,6 +28,18 @@ extension PlayerState {
                       self.currentVideoId != nil else { return }
                 self.castItem(self.queue[self.currentIndex])
             }
+        // Advance the queue when the receiver finishes an item — the cast
+        // equivalent of the local end-of-item observer.
+        store.onEnded = { [weak self] in self?.castAdvanceToNext() }
+    }
+
+    /// The receiver finished the current item: clear the loaded-id guard (so the
+    /// next item actually loads) and advance the queue, which routes back through
+    /// `castItem` for the next video.
+    func castAdvanceToNext() {
+        log.event("cast", "ended", fields: ["videoId": currentVideoId ?? ""])
+        castLoadedVideoId = nil
+        advanceAfterFinish()
     }
 
     /// Send the item to the receiver, tearing down local playback so audio never

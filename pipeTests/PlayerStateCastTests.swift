@@ -86,6 +86,33 @@ struct PlayerStateCastTests {
         #expect(caster.events.filter { $0 == "load" }.count == 1)
     }
 
+    @Test func finishingAnItemAdvancesTheQueueOnTheReceiver() {
+        // Regression: casting stopped after one item because nothing handled the
+        // receiver's "finished" event. onEnded must drop the finished item and
+        // load the next one onto the receiver.
+        let player = isolatedPlayer()
+        let caster = MockCaster(connectionState: .connected, deviceName: "Shield")
+        player.attachCast(CastStore(caster: caster))
+        player.play(videoId: "v1", urlString: "https://x/1.mp4", title: "One", artist: "A", thumbnail: "", duration: 10)
+        player.addToQueue(videoId: "v2", url: "https://x/2.mp4", title: "Two", artist: "A", thumbnail: "", duration: 10)
+        #expect(caster.loaded.count == 1)
+        // Receiver reports the first item finished.
+        caster.fireEnded()
+        #expect(player.currentVideoId == "v2")
+        #expect(caster.loaded.last?.url == "https://x/2.mp4")
+        #expect(caster.loaded.count == 2)
+    }
+
+    @Test func finishingLastItemStopsCasting() {
+        let player = isolatedPlayer()
+        let caster = MockCaster(connectionState: .connected, deviceName: "Shield")
+        player.attachCast(CastStore(caster: caster))
+        player.play(videoId: "v1", urlString: "https://x/1.mp4", title: "One", artist: "A", thumbnail: "", duration: 10)
+        caster.fireEnded()
+        #expect(player.queue.isEmpty)
+        #expect(caster.events.contains("stop"))
+    }
+
     @Test func notCastingKeepsLocalBehavior() {
         let player = isolatedPlayer()
         player.cast = CastStore(caster: MockCaster(connectionState: .disconnected))
