@@ -145,6 +145,15 @@ final class ViewRenderTests: XCTestCase {
         render(NavigationStack { SettingsView(settings: makeSettings(), player: p, recents: r) })
     }
 
+    func testRenderCastQualitySection() {
+        let s = makeSettings()
+        // Render each selection so the picker's rows are all exercised.
+        for q in CastQuality.allCases {
+            s.castQuality = q
+            render(NavigationStack { Form { CastQualitySection(settings: s) } })
+        }
+    }
+
     func testRenderSettingsViewWithActiveSleepTimerAndHistory() {
         let (p, _, r) = makeStores()
         p.startSleepTimer(minutes: 30)
@@ -193,6 +202,16 @@ final class ViewRenderTests: XCTestCase {
         let (p, _, r) = makeStores()
         r.add(videoId: "a", title: "Title", artist: "Artist", thumbnail: "t", timestamp: 30, duration: 100, uploadedDate: "1 day ago")
         render(NavigationStack { RecentsView(player: p, recents: r) })
+    }
+
+    /// Live-render with several rows so the List actually lays out its cells —
+    /// exercising the duration/resume/uploaded-date branches and the row actions
+    /// that a static render leaves uncovered.
+    func testRenderRecentsViewRowsLive() {
+        let (p, _, r) = makeStores()
+        r.add(videoId: "a", title: "Resumable", artist: "Artist", thumbnail: "t", timestamp: 45, duration: 200, uploadedDate: "2 days ago")
+        r.add(videoId: "b", title: "No Duration", artist: "B", thumbnail: "t", timestamp: 0, duration: 0, uploadedDate: nil)
+        renderLive(NavigationStack { RecentsView(player: p, recents: r) }, seconds: 0.6)
     }
 
     func testRenderFollowingViewEmpty() {

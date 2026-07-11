@@ -4,6 +4,22 @@ import Foundation
 
 struct CastQualityLogicTests {
 
+    // MARK: - CastQuality enum
+
+    @Test func qualityLabelsAndHeights() {
+        #expect(CastQuality.auto.label == "Auto (best available)")
+        #expect(CastQuality.p720.label == "720p")
+        #expect(CastQuality.auto.maxHeight == nil)
+        #expect(CastQuality.p360.maxHeight == 360)
+        #expect(CastQuality.p720.maxHeight == 720)
+        #expect(CastQuality.p1080.maxHeight == 1080)
+        // Every case has a stable id and is round-trippable via rawValue.
+        for q in CastQuality.allCases {
+            #expect(q.id == q.rawValue)
+            #expect(CastQuality(rawValue: q.rawValue) == q)
+        }
+    }
+
     private func stream(_ quality: String, videoOnly: Bool = false, mime: String = "video/mp4") -> VideoStream {
         VideoStream(url: "u-\(quality)", quality: quality, mimeType: mime, videoOnly: videoOnly)
     }
