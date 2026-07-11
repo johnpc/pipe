@@ -255,7 +255,15 @@ enum StepDefinitions {
 
         // MARK: Search history
         r.define("\"(.+)\" should appear in the Search History section") { w in
-            XCTAssertTrue(w.app.staticTexts[w.capture()].waitForExistence(timeout: medium),
+            let term = w.capture()
+            let element = w.app.staticTexts[term]
+            // Search History sits below the fold in Settings; scroll it into view.
+            var tries = 0
+            while !element.exists && tries < 6 {
+                w.app.swipeUp()
+                tries += 1
+            }
+            XCTAssertTrue(element.waitForExistence(timeout: medium),
                           "Performed search should be remembered in history")
         }
 
