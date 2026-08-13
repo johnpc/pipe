@@ -62,6 +62,9 @@ class PlayerState: ObservableObject {
     /// How many times we've reloaded the current item to recover a premature
     /// end, so recovery is bounded and never loops forever.
     var prematureEndRetries = 0
+    /// How many times we've re-resolved the current item after it failed to load
+    /// at all (dead-on-arrival URL), so that recovery is likewise bounded.
+    var itemFailureRetries = 0
     /// Last 30s bucket for which a progress heartbeat was logged (dedupes the
     /// 5s time-observer ticks down to ~one heartbeat per 30s).
     var lastHeartbeatBucket = -1

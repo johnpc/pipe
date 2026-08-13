@@ -295,6 +295,13 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Recovery from a stream that fails to load
+
+    func test_A_stream_that_never_loads_reports_itself_instead_of_freezing() {
+        runScenario(feature: "stream_recovery.feature", scenario: "A stream that never loads reports itself instead of freezing")
+    }
+
+
     // MARK: - Tab Navigation
 
     func test_All_tabs_are_reachable() {
