@@ -34,11 +34,21 @@ extension PlayerState {
             Task { @MainActor in self?.handleTimeControlStatus(p.timeControlStatus) }
         }
 
-        // A failed AVPlayerItem is otherwise silent; log its error so a broken
-        // stream is diagnosable from the exported log.
+        // A failed AVPlayerItem is otherwise silent: log its error, then recover.
+        // Without the recovery the item just sits at 0s forever — a dead-on-arrival
+        // URL is unplayable, so only a freshly resolved one can succeed.
         itemStatusObserver = player?.currentItem?.observe(\.status, options: [.new]) { [weak self] item, _ in
-            guard item.status == .failed else { return }
-            Task { @MainActor in self?.log.event("itemError", "itemFailed", fields: ["error": item.error?.localizedDescription ?? "unknown"]) }
+            switch item.status {
+            case .failed:
+                Task { @MainActor in
+                    self?.log.event("itemError", "itemFailed", fields: ["error": item.error?.localizedDescription ?? "unknown"])
+                    self?.handleItemFailure()
+                }
+            case .readyToPlay:
+                Task { @MainActor in self?.noteItemPlaying() }
+            default:
+                break
+            }
         }
     }
 

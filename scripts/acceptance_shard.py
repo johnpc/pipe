@@ -45,6 +45,7 @@ THEMES = {
         "transcript.feature",
         "sponsorblock.feature",
         "cast_to_tv.feature",
+        "stream_recovery.feature",
     ],
     "discovery": [
         "search.feature",
