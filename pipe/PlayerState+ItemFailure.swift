@@ -10,7 +10,7 @@ extension PlayerState {
     /// A stream that failed to load: mint a new URL and retry, or give up and
     /// surface the error. The stored URL is dead, so re-resolving from the
     /// videoId is the only move that can succeed.
-    func handleItemFailure() {
+    func handleItemFailure(error itemError: Error? = nil) {
         guard currentIndex >= 0, currentIndex < queue.count else { return }
         let item = queue[currentIndex]
         let isLocal = downloads?.localURLString(for: item.videoId) != nil
@@ -22,7 +22,11 @@ extension PlayerState {
         ])
         guard outcome == .retry else {
             itemFailureRetries = 0
-            error = ItemFailurePolicy.failureMessage(title: item.title)
+            let reason = ItemFailurePolicy.reason(from: itemError)
+            // Log the real cause we're about to show, so a give-up is diagnosable
+            // from the exported/uploaded log without guessing.
+            log.event("itemError", "giveUp", fields: ["videoId": item.videoId, "reason": reason])
+            error = ItemFailurePolicy.failureMessage(title: item.title, reason: reason)
             isPlaying = false
             return
         }

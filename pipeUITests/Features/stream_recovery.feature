@@ -11,4 +11,4 @@ Feature: Recovery from a stream that fails to load
     Given I have searched for "MrBeast"
     When I tap the play button on the first result
     Then the mini player bar should appear
-    And I should see "Couldn't play Survive 30 Days Chained To A Stranger, Win $250,000 — the stream expired"
+    And I should see text containing "Couldn't play Survive 30 Days Chained To A Stranger, Win $250,000 —"
