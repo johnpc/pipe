@@ -40,9 +40,10 @@ extension PlayerState {
         itemStatusObserver = player?.currentItem?.observe(\.status, options: [.new]) { [weak self] item, _ in
             switch item.status {
             case .failed:
+                let itemError = item.error
                 Task { @MainActor in
-                    self?.log.event("itemError", "itemFailed", fields: ["error": item.error?.localizedDescription ?? "unknown"])
-                    self?.handleItemFailure()
+                    self?.log.event("itemError", "itemFailed", fields: ["error": itemError?.localizedDescription ?? "unknown"])
+                    self?.handleItemFailure(error: itemError)
                 }
             case .readyToPlay:
                 Task { @MainActor in self?.noteItemPlaying() }

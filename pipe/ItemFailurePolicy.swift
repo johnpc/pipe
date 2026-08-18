@@ -34,8 +34,50 @@ enum ItemFailurePolicy {
     }
 
     /// User-facing copy when recovery is exhausted. Names the item so a failure in
-    /// a background queue isn't a mystery.
-    static func failureMessage(title: String) -> String {
-        "Couldn't play \(title) — the stream expired"
+    /// a background queue isn't a mystery, and surfaces the *real* underlying
+    /// cause (`reason`) rather than the old "the stream expired" guess — which was
+    /// frequently wrong (a dead-on-arrival 403, a throttled instance, and an
+    /// offline drop all looked identical to the user).
+    static func failureMessage(title: String, reason: String) -> String {
+        "Couldn't play \(title) — \(reason)"
+    }
+
+    /// Human-readable reason from the `AVPlayerItem.error` behind a load failure.
+    /// Pure so the mapping is unit-testable without a live player. Recognizes the
+    /// common CoreMedia/HTTP and URL-loading codes; falls back to the error's own
+    /// message, then to a generic string when there's no error at all.
+    static func reason(from error: Error?) -> String {
+        guard let error else { return "playback failed" }
+        let ns = error as NSError
+        if let http = httpStatus(in: ns) {
+            switch http {
+            case 403: return "the video server refused the stream (403)"
+            case 404: return "the stream is no longer available (404)"
+            case 429: return "the video server is rate-limiting (429)"
+            default: return "the video server returned an error (\(http))"
+            }
+        }
+        switch (ns.domain, ns.code) {
+        case (NSURLErrorDomain, NSURLErrorNotConnectedToInternet),
+             (NSURLErrorDomain, NSURLErrorNetworkConnectionLost):
+            return "no connection"
+        case (NSURLErrorDomain, NSURLErrorTimedOut):
+            return "the connection timed out"
+        default:
+            let message = ns.localizedDescription
+            return message.isEmpty ? "playback failed" : message
+        }
+    }
+
+    /// Dig an HTTP status code out of an NSError chain. AVFoundation buries the
+    /// server's response code in an underlying error's userInfo rather than the
+    /// top-level code, so walk the `NSUnderlyingErrorKey` chain looking for it.
+    private static func httpStatus(in error: NSError) -> Int? {
+        var current: NSError? = error
+        while let err = current {
+            if let code = err.userInfo["NSHTTPStatusCode"] as? Int { return code }
+            current = err.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return nil
     }
 }

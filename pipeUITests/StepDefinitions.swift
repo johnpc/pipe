@@ -536,6 +536,16 @@ enum StepDefinitions {
                           "Expected to see \"\(text)\" on screen")
         }
 
+        // Partial match, for text whose tail varies at runtime (e.g. a playback
+        // error whose reason depends on the live AVPlayer/network error).
+        r.define("I should see text containing \"(.+)\"") { w in
+            let text = w.capture()
+            let match = w.app.staticTexts.containing(
+                NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+            XCTAssertTrue(match.waitForExistence(timeout: long),
+                          "Expected to see text containing \"\(text)\" on screen")
+        }
+
         // MARK: Error recovery (scenario launches with --uitest-fail-streams)
         r.define("a video detail fails to load") { w in
             w.app.buttons["Search"].tap()
