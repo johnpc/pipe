@@ -35,14 +35,11 @@ struct StreamURLHelperTests {
 
     // MARK: - getStreamUrl
 
-    @Test func getStreamUrlRewritesProxyHost() {
+    @Test func getStreamUrlKeepsProxiedForm() {
         let stream = makeStream(videoStreams: [
             VideoStream(url: "https://pipedproxy.jpc.io/videoplayback?host=rr3---abc.googlevideo.com&itag=18", quality: "360p", mimeType: "video/mp4", videoOnly: false)
         ])
-        let result = getStreamUrl(stream)
-        #expect(result.hasPrefix("https://rr3---abc.googlevideo.com/"))
-        #expect(!result.contains("host="))
-        #expect(!result.contains("pipedproxy"))
+        #expect(getStreamUrl(stream) == "https://pipedproxy.jpc.io/videoplayback?host=rr3---abc.googlevideo.com&itag=18")
     }
 
     @Test func getStreamUrlPicksNonVideoOnlyMp4() {
@@ -81,27 +78,11 @@ struct StreamURLHelperTests {
         #expect(getAudioStreamUrl(makeStream()) == "")
     }
 
-    @Test func getAudioStreamUrlRewritesProxyHost() {
+    @Test func getAudioStreamUrlKeepsProxiedForm() {
         let stream = makeStream(audioStreams: [
             AudioStream(url: "https://pipedproxy.jpc.io/audioplayback?host=rr5---xyz.googlevideo.com&itag=140", bitrate: 128000, mimeType: "audio/mp4")
         ])
-        let result = getAudioStreamUrl(stream)
-        #expect(result.hasPrefix("https://rr5---xyz.googlevideo.com/"))
-        #expect(!result.contains("host="))
-    }
-
-    // MARK: - rewriteProxyHost
-
-    @Test func rewriteProxyHostNoOpWithoutHostParam() {
-        #expect(rewriteProxyHost("https://example.com/video.mp4?itag=18") == "https://example.com/video.mp4?itag=18")
-    }
-
-    @Test func rewriteProxyHostWorksForArbitraryInstance() {
-        // Not tied to a hardcoded instance origin.
-        let input = "https://proxy.other-instance.net/x?host=upstream.googlevideo.com&itag=18"
-        let result = rewriteProxyHost(input)
-        #expect(result.hasPrefix("https://upstream.googlevideo.com/"))
-        #expect(!result.contains("host="))
+        #expect(getAudioStreamUrl(stream) == "https://pipedproxy.jpc.io/audioplayback?host=rr5---xyz.googlevideo.com&itag=140")
     }
 
     // MARK: - formatUploadDate
