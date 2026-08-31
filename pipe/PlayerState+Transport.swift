@@ -67,6 +67,9 @@ extension PlayerState {
     /// `isPlaying` and now-playing info in sync instead of being fought.
     /// Decision is delegated to the pure `PlaybackStatusPolicy` for testability.
     func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
+        // Surface (re)buffering: waiting means "intends to play, no audio yet";
+        // reaching .playing or .paused ends it.
+        isBuffering = status == .waitingToPlayAtSpecifiedRate
         let nowPlaying = PlaybackStatusPolicy.isPlaying(for: status, current: isPlaying)
         guard nowPlaying != isPlaying else { return }
         log.event("status", "adopt", fields: ["raw": String(status.rawValue), "from": String(isPlaying), "to": String(nowPlaying)])
@@ -80,8 +83,7 @@ extension PlayerState {
     /// `isPlaying` false, so this is a no-op then.
     func handlePlaybackStalled() {
         guard isPlaying else { return }
-        player?.play()
-        if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
+        player?.playImmediately(atRate: playbackSpeed)
     }
 
 }

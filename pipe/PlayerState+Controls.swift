@@ -27,8 +27,8 @@ extension PlayerState {
             playItem(queue[currentIndex])
             return
         }
-        player?.play()
-        if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
+        // Resume without waiting for AVPlayer's anti-stall buffer margin.
+        player?.playImmediately(atRate: playbackSpeed)
         isPlaying = true
         log.event("transport", "resume", fields: ["at": String(Int(currentTime))])
         updateNowPlaying()
@@ -37,6 +37,7 @@ extension PlayerState {
     func pause() {
         if isCasting { cast?.pause() } else { player?.pause() }
         isPlaying = false
+        isBuffering = false
         log.event("transport", "pause", fields: ["at": String(Int(currentTime))])
         updateNowPlaying()
     }

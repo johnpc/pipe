@@ -21,6 +21,10 @@ class PlayerState: ObservableObject {
     @Published var stopAfterCurrentEpisode = false
     /// Active chapter title at the current time; drives the now-playing label.
     @Published var currentChapterTitle: String?
+    /// True while the player intends to play but audio hasn't started (initial
+    /// buffering / rebuffering). Drives the spinner on the play controls so the
+    /// wait after "Loading..." is visible instead of a silent dead pause button.
+    @Published var isBuffering = false
 
     var sleepTimer: Timer?
     var chaptersByVideo: [String: [Chapter]] = [:]  // chapters keyed by video id

@@ -82,10 +82,13 @@ extension PlayerState {
             log.event("play", "resume", fields: ["from": String(Int(savedPos))])
         }
 
-        player?.play()
-        // Apply the remembered playback speed to the new item.
-        if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
+        // Start the instant any media is buffered rather than waiting for
+        // AVPlayer's default anti-stall margin — several silent seconds on a
+        // proxied stream. The stall observer already recovers any underruns
+        // this more eager start produces.
+        player?.playImmediately(atRate: playbackSpeed)
         isPlaying = true
+        isBuffering = true  // cleared when timeControlStatus first hits .playing
         updateNowPlaying()
     }
 }

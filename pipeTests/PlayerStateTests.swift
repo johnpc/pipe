@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import AVFoundation
 @testable import pipe
 
 @MainActor
@@ -517,6 +518,39 @@ struct PlayerStateTests {
         player.toggleVideoMode()
         #expect(player.videoMode == true)
         #expect(player.queue.isEmpty)
+    }
+
+    // MARK: - buffering indicator
+
+    @Test func playItemEntersBufferingUntilPlaybackStarts() {
+        let player = isolatedPlayer()
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 100)
+        // Intends to play, no audio yet → spinner shows.
+        #expect(player.isBuffering == true)
+        // AVPlayer reports real playback → spinner clears.
+        player.handleTimeControlStatus(.playing)
+        #expect(player.isBuffering == false)
+        #expect(player.isPlaying == true)
+    }
+
+    @Test func rebufferingMidPlaySetsBufferingWithoutFlippingPlayState() {
+        let player = isolatedPlayer()
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 100)
+        player.handleTimeControlStatus(.playing)
+        player.handleTimeControlStatus(.waitingToPlayAtSpecifiedRate)
+        #expect(player.isBuffering == true)
+        #expect(player.isPlaying == true)  // still intends to play
+    }
+
+    @Test func pauseAndStopClearBuffering() {
+        let player = isolatedPlayer()
+        player.play(videoId: "v", urlString: "bad://v", title: "T", artist: "A", thumbnail: "", duration: 100)
+        #expect(player.isBuffering == true)
+        player.pause()
+        #expect(player.isBuffering == false)
+        player.play(videoId: "v2", urlString: "bad://v2", title: "T2", artist: "A", thumbnail: "", duration: 100)
+        player.stop()
+        #expect(player.isBuffering == false)
     }
 
     // MARK: - sleep timer

@@ -46,8 +46,7 @@ extension PlayerState {
             // playback at the segment end. Re-assert play + speed if we still
             // intend to be playing.
             guard let self, self.isPlaying else { return }
-            self.player?.play()
-            if self.playbackSpeed != 1.0 { self.player?.rate = self.playbackSpeed }
+            self.player?.playImmediately(atRate: self.playbackSpeed)
         }
         currentTime = target
     }
