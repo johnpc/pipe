@@ -252,10 +252,6 @@ final class ViewRenderTests: XCTestCase {
         }
     }
 
-    func testRenderCommentsView() {
-        render(CommentsView(videoId: "v1"))
-    }
-
     func testRenderCommentsList() {
         render(NavigationStack { CommentsList(videoId: "v1") })
     }

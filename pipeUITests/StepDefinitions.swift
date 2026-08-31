@@ -450,18 +450,47 @@ enum StepDefinitions {
                           "Trending list should render")
         }
         r.define("I open the comments") { w in
-            let button = w.app.buttons["commentsButton"]
-            XCTAssertTrue(button.waitForExistence(timeout: long))
-            button.tap()
+            // Comments are inline at the bottom of the detail page; scroll down
+            // until the section header is on screen.
+            let header = w.app.staticTexts["Comments"]
+            var tries = 0
+            while !header.exists && tries < 8 {
+                w.app.swipeUp()
+                tries += 1
+            }
+            XCTAssertTrue(header.waitForExistence(timeout: long), "Comments section should be reachable on the detail page")
         }
         r.define("I should see at least one comment") { w in
-            XCTAssertTrue(w.app.navigationBars["Comments"].waitForExistence(timeout: long) &&
-                          w.app.cells.firstMatch.waitForExistence(timeout: long),
+            XCTAssertTrue(w.app.cells.firstMatch.waitForExistence(timeout: long),
                           "At least one comment should be shown")
         }
         r.define("I should see an \"Up Next\" list") { w in
             XCTAssertTrue(w.app.staticTexts["Up Next"].waitForExistence(timeout: long),
                           "Up Next list should be shown")
+        }
+
+        // MARK: Video detail page
+        r.define("I should see the video detail page") { w in
+            XCTAssertTrue(w.app.navigationBars["Details"].waitForExistence(timeout: long),
+                          "The video detail page should open")
+            // The /streams/ fixture answers every id with the same video, so the
+            // detail header shows the now-playing fixture's title.
+            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long),
+                          "The detail page should show the video's title")
+        }
+        r.define("playback should not have started") { w in
+            // Opening details must not start the video: no mini player appears
+            // (its play/pause control only exists once something is queued).
+            XCTAssertFalse(w.app.buttons["playPauseButton"].exists,
+                           "Viewing details must not start playback")
+        }
+        r.define("I should see the video description") { w in
+            // The fixture description opens with this line; rendering it (sans
+            // raw <br> tags) proves the description section works.
+            let description = w.app.staticTexts.containing(
+                NSPredicate(format: "label CONTAINS[c] 'imagine being chained'")).firstMatch
+            XCTAssertTrue(description.waitForExistence(timeout: long),
+                          "The description should be shown on the detail page")
         }
 
         // MARK: Playlists

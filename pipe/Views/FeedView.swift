@@ -36,6 +36,7 @@ struct FeedView: View {
         .navigationDestination(for: String.self) { dest in
             FeedDestination(dest: dest, player: player, saved: saved, downloads: downloads)
         }
+        .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player) }
         .toolbar { FeedToolbar(sort: $sort, hideWatched: $hideWatched) }
         .task { await loadFeed() }
         .onChange(of: following.channels) { _, _ in
@@ -44,13 +45,17 @@ struct FeedView: View {
     }
 
     private func row(_ v: RelatedStream) -> some View {
-        VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId),
-                 resumeTime: recents.resumeTime(videoId: v.videoId),
-                 onPlay: { playVideo(v) }, onQueue: { queueVideo(v) },
-                 onPlayNext: { playNextVideo(v) },
-                 onCast: { Playback.cast(videoId: v.videoId, player: player) },
-                 isSaved: saved.isSaved(v.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(v)) },
-                 isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(v) })
+        // The row navigates to the video's detail page (description, comments)
+        // WITHOUT starting playback; the play/queue buttons remain the way to play.
+        NavigationLink(value: v) {
+            VideoRow(v: v, isCompleted: recents.isCompleted(videoId: v.videoId),
+                     resumeTime: recents.resumeTime(videoId: v.videoId),
+                     onPlay: { playVideo(v) }, onQueue: { queueVideo(v) },
+                     onPlayNext: { playNextVideo(v) },
+                     onCast: { Playback.cast(videoId: v.videoId, player: player) },
+                     isSaved: saved.isSaved(v.videoId), onToggleSave: { Haptics.tap(); saved.toggle(savedItem(v)) },
+                     isDownloaded: downloads.isDownloaded(v.videoId), onToggleDownload: { Haptics.tap(); toggleDownload(v) })
+        }
     }
 
     private func loadFeed() async {
