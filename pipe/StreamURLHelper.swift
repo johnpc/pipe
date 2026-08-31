@@ -41,11 +41,9 @@ func formatDuration(_ seconds: Int) -> String {
     let h = seconds / 3600
     let m = (seconds % 3600) / 60
     let s = seconds % 60
-    if h > 0 {
-        return "\(h)h\(m)m"
-    } else {
-        return "\(m)m\(s)s"
-    }
+    if h > 0 { return "\(h)h\(m)m" }
+    if m > 0 { return "\(m)m\(s)s" }
+    return "\(s)s"  // "37s", not the awkward "0m37s"
 }
 
 func formatUploadDate(_ dateString: String) -> String {

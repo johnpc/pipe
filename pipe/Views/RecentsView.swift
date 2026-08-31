@@ -7,6 +7,9 @@ struct RecentsView: View {
     var body: some View {
         List {
             ForEach(recents.items, id: \.videoId) { (item: RecentItem) in
+                // Row navigates to the video's detail page without playing it;
+                // the play/queue buttons remain the way to start playback.
+                NavigationLink(value: item) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 12) {
                         ZStack(alignment: .bottomTrailing) {
@@ -46,6 +49,7 @@ struct RecentsView: View {
                     Text(item.title).font(.subheadline).lineLimit(3)
                 }
                 .padding(.vertical, 8)
+                }
                 .contextMenu {
                     Button { playItem(item) } label: { Label("Play", systemImage: "play.fill") }
                     Button { queueItem(item) } label: { Label("Add to Queue", systemImage: "text.badge.plus") }
@@ -61,6 +65,7 @@ struct RecentsView: View {
         }
         .listStyle(.plain)
         .navigationTitle("Recents")
+        .navigationDestination(for: RecentItem.self) { DetailView(videoId: $0.videoId, player: player) }
         .overlay {
             if recents.items.isEmpty {
                 ContentUnavailableView("No History", systemImage: "clock", description: Text("Videos you watch will appear here"))

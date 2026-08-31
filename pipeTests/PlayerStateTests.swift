@@ -77,6 +77,31 @@ struct PlayerStateTests {
         #expect(player.queue.count == 2)
     }
 
+    @Test func removeCurrentWhilePlayingMovesToNextItem() {
+        // Regression: removing the now-playing row left its audio running as a
+        // ghost while the queue no longer contained it.
+        let player = isolatedPlayer()
+        enqueue(player, ["a", "b", "c"])
+        player.isPlaying = true
+        player.removeFromQueue(at: 0)
+        #expect(player.queue.map(\.videoId) == ["b", "c"])
+        #expect(player.currentIndex == 0)
+        #expect(player.currentVideoId == "b")  // actually switched to b
+        #expect(player.currentTitle == "b")
+    }
+
+    @Test func removeCurrentWhilePausedUpdatesMetadataWithoutPlaying() {
+        let player = isolatedPlayer()
+        enqueue(player, ["a", "b"])
+        player.isPlaying = false
+        player.removeFromQueue(at: 0)
+        #expect(player.currentIndex == 0)
+        #expect(player.currentTitle == "b")
+        #expect(player.currentVideoId == "b")
+        #expect(player.isPlaying == false)
+        #expect(player.player == nil)  // ghost player released
+    }
+
     @Test func removeLastRemainingStops() {
         let player = isolatedPlayer()
         enqueue(player, ["a"])
@@ -146,6 +171,17 @@ struct PlayerStateTests {
         #expect(player.queue.first?.videoId == "z")
         #expect(player.currentIndex == 0)
         #expect(player.currentTitle == "Z")
+    }
+
+    @Test func playAnAlreadyQueuedVideoPlaysInPlaceWithoutDuplicating() {
+        // Regression: play() blindly inserted at the front, so playing a video
+        // that was already queued produced two queue entries for the same id.
+        let player = isolatedPlayer()
+        enqueue(player, ["a", "b", "c"])
+        player.play(videoId: "b", urlString: "bad://b-fresh", title: "b", artist: "a", thumbnail: "", duration: 10)
+        #expect(player.queue.map(\.videoId) == ["a", "b", "c"])
+        #expect(player.currentIndex == 1)
+        #expect(player.queue[1].url == "bad://b-fresh")  // fresh URL adopted
     }
 
     // MARK: - current chapter label
@@ -250,6 +286,16 @@ struct PlayerStateTests {
         #expect(player.currentTime == 0)
     }
 
+    @Test func skipForwardWorksBeforeDurationIsKnown() {
+        // Regression: with duration still 0 (cold restore / item loading), a
+        // forward skip clamped to min(t+10, 0) and snapped playback to 0:00.
+        let player = isolatedPlayer()
+        player.duration = 0
+        player.currentTime = 50
+        player.skip(10)
+        #expect(player.currentTime == 60)
+    }
+
     @Test func seekUpdatesCurrentTime() {
         let player = isolatedPlayer()
         player.duration = 100
@@ -265,6 +311,10 @@ struct PlayerStateTests {
         #expect(player.currentTitle == nil)
         #expect(player.currentTime == 0)
         #expect(player.duration == 0)
+        // Item-scoped state must not leak into the next session.
+        #expect(player.currentVideoId == nil)
+        #expect(player.expectedDuration == nil)
+        #expect(player.sponsorSegments.isEmpty)
     }
 
     // MARK: - progress / end handlers + recents integration
@@ -440,6 +490,26 @@ struct PlayerStateTests {
         #expect(player.videoMode == true)
         player.toggleVideoMode()
         #expect(player.videoMode == false)
+    }
+
+    @Test func toggleVideoModeKeepsPositionViaPendingSeek() {
+        // Regression: the old post-hoc seek() landed on the OLD player when the
+        // item took the async stale-URL refresh path, losing the position.
+        let player = isolatedPlayer()
+        player.addToQueue(videoId: "v", url: "bad://video", audioUrl: "bad://audio", title: "T", artist: "a", thumbnail: "", duration: 100)
+        player.handleProgress(currentTime: 42, itemDuration: 100)
+        player.toggleVideoMode()
+        // playItem consumed the pending seek and restored the position.
+        #expect(player.currentTime == 42)
+    }
+
+    @Test func videoModePersistsAcrossInstances() {
+        let suite = UserDefaults(suiteName: "vm-\(UUID().uuidString)")!
+        let p1 = PlayerState(defaults: suite)
+        p1.toggleVideoMode()
+        #expect(p1.videoMode == true)
+        let p2 = PlayerState(defaults: suite)
+        #expect(p2.videoMode == true)
     }
 
     @Test func toggleVideoModeNoOpWithEmptyQueue() {

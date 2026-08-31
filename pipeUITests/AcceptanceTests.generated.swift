@@ -330,6 +330,17 @@ extension AcceptanceTests {
     }
 
 
+    // MARK: - Video Detail Page
+
+    func test_Opening_a_video_shows_its_details_without_starting_playback() {
+        runScenario(feature: "video_detail.feature", scenario: "Opening a video shows its details without starting playback")
+    }
+
+    func test_The_detail_page_shows_the_description_and_comments() {
+        runScenario(feature: "video_detail.feature", scenario: "The detail page shows the description and comments")
+    }
+
+
     // MARK: - Watch History Management
 
     func test_Clearing_watch_history() {

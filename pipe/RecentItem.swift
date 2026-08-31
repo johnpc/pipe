@@ -2,7 +2,7 @@ import Foundation
 
 /// A watched item with resume position and last-watched time, persisted by
 /// `RecentsStore`.
-struct RecentItem: Codable, Identifiable, Equatable {
+struct RecentItem: Codable, Identifiable, Equatable, Hashable {
     var id: String { videoId }
     let videoId: String
     let title: String

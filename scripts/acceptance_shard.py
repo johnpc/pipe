@@ -54,6 +54,7 @@ THEMES = {
         "comments.feature",
         "up_next.feature",
         "playlists.feature",
+        "video_detail.feature",
     ],
     "library": [
         "downloads.feature",

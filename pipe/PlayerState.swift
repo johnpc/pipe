@@ -78,6 +78,7 @@ class PlayerState: ObservableObject {
 
     let speedKey = "playbackSpeed"
     let sponsorKey = "sponsorBlockEnabled"
+    let videoModeKey = "videoMode"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -85,11 +86,7 @@ class PlayerState: ObservableObject {
         setupRemoteCommands()
         observeAudioSession()
         restoreQueue()
-        // Restore the user's preferred playback speed (podcast-app behavior).
-        let savedSpeed = defaults.float(forKey: speedKey)
-        if savedSpeed > 0 { playbackSpeed = savedSpeed }
-        // Default ON; only an explicit stored `false` disables it.
-        if defaults.object(forKey: sponsorKey) != nil { sponsorBlockEnabled = defaults.bool(forKey: sponsorKey) }
+        restorePreferences()
     }
 
     // Opt the deinit out of MainActor isolation to avoid a crashing async

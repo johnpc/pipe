@@ -62,4 +62,23 @@ extension PlayerState {
         old.pause()
         player = nil
     }
+
+    /// Full stop: tear everything down and clear all item-scoped state so
+    /// nothing (sponsor segments, expected duration, video id) leaks into the
+    /// next playback session.
+    func stop() {
+        teardownPlaybackObservers()
+        releaseCurrentPlayer()
+        teardownCast()
+        isPlaying = false
+        currentTitle = nil
+        currentArtist = nil
+        currentThumbnail = nil
+        currentVideoId = nil
+        currentTime = 0
+        duration = 0
+        expectedDuration = nil
+        sponsorSegments = []
+        currentChapterTitle = nil
+    }
 }
