@@ -1,4 +1,5 @@
 import Foundation
+@testable import pipe
 
 /// URLProtocol stub that lets tests return canned responses for any request,
 /// so PipedAPI decoding can be exercised without hitting the network.
@@ -6,7 +7,10 @@ final class MockURLProtocol: URLProtocol {
     static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 
     /// Convenience: install a session backed by this protocol and point PipedAPI at it.
+    /// Also clears the stream cache: a test stubbing the network expects its
+    /// stub to be hit, not a previous test's cached response for the same id.
     static func makeSession() -> URLSession {
+        StreamCache.removeAll()
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]
         return URLSession(configuration: config)

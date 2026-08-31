@@ -40,26 +40,6 @@ enum PipedAPI {
         }
     }
 
-    /// Fetch a raw text document (e.g. a TTML subtitle track) from an absolute
-    /// URL. Retries transient network errors like `fetch`, but skips JSON
-    /// decoding since captions are XML/text.
-    static func rawText(from url: URL) async throws -> String {
-        var attempt = 0
-        while true {
-            attempt += 1
-            do {
-                let (data, _) = try await session.data(from: url)
-                return String(decoding: data, as: UTF8.self)
-            } catch {
-                if RetryPolicy.shouldRetry(error, attempt: attempt) {
-                    await sleep(RetryPolicy.backoffNanos(beforeAttempt: attempt + 1))
-                    continue
-                }
-                throw error
-            }
-        }
-    }
-
     /// Builds the search request URL. Pure, so URL construction is unit-testable.
     static func searchURL(_ query: String) -> URL {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
@@ -81,10 +61,6 @@ enum PipedAPI {
 
     static func channelTab(_ tabData: String) async throws -> ChannelTabResponse {
         try await fetch(ChannelTabResponse.self, from: channelTabURL(tabData))
-    }
-
-    static func streams(_ videoId: String) async throws -> StreamResponse {
-        try await fetch(StreamResponse.self, from: URL(string: "\(pipedBase)/streams/\(videoId)")!)
     }
 
     static func channelNextPageURL(channelId: String, nextpage: String) -> URL {

@@ -28,6 +28,7 @@ extension PlayerState {
             log.event("itemError", "giveUp", fields: ["videoId": item.videoId, "reason": reason])
             error = ItemFailurePolicy.failureMessage(title: item.title, reason: reason)
             isPlaying = false
+            isBuffering = false
             return
         }
         itemFailureRetries += 1

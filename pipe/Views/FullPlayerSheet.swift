@@ -66,7 +66,10 @@ struct FullPlayerSheet: View {
                         .disabled(player.currentIndex <= 0)
                     Button { player.skip(-10) } label: { Image(systemName: "gobackward.10").font(.title2) }
                     Button { player.togglePlayPause() } label: {
-                        Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill").font(.system(size: 60))
+                        Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.system(size: 60))
+                            .opacity(player.isBuffering ? 0.35 : 1)
+                            .overlay { if player.isBuffering { ProgressView() } }
                     }
                     .accessibilityIdentifier("playPauseButton")
                     .accessibilityLabel(player.isPlaying ? "Pause" : "Play")

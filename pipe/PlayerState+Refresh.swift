@@ -36,9 +36,11 @@ extension PlayerState {
     }
 
     /// Fetch fresh streams and return a copy of `item` with updated URLs and a
-    /// current `resolvedAt`, or nil if the fetch/decoding fails.
+    /// current `resolvedAt`, or nil if the fetch/decoding fails. Bypasses the
+    /// stream cache: this path exists to mint a NEW URL (expired or dead on
+    /// arrival) — re-serving the cached one would fail identically.
     static func reresolve(_ item: QueueItem) async -> QueueItem? {
-        guard let response = try? await PipedAPI.streams(item.videoId) else { return nil }
+        guard let response = try? await PipedAPI.streams(item.videoId, bypassingCache: true) else { return nil }
         var copy = item
         copy.url = getStreamUrl(response)
         copy.audioUrl = getAudioStreamUrl(response)
@@ -71,6 +73,7 @@ extension PlayerState {
         releaseCurrentPlayer()
         teardownCast()
         isPlaying = false
+        isBuffering = false
         currentTitle = nil
         currentArtist = nil
         currentThumbnail = nil

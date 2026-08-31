@@ -11,6 +11,9 @@ struct PipedAPITests {
     private func withStub(_ json: String, _ body: () async throws -> Void) async rethrows {
         PipedAPI.session = MockURLProtocol.makeSession()
         MockURLProtocol.stub(json: json)
+        // The stream cache would happily serve a previous test's response for
+        // the same video id; every stubbed scenario starts cold.
+        StreamCache.removeAll()
         defer { PipedAPI.session = .shared }
         try await body()
     }
@@ -114,6 +117,28 @@ struct PipedAPITests {
             // The two well-formed videos survive; the mix/playlist row is dropped.
             #expect(s.relatedStreams?.count == 2)
             #expect(s.relatedStreams?.map(\.title) == ["Good", "Good2"])
+        }
+    }
+
+    @Test func streamsServesSecondCallFromCache() async throws {
+        try await withStub(Self.streamJSON) {
+            _ = try await PipedAPI.streams("v")
+            // Poison the network; a cached second call must not touch it.
+            MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+            let s = try await PipedAPI.streams("v")
+            #expect(s.title == "Song")
+        }
+    }
+
+    @Test func streamsBypassingCacheRefetches() async throws {
+        try await withStub(Self.streamJSON) {
+            _ = try await PipedAPI.streams("v")
+            MockURLProtocol.stubError(URLError(.notConnectedToInternet))
+            // Recovery paths demand a genuinely fresh URL: bypass must hit the
+            // network (and here, fail) rather than re-serve the cached response.
+            await #expect(throws: (any Error).self) {
+                _ = try await PipedAPI.streams("v", bypassingCache: true)
+            }
         }
     }
 

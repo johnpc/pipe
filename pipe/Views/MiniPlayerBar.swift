@@ -19,10 +19,14 @@ struct MiniPlayerBar: View {
                     Text(player.currentArtist ?? "").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer()
+                // While buffering, dim the control under a spinner but keep it
+                // tappable so the user can still pause a long buffer.
                 Button { player.togglePlayPause() } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
                         .frame(width: 44, height: 44)
+                        .opacity(player.isBuffering ? 0.35 : 1)
+                        .overlay { if player.isBuffering { ProgressView().accessibilityIdentifier("bufferingIndicator") } }
                 }
                 .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
             }
