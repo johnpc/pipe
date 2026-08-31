@@ -6,8 +6,12 @@ struct StreamURLHelperTests {
 
     // MARK: - formatDuration
 
+    @Test func formatDurationUnderOneMinute() {
+        #expect(formatDuration(0) == "0s")
+        #expect(formatDuration(37) == "37s")
+    }
+
     @Test func formatDurationUnderOneHour() {
-        #expect(formatDuration(0) == "0m0s")
         #expect(formatDuration(65) == "1m5s")
         #expect(formatDuration(599) == "9m59s")
     }

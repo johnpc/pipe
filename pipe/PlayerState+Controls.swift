@@ -9,7 +9,9 @@ extension PlayerState {
         // While casting, drive the receiver rather than a local player. If no
         // item has been loaded onto the TV yet, load the current one.
         if isCasting {
-            if currentVideoId == nil, currentIndex >= 0, currentIndex < queue.count {
+            // Load onto the receiver if it has nothing yet (`currentVideoId` is
+            // non-nil right after a queue restore, so it can't be the signal).
+            if castLoadedVideoId == nil, currentIndex >= 0, currentIndex < queue.count {
                 playItem(queue[currentIndex])
             } else {
                 cast?.play()
@@ -40,6 +42,16 @@ extension PlayerState {
     }
 
     func play(videoId: String, urlString: String, audioUrl: String = "", castUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
+        // Already queued: play it in place (with the fresh URLs) instead of
+        // inserting a duplicate entry for the same video.
+        if let existing = queue.firstIndex(where: { $0.videoId == videoId }) {
+            queue[existing].url = urlString
+            queue[existing].audioUrl = audioUrl
+            queue[existing].castUrl = castUrl
+            queue[existing].resolvedAt = Date()
+            playIndex(existing)
+            return
+        }
         let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, castUrl: castUrl, duration: duration, uploadedDate: uploadedDate)
         queue.insert(item, at: 0)
         playIndex(0)
@@ -53,8 +65,10 @@ extension PlayerState {
     }
 
     func skip(_ seconds: Double) {
-        let newTime = max(0, min(currentTime + seconds, duration))
-        seek(to: newTime)
+        // Duration can be 0 before the item reports it (cold restore, still
+        // loading); clamping to it would snap every forward skip back to 0:00.
+        let upper = duration > 0 ? duration : .greatestFiniteMagnitude
+        seek(to: max(0, min(currentTime + seconds, upper)))
     }
 
     func seek(to time: Double) {

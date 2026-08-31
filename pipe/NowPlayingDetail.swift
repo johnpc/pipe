@@ -20,5 +20,8 @@ final class NowPlayingDetail: ObservableObject {
         loadedVideoId = videoId
         state = .loading
         state = LoadState.from(try? await PipedAPI.streams(videoId))
+        // A failed fetch must not "claim" the id, or reopening the tab would
+        // show the failure forever with no retry.
+        if state.didFail { loadedVideoId = nil }
     }
 }

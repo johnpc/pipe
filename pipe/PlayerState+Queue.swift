@@ -1,6 +1,7 @@
 import Foundation
 
-/// Queue management for PlayerState: add/remove/move/persist/restore.
+/// Queue management for PlayerState: add/navigate/persist/restore. Removal
+/// lives in +QueueRemove; reordering in +QueueEdit.
 extension PlayerState {
     /// Append to the end of the queue.
     func addToQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
@@ -58,23 +59,4 @@ extension PlayerState {
         if currentIndex > 0 { playIndex(currentIndex - 1) }
     }
     
-    func removeFromQueue(at index: Int) {
-        guard index >= 0, index < queue.count else { return }
-        queue.remove(at: index)
-        if index < currentIndex {
-            currentIndex -= 1
-        } else if index == currentIndex {
-            if queue.isEmpty {
-                currentIndex = -1
-                stop()
-            } else if currentIndex >= queue.count {
-                currentIndex = queue.count - 1
-            }
-        }
-        persistQueue()
-    }
-    
-    func removeFromQueue(at offsets: IndexSet) {
-        offsets.sorted(by: >).forEach { removeFromQueue(at: $0) }
-    }
 }

@@ -1,7 +1,8 @@
 import AVFoundation
 import Combine
 
-/// End-of-item advancement, stall recovery, and play() entry point.
+/// End-of-item advancement and stall/status recovery. (`stop()` lives with the
+/// teardown helpers in +Refresh.)
 extension PlayerState {
     func handlePlaybackEnded() {
         // Distinguish a genuine finish from a stream that died early (the
@@ -83,16 +84,4 @@ extension PlayerState {
         if playbackSpeed != 1.0 { player?.rate = playbackSpeed }
     }
 
-    func stop() {
-        teardownPlaybackObservers()
-        releaseCurrentPlayer()
-        teardownCast()
-        isPlaying = false
-        currentTitle = nil
-        currentArtist = nil
-        currentThumbnail = nil
-        currentTime = 0
-        duration = 0
-        currentChapterTitle = nil
-    }
 }
