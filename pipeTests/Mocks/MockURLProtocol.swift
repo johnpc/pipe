@@ -16,9 +16,12 @@ final class MockURLProtocol: URLProtocol {
         return URLSession(configuration: config)
     }
 
-    /// Stub the next response with a JSON string and reset PipedAPI's session.
+    /// Stub every response with a body and status; counts requests so tests can
+    /// assert how many attempts a status code provoked.
     static func stub(json: String, status: Int = 200) {
+        requestCount = 0
         requestHandler = { request in
+            requestCount += 1
             let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
             return (response, Data(json.utf8))
         }

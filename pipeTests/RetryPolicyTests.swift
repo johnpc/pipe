@@ -28,6 +28,22 @@ struct RetryPolicyTests {
         #expect(RetryPolicy.shouldRetry(Decoding(), attempt: 1) == false)
     }
 
+    @Test func retriesGatewayStatuses() {
+        // 502/503/504 are what the proxy answers while the instance restarts.
+        for status in [502, 503, 504] {
+            #expect(RetryPolicy.shouldRetry(PipedError.http(status), attempt: 1) == true)
+        }
+        #expect(RetryPolicy.shouldRetry(PipedError.http(502), attempt: RetryPolicy.maxAttempts) == false)
+    }
+
+    @Test func doesNotRetryInstanceVerdicts() {
+        // 4xx/500 and Piped's own error envelope are final answers.
+        for status in [400, 404, 429, 500] {
+            #expect(RetryPolicy.shouldRetry(PipedError.http(status), attempt: 1) == false)
+        }
+        #expect(RetryPolicy.shouldRetry(PipedError(message: "JSON response is too short"), attempt: 1) == false)
+    }
+
     @Test func stopsAtMaxAttempts() {
         #expect(RetryPolicy.shouldRetry(URLError(.timedOut), attempt: RetryPolicy.maxAttempts) == false)
         #expect(RetryPolicy.shouldRetry(URLError(.timedOut), attempt: RetryPolicy.maxAttempts - 1) == true)

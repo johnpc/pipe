@@ -48,30 +48,42 @@ final class FixtureURLProtocol: URLProtocol {
     /// with `{error,message}`), exercising the real-message error toast.
     static var errorStreams = false
 
+    /// When true, `/streams/` requests answer like the proxy in front of a dead
+    /// instance does — HTTP 502 with an HTML body — the actual failure mode of
+    /// an instance outage, exercising the status-naming error toast.
+    static var downStreams = false
+
+    /// Body the 502 mode serves: what nginx returns when its upstream is gone.
+    static let downBody = Data("<html><body><h1>502 Bad Gateway</h1></body></html>".utf8)
+
     override func startLoading() {
-        if request.url?.path.hasPrefix("/streams/") == true {
+        guard let url = request.url else { return }
+        if url.path.hasPrefix("/streams/") {
             if FixtureURLProtocol.failStreams {
                 client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
                 return
             }
-            if FixtureURLProtocol.errorStreams, let url = request.url {
+            if FixtureURLProtocol.errorStreams {
                 let body = Data(#"{"error":"ParsingException","message":"JSON response is too short"}"#.utf8)
-                let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
-                client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-                client?.urlProtocol(self, didLoad: body)
-                client?.urlProtocolDidFinishLoading(self)
-                return
+                return respond(url: url, status: 200, body: body, contentType: "application/json")
+            }
+            if FixtureURLProtocol.downStreams {
+                return respond(url: url, status: 502, body: FixtureURLProtocol.downBody, contentType: "text/html")
             }
         }
-        guard let url = request.url,
-              let name = FixtureRouter.fixtureName(for: url),
+        guard let name = FixtureRouter.fixtureName(for: url),
               let data = FixtureURLProtocol.loader(name) else {
             client?.urlProtocol(self, didFailWithError: URLError(.fileDoesNotExist))
             return
         }
-        let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+        respond(url: url, status: 200, body: data, contentType: "application/json")
+    }
+
+    private func respond(url: URL, status: Int, body: Data, contentType: String) {
+        guard let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil,
+                                             headerFields: ["Content-Type": contentType]) else { return }
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocol(self, didLoad: body)
         client?.urlProtocolDidFinishLoading(self)
     }
 

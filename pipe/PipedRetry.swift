@@ -12,9 +12,16 @@ var pipedCastQuality: CastQuality = .auto
 enum RetryPolicy {
     static let maxAttempts = 3
 
-    /// Whether an error is worth retrying (transient connectivity, not a 4xx/decode).
+    /// Gateway statuses the proxy in front of the instance answers while the
+    /// instance restarts (e.g. its watchdog recreating it) — a short retry often
+    /// lands. 4xx and 500 are the instance's own verdict and are not retried.
+    static let transientStatuses: Set<Int> = [502, 503, 504]
+
+    /// Whether an error is worth retrying (transient connectivity or gateway
+    /// error, not a 4xx/decode).
     static func shouldRetry(_ error: Error, attempt: Int) -> Bool {
         guard attempt < maxAttempts else { return false }
+        if let status = (error as? PipedError)?.statusCode { return transientStatuses.contains(status) }
         guard let urlError = error as? URLError else { return false }
         switch urlError.code {
         case .timedOut, .cannotConnectToHost, .networkConnectionLost,

@@ -21,7 +21,13 @@ enum PipedAPI {
         while true {
             attempt += 1
             do {
-                let (data, _) = try await session.data(from: url)
+                let (data, response) = try await session.data(from: url)
+                if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                    // Never try to decode an error page: a 502 from the proxy in
+                    // front of a dead instance used to decode-fail into a
+                    // misleading "video unavailable". Prefer Piped's own envelope.
+                    throw PipedErrorEnvelope.error(from: data) ?? PipedError.http(http.statusCode)
+                }
                 do {
                     return try JSONDecoder().decode(T.self, from: data)
                 } catch let decodeError {

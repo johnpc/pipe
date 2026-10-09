@@ -7,7 +7,17 @@ import Foundation
 /// surfaces the instance's real message instead, so logs name the true cause.
 struct PipedError: LocalizedError, Equatable {
     let message: String
+    /// Set when the failure was a non-2xx reply rather than an error envelope.
+    var statusCode: Int? = nil
     var errorDescription: String? { message }
+
+    /// A non-2xx reply with no Piped envelope — e.g. the 502 the proxy in front
+    /// of the instance returns while the instance itself is down. Naming the
+    /// status is what lets a user (or a log reader) tell "the backend is down"
+    /// from "this one video is broken".
+    static func http(_ status: Int) -> PipedError {
+        PipedError(message: "the Piped instance returned an error (\(status))", statusCode: status)
+    }
 }
 
 /// The `{error, message}` envelope Piped returns on failure. All-optional so it

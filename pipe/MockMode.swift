@@ -18,15 +18,18 @@ enum MockMode {
 
     static let failArgument = "--uitest-fail-streams"
     static let errorArgument = "--uitest-error-streams"
+    static let downArgument = "--uitest-down-instance"
 
     /// Activate only when the launch argument is present. Also honors flags that
-    /// make `/streams/` requests fail (network error, for the Retry UI) or return
-    /// a Piped error envelope (for the real-message error toast).
+    /// make `/streams/` requests fail (network error, for the Retry UI), return
+    /// a Piped error envelope (for the real-message error toast), or answer like
+    /// a proxy whose instance is down (HTTP 502, for the status-naming toast).
     static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
         guard isEnabled(args) else { return }
         resetPersistedState()
         FixtureURLProtocol.failStreams = args.contains(failArgument)
         FixtureURLProtocol.errorStreams = args.contains(errorArgument)
+        FixtureURLProtocol.downStreams = args.contains(downArgument)
         activate()
     }
 
