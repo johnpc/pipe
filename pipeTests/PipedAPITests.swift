@@ -277,6 +277,40 @@ struct PipedAPITests {
         }
     }
 
+    @Test func errorPageWithStatusThrowsStatusErrorWithoutRetry() async {
+        // nginx's HTML 404 is not a payload and not transient: one attempt,
+        // and the error names the status instead of "data couldn't be read".
+        await withFastRetry {
+            MockURLProtocol.stub(json: "<html>404 Not Found</html>", status: 404)
+            await #expect(throws: PipedError.http(404)) {
+                _ = try await PipedAPI.streams("v")
+            }
+            #expect(MockURLProtocol.requestCount == 1)
+        }
+    }
+
+    @Test func gatewayErrorIsRetriedThenNamed() async {
+        // A 502 while the instance restarts gets maxAttempts tries, then the
+        // user sees "returned an error (502)" rather than "video unavailable".
+        await withFastRetry {
+            MockURLProtocol.stub(json: "<html><h1>502 Bad Gateway</h1></html>", status: 502)
+            await #expect(throws: PipedError.http(502)) {
+                _ = try await PipedAPI.streams("v")
+            }
+            #expect(MockURLProtocol.requestCount == RetryPolicy.maxAttempts)
+        }
+    }
+
+    @Test func errorStatusPrefersPipedEnvelopeMessage() async {
+        // An instance that returns its envelope with a 500 still gets quoted.
+        await withFastRetry {
+            MockURLProtocol.stub(json: #"{"error":"x","message":"JSON response is too short"}"#, status: 500)
+            await #expect(throws: PipedError(message: "JSON response is too short")) {
+                _ = try await PipedAPI.streams("v")
+            }
+        }
+    }
+
     @Test func retryDoesNotRetryDecodingErrors() async {
         await withFastRetry {
             MockURLProtocol.failThenSucceed(times: 0, error: URLError(.timedOut), json: "not json")

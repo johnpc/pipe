@@ -37,6 +37,7 @@ final class AcceptanceTests: XCTestCase {
         var args = ["--uitest-mock"]
         if scenario.tags.contains("@fail-streams") { args.append("--uitest-fail-streams") }
         if scenario.tags.contains("@error-streams") { args.append("--uitest-error-streams") }
+        if scenario.tags.contains("@down-instance") { args.append("--uitest-down-instance") }
         app.launchArguments = args
         app.launch()
 

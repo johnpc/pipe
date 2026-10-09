@@ -84,6 +84,25 @@ struct FixtureMockTests {
         #expect(FixtureURLProtocol.canInit(with: unknown) == false)
     }
 
+    @Test func protocolAnswers502WhenInstanceIsDown() async throws {
+        // `--uitest-down-instance` must look exactly like a dead instance behind
+        // nginx: a 502 with an HTML body, only for /streams/.
+        FixtureURLProtocol.downStreams = true
+        defer { FixtureURLProtocol.downStreams = false }
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [FixtureURLProtocol.self]
+        let session = URLSession(configuration: config)
+
+        let (data, response) = try await session.data(from: URL(string: "https://x/streams/abc")!)
+        #expect((response as? HTTPURLResponse)?.statusCode == 502)
+        #expect(data == FixtureURLProtocol.downBody)
+    }
+
+    @Test func downArgumentIsDistinctFromOtherFlags() {
+        #expect(MockMode.downArgument == "--uitest-down-instance")
+        #expect(Set([MockMode.failArgument, MockMode.errorArgument, MockMode.downArgument]).count == 3)
+    }
+
     @Test func protocolServesInjectedFixtureData() async throws {
         // Override the loader so the test doesn't depend on the app bundle.
         let previous = FixtureURLProtocol.loader

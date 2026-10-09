@@ -294,6 +294,10 @@ extension AcceptanceTests {
         runScenario(feature: "stream_error_message.feature", scenario: "A Piped instance error surfaces its real message")
     }
 
+    func test_A_dead_Piped_instance_names_the_HTTP_error() {
+        runScenario(feature: "stream_error_message.feature", scenario: "A dead Piped instance names the HTTP error")
+    }
+
 
     // MARK: - Recovery from a stream that fails to load
 
