@@ -92,18 +92,10 @@ jobs:
         run: python3 scripts/crap_check.py coverage.json
 
   acceptance-tests:
-    name: Acceptance — ${{ matrix.theme }}
+    name: Acceptance
     runs-on: [self-hosted, mac-mini]
     needs: build
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        # Themed shards — keep in sync with THEMES in scripts/acceptance_shard.py.
-        # A red job names what broke (e.g. "Acceptance — playback"). The --check
-        # gate below fails if any .feature file is unassigned, so a new feature
-        # can never be silently skipped.
-        theme: [playback, discovery, library, navigation]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: actions/cache/restore@v5
@@ -112,33 +104,31 @@ jobs:
           key: derived-data-${{ github.sha }}
       - name: Verify generated acceptance tests match .feature files
         run: python3 scripts/generate_acceptance_tests.py --check
-      - name: Verify every feature is assigned to a theme
-        run: python3 scripts/acceptance_shard.py --check
-      - name: Run acceptance theme (retry shard on failure)
+      - name: Run all scenarios on parallel simulators
         run: |
-          # Run this theme's scenarios. Retry the WHOLE shard up to 2 more times
-          # to absorb genuine simulator flakes — but the LAST run's exit code is
-          # the gate, so a real failure always fails the job. We never parse a
-          # "failed tests" list to re-run a subset: a malformed -only-testing
-          # filter can match nothing and exit 0, masking failures (it once did).
-          ONLY_TESTING=$(python3 scripts/acceptance_shard.py --theme "${{ matrix.theme }}")
-          echo "Theme '${{ matrix.theme }}' → $ONLY_TESTING"
-          run_shard() {
-            xcodebuild test-without-building \
-              -scheme "$SCHEME" \
-              -destination "$DESTINATION" \
-              -derivedDataPath DerivedData \
-              $ONLY_TESTING \
-              -quiet
-          }
-          for attempt in 1 2 3; do
-            echo "▶ Attempt $attempt for theme '${{ matrix.theme }}'"
-            if run_shard; then exit 0; fi
-            echo "⚠️ Attempt $attempt failed"
-            sleep 5
-          done
-          echo "❌ Theme '${{ matrix.theme }}' failed after 3 attempts"
-          exit 1
+          # One job on the one Mac Mini: matrix shards would just queue behind
+          # each other. Instead Xcode clones the simulator and spreads the
+          # per-feature test classes across workers. Only a failing test is
+          # retried (a flake that passes on retry passes; a real failure fails
+          # every iteration and fails the job). Running the whole target means
+          # no scenario can be skipped by a stale filter.
+          rm -rf AcceptanceResults.xcresult
+          xcodebuild test-without-building \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -derivedDataPath DerivedData \
+            -only-testing:pipeUITests \
+            -parallel-testing-enabled YES \
+            -parallel-testing-worker-count 4 \
+            -retry-tests-on-failure \
+            -test-iterations 3 \
+            -resultBundlePath AcceptanceResults.xcresult \
+            -quiet
+      - name: Summarize failures
+        if: failure()
+        run: |
+          xcrun xcresulttool get test-results summary --path AcceptanceResults.xcresult \
+            | python3 -c "import json,sys; [print(f'❌ {f[\"testIdentifierString\"]}: {f[\"failureText\"]}') for f in json.load(sys.stdin).get('testFailures', [])]"
 
   deploy:
     name: Deploy to App Store Connect
@@ -163,12 +153,12 @@ jobs:
       - name: Revoke stale API-created certificates
         run: |
           python3 - << 'EOF'
-          import json, time, urllib.request, ssl
+          import json, os, time, urllib.request, ssl
           ctx = ssl.create_default_context()
 
           key_id = "${{ secrets.ASC_KEY_ID }}"
           issuer_id = "${{ secrets.ASC_ISSUER_ID }}"
-          key_path = f"/Users/runner/private_keys/AuthKey_{key_id}.p8"
+          key_path = os.path.expanduser(f"~/private_keys/AuthKey_{key_id}.p8")
 
           # Inline minimal JWT (ES256) without PyJWT
           import subprocess, tempfile, base64

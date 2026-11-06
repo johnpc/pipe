@@ -248,6 +248,9 @@ enum StepDefinitions {
         }
         r.define("I tap \"(.+)\"") { w in
             let button = w.app.buttons[w.capture()]
+            // A button below the fold of a lazy List (e.g. Settings) isn't
+            // realized until scrolled to; scroll only if it doesn't show up.
+            if !button.waitForExistence(timeout: short) { scrollToElement(w, button) }
             XCTAssertTrue(button.waitForExistence(timeout: medium), "“\(w.capture())” should be present")
             button.tap()
         }
@@ -324,6 +327,9 @@ enum StepDefinitions {
         // MARK: Audio / video mode
         r.define("I enable \"(.+)\"") { w in
             let button = w.app.buttons[w.capture()]
+            // A button below the fold of a lazy List (e.g. Settings) isn't
+            // realized until scrolled to; scroll only if it doesn't show up.
+            if !button.waitForExistence(timeout: short) { scrollToElement(w, button) }
             XCTAssertTrue(button.waitForExistence(timeout: medium), "“\(w.capture())” should be present")
             button.tap()
         }

@@ -16,10 +16,12 @@ mirror to keep in sync.
   regex, with capture groups) to an XCUITest action/assertion.
 - **`pipeUITests/StepRegistry.swift`** — step registration + matching (flags
   undefined/ambiguous steps as failures).
-- **`pipeUITests/AcceptanceTests.generated.swift`** — `@generated`: one concrete
-  `test…` per scenario, each delegating to the runtime runner. Concrete methods
-  are required so XCTest's `-only-testing` filtering and crash recovery work
-  (CI's targeted retry depends on them). **Do not edit by hand.**
+- **`pipeUITests/AcceptanceTests.generated.swift`** — `@generated`: one
+  `AcceptanceTests` subclass per feature file (e.g. `AudioLanguageFeatureTests`)
+  with one concrete `test…` per scenario, each delegating to the runtime runner.
+  Concrete methods are required so XCTest's `-only-testing` filtering and crash
+  recovery work; one class per feature lets CI's parallel simulators split the
+  suite (Xcode parallelizes by class). **Do not edit by hand.**
 
 ## Adding or changing a scenario
 
@@ -82,5 +84,5 @@ video titles) — no skips, no dependence on a live backend during CI.
 ```bash
 xcodebuild test -scheme pipe \
   -destination "platform=iOS Simulator,name=iPhone 17 Pro" \
-  -only-testing:"pipeUITests/AcceptanceTests"
+  -only-testing:"pipeUITests" -parallel-testing-enabled YES
 ```

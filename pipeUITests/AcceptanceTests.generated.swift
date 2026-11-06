@@ -3,10 +3,9 @@
 // Regenerate with: python3 scripts/generate_acceptance_tests.py
 import XCTest
 
-extension AcceptanceTests {
 
-
-    // MARK: - Audio language
+/// Audio language
+final class AudioLanguageFeatureTests: AcceptanceTests {
 
     func test_Audio_language_defaults_to_English() {
         runScenario(feature: "audio_language.feature", scenario: "Audio language defaults to English")
@@ -20,15 +19,21 @@ extension AcceptanceTests {
         runScenario(feature: "audio_language.feature", scenario: "Switching a dubbed video to another language")
     }
 
+}
 
-    // MARK: - Audio and Video Playback Mode
+
+/// Audio and Video Playback Mode
+final class AudioVideoModeFeatureTests: AcceptanceTests {
 
     func test_Toggling_video_mode_from_the_full_player() {
         runScenario(feature: "audio_video_mode.feature", scenario: "Toggling video mode from the full player")
     }
 
+}
 
-    // MARK: - Cast to TV
+
+/// Cast to TV
+final class CastToTvFeatureTests: AcceptanceTests {
 
     func test_The_full_player_offers_a_Cast_control() {
         runScenario(feature: "cast_to_tv.feature", scenario: "The full player offers a Cast control")
@@ -38,22 +43,31 @@ extension AcceptanceTests {
         runScenario(feature: "cast_to_tv.feature", scenario: "A search result offers a Cast action")
     }
 
+}
 
-    // MARK: - Channel Browsing
+
+/// Channel Browsing
+final class ChannelBrowsingFeatureTests: AcceptanceTests {
 
     func test_Opening_a_channel_shows_its_videos() {
         runScenario(feature: "channel_browsing.feature", scenario: "Opening a channel shows its videos")
     }
 
+}
 
-    // MARK: - Channel Metadata
+
+/// Channel Metadata
+final class ChannelMetadataFeatureTests: AcceptanceTests {
 
     func test_Channel_results_show_subscriber_count_and_verified_badge() {
         runScenario(feature: "channel_metadata.feature", scenario: "Channel results show subscriber count and verified badge")
     }
 
+}
 
-    // MARK: - Chapters
+
+/// Chapters
+final class ChaptersFeatureTests: AcceptanceTests {
 
     func test_Opening_a_video_with_chapters_shows_a_tappable_chapter_list() {
         runScenario(feature: "chapters.feature", scenario: "Opening a video with chapters shows a tappable chapter list")
@@ -63,15 +77,21 @@ extension AcceptanceTests {
         runScenario(feature: "chapters.feature", scenario: "The full player shows the current chapter")
     }
 
+}
 
-    // MARK: - Comments
+
+/// Comments
+final class CommentsFeatureTests: AcceptanceTests {
 
     func test_Opening_comments_shows_them() {
         runScenario(feature: "comments.feature", scenario: "Opening comments shows them")
     }
 
+}
 
-    // MARK: - Diagnostics log
+
+/// Diagnostics log
+final class DiagnosticsFeatureTests: AcceptanceTests {
 
     func test_Settings_exposes_a_diagnostics_section() {
         runScenario(feature: "diagnostics.feature", scenario: "Settings exposes a diagnostics section")
@@ -81,8 +101,11 @@ extension AcceptanceTests {
         runScenario(feature: "diagnostics.feature", scenario: "Diagnostics upload is off by default and can be turned on")
     }
 
+}
 
-    // MARK: - Offline Downloads
+
+/// Offline Downloads
+final class DownloadsFeatureTests: AcceptanceTests {
 
     func test_Empty_downloads_state() {
         runScenario(feature: "downloads.feature", scenario: "Empty downloads state")
@@ -100,8 +123,11 @@ extension AcceptanceTests {
         runScenario(feature: "downloads.feature", scenario: "Downloads screen shows storage used")
     }
 
+}
 
-    // MARK: - Error Recovery
+
+/// Error Recovery
+final class ErrorRecoveryFeatureTests: AcceptanceTests {
 
     func test_Detail_view_offers_retry_on_failure() {
         runScenario(feature: "error_recovery.feature", scenario: "Detail view offers retry on failure")
@@ -111,15 +137,21 @@ extension AcceptanceTests {
         runScenario(feature: "error_recovery.feature", scenario: "Queueing a failed stream explains why it couldn't be added")
     }
 
+}
 
-    // MARK: - Feed Sorting and Filtering
+
+/// Feed Sorting and Filtering
+final class FeedSortingFeatureTests: AcceptanceTests {
 
     func test_Feed_offers_sort_and_hide_watched_options() {
         runScenario(feature: "feed_sorting.feature", scenario: "Feed offers sort and hide-watched options")
     }
 
+}
 
-    // MARK: - Following Channels
+
+/// Following Channels
+final class FollowingFeatureTests: AcceptanceTests {
 
     func test_Empty_following_state() {
         runScenario(feature: "following.feature", scenario: "Empty following state")
@@ -129,8 +161,11 @@ extension AcceptanceTests {
         runScenario(feature: "following.feature", scenario: "Following a channel from search")
     }
 
+}
 
-    // MARK: - Full Player Tabs
+
+/// Full Player Tabs
+final class FullPlayerFeatureTests: AcceptanceTests {
 
     func test_Up_Next_is_reachable_from_the_full_player() {
         runScenario(feature: "full_player.feature", scenario: "Up Next is reachable from the full player")
@@ -148,8 +183,11 @@ extension AcceptanceTests {
         runScenario(feature: "full_player.feature", scenario: "Chapters tab lists chapters and seeks on tap")
     }
 
+}
 
-    // MARK: - Offline Mode
+
+/// Offline Mode
+final class OfflineModeFeatureTests: AcceptanceTests {
 
     func test_Enabling_offline_mode_opens_Downloads() {
         runScenario(feature: "offline_mode.feature", scenario: "Enabling offline mode opens Downloads")
@@ -163,8 +201,11 @@ extension AcceptanceTests {
         runScenario(feature: "offline_mode.feature", scenario: "Following still works offline")
     }
 
+}
 
-    // MARK: - Picture in Picture
+
+/// Picture in Picture
+final class PictureInPictureFeatureTests: AcceptanceTests {
 
     func test_Video_mode_presents_a_PiP_capable_player() {
         runScenario(feature: "picture_in_picture.feature", scenario: "Video mode presents a PiP-capable player")
@@ -174,15 +215,21 @@ extension AcceptanceTests {
         runScenario(feature: "picture_in_picture.feature", scenario: "Pausing the video-mode player pauses playback")
     }
 
+}
 
-    // MARK: - Play Next
+
+/// Play Next
+final class PlayNextFeatureTests: AcceptanceTests {
 
     func test_Play_Next_is_offered_in_a_result_s_context_menu() {
         runScenario(feature: "play_next.feature", scenario: "Play Next is offered in a result's context menu")
     }
 
+}
 
-    // MARK: - Video Playback
+
+/// Video Playback
+final class PlaybackFeatureTests: AcceptanceTests {
 
     func test_Playing_a_result_starts_the_mini_player() {
         runScenario(feature: "playback.feature", scenario: "Playing a result starts the mini player")
@@ -192,8 +239,11 @@ extension AcceptanceTests {
         runScenario(feature: "playback.feature", scenario: "Expanding the mini player shows full controls")
     }
 
+}
 
-    // MARK: - Playlists
+
+/// Playlists
+final class PlaylistsFeatureTests: AcceptanceTests {
 
     func test_A_channel_s_Playlists_tab_lists_its_playlists() {
         runScenario(feature: "playlists.feature", scenario: "A channel's Playlists tab lists its playlists")
@@ -215,8 +265,11 @@ extension AcceptanceTests {
         runScenario(feature: "playlists.feature", scenario: "Playlist results appear in search")
     }
 
+}
 
-    // MARK: - Playback Queue
+
+/// Playback Queue
+final class QueueFeatureTests: AcceptanceTests {
 
     func test_Queueing_a_result_adds_it_to_the_queue() {
         runScenario(feature: "queue.feature", scenario: "Queueing a result adds it to the queue")
@@ -226,8 +279,11 @@ extension AcceptanceTests {
         runScenario(feature: "queue.feature", scenario: "A video with a malformed related entry still plays")
     }
 
+}
 
-    // MARK: - Recently Played
+
+/// Recently Played
+final class RecentsFeatureTests: AcceptanceTests {
 
     func test_Empty_recents_state() {
         runScenario(feature: "recents.feature", scenario: "Empty recents state")
@@ -237,15 +293,21 @@ extension AcceptanceTests {
         runScenario(feature: "recents.feature", scenario: "Playing a video records it in Recents")
     }
 
+}
 
-    // MARK: - Save for Later
+
+/// Save for Later
+final class SaveForLaterFeatureTests: AcceptanceTests {
 
     func test_Empty_saved_state() {
         runScenario(feature: "save_for_later.feature", scenario: "Empty saved state")
     }
 
+}
 
-    // MARK: - Search Videos
+
+/// Search Videos
+final class SearchFeatureTests: AcceptanceTests {
 
     func test_Empty_state_shows_suggestions() {
         runScenario(feature: "search.feature", scenario: "Empty state shows suggestions")
@@ -259,22 +321,31 @@ extension AcceptanceTests {
         runScenario(feature: "search.feature", scenario: "Tapping a suggestion runs a search")
     }
 
+}
 
-    // MARK: - Search As You Type
+
+/// Search As You Type
+final class SearchAsYouTypeFeatureTests: AcceptanceTests {
 
     func test_Typing_a_query_shows_results_without_submitting() {
         runScenario(feature: "search_as_you_type.feature", scenario: "Typing a query shows results without submitting")
     }
 
+}
 
-    // MARK: - Search History
+
+/// Search History
+final class SearchHistoryFeatureTests: AcceptanceTests {
 
     func test_A_performed_search_is_remembered() {
         runScenario(feature: "search_history.feature", scenario: "A performed search is remembered")
     }
 
+}
 
-    // MARK: - Settings
+
+/// Settings
+final class SettingsFeatureTests: AcceptanceTests {
 
     func test_Settings_screen_shows_its_sections() {
         runScenario(feature: "settings.feature", scenario: "Settings screen shows its sections")
@@ -288,22 +359,31 @@ extension AcceptanceTests {
         runScenario(feature: "settings.feature", scenario: "Clearing search history empties it")
     }
 
+}
 
-    // MARK: - Sleep Timer End of Episode
+
+/// Sleep Timer End of Episode
+final class SleepTimerFeatureTests: AcceptanceTests {
 
     func test_Setting_an_end_of_episode_sleep_timer_shows_its_state() {
         runScenario(feature: "sleep_timer.feature", scenario: "Setting an end-of-episode sleep timer shows its state")
     }
 
+}
 
-    // MARK: - SponsorBlock
+
+/// SponsorBlock
+final class SponsorblockFeatureTests: AcceptanceTests {
 
     func test_SponsorBlock_is_on_by_default_and_can_be_turned_off() {
         runScenario(feature: "sponsorblock.feature", scenario: "SponsorBlock is on by default and can be turned off")
     }
 
+}
 
-    // MARK: - Stream error messages
+
+/// Stream error messages
+final class StreamErrorMessageFeatureTests: AcceptanceTests {
 
     func test_A_Piped_instance_error_surfaces_its_real_message() {
         runScenario(feature: "stream_error_message.feature", scenario: "A Piped instance error surfaces its real message")
@@ -313,43 +393,61 @@ extension AcceptanceTests {
         runScenario(feature: "stream_error_message.feature", scenario: "A dead Piped instance names the HTTP error")
     }
 
+}
 
-    // MARK: - Recovery from a stream that fails to load
+
+/// Recovery from a stream that fails to load
+final class StreamRecoveryFeatureTests: AcceptanceTests {
 
     func test_A_stream_that_never_loads_reports_itself_instead_of_freezing() {
         runScenario(feature: "stream_recovery.feature", scenario: "A stream that never loads reports itself instead of freezing")
     }
 
+}
 
-    // MARK: - Tab Navigation
+
+/// Tab Navigation
+final class TabNavigationFeatureTests: AcceptanceTests {
 
     func test_All_tabs_are_reachable() {
         runScenario(feature: "tab_navigation.feature", scenario: "All tabs are reachable")
     }
 
+}
 
-    // MARK: - Transcript
+
+/// Transcript
+final class TranscriptFeatureTests: AcceptanceTests {
 
     func test_Transcript_tab_is_reachable_from_the_full_player() {
         runScenario(feature: "transcript.feature", scenario: "Transcript tab is reachable from the full player")
     }
 
+}
 
-    // MARK: - Trending
+
+/// Trending
+final class TrendingFeatureTests: AcceptanceTests {
 
     func test_Opening_Trending_shows_videos() {
         runScenario(feature: "trending.feature", scenario: "Opening Trending shows videos")
     }
 
+}
 
-    // MARK: - Up Next
+
+/// Up Next
+final class UpNextFeatureTests: AcceptanceTests {
 
     func test_A_video_s_detail_shows_related_videos() {
         runScenario(feature: "up_next.feature", scenario: "A video's detail shows related videos")
     }
 
+}
 
-    // MARK: - Video Detail Page
+
+/// Video Detail Page
+final class VideoDetailFeatureTests: AcceptanceTests {
 
     func test_Opening_a_video_shows_its_details_without_starting_playback() {
         runScenario(feature: "video_detail.feature", scenario: "Opening a video shows its details without starting playback")
@@ -359,8 +457,11 @@ extension AcceptanceTests {
         runScenario(feature: "video_detail.feature", scenario: "The detail page shows the description and comments")
     }
 
+}
 
-    // MARK: - Watch History Management
+
+/// Watch History Management
+final class WatchHistoryManagementFeatureTests: AcceptanceTests {
 
     func test_Clearing_watch_history() {
         runScenario(feature: "watch_history_management.feature", scenario: "Clearing watch history")
