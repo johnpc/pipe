@@ -18,7 +18,10 @@ import XCTest
 /// fixtures, so every flow is deterministic. A scenario (or feature) tagged
 /// `@fail-streams` additionally launches with `--uitest-fail-streams` to make
 /// `/streams/` requests fail and exercise the Retry UI.
-final class AcceptanceTests: XCTestCase {
+///
+/// Base class only: the generator emits one subclass per feature file so CI's
+/// parallel simulators can split the suite (Xcode parallelizes by class).
+class AcceptanceTests: XCTestCase {
 
     /// Parse the named bundled feature file, find the scenario, and run its steps.
     func runScenario(feature fileName: String, scenario name: String,

@@ -211,6 +211,29 @@ enum StepDefinitions {
             w.app.buttons["Settings"].tap()
             XCTAssertTrue(w.app.navigationBars["Settings"].waitForExistence(timeout: medium))
         }
+        // MARK: Audio language
+        r.define("the audio language setting should be \"(.+)\"") { w in
+            let picker = w.app.buttons["audioLanguagePicker"]
+            XCTAssertTrue(picker.waitForExistence(timeout: medium), "Audio Language picker should be present")
+            let shown = picker.label + " " + ((picker.value as? String) ?? "")
+            XCTAssertTrue(shown.contains(w.capture()), "Audio Language should be \(w.capture()), was “\(shown)”")
+        }
+        r.define("the audio language menu should show \"(.+)\"") { w in
+            let menu = w.app.buttons["audioLanguageMenu"]
+            XCTAssertTrue(menu.waitForExistence(timeout: long), "Dubbed video should offer an audio language menu")
+            let expected = NSPredicate(format: "label CONTAINS %@", w.capture())
+            let match = XCTNSPredicateExpectation(predicate: expected, object: menu)
+            XCTAssertEqual(XCTWaiter.wait(for: [match], timeout: medium), .completed,
+                           "Audio language menu should show \(w.capture()), was “\(menu.label)”")
+        }
+        r.define("I choose \"(.+)\" from the audio language menu") { w in
+            let menu = w.app.buttons["audioLanguageMenu"]
+            XCTAssertTrue(menu.waitForExistence(timeout: long), "Dubbed video should offer an audio language menu")
+            menu.tap()
+            let option = w.app.buttons[w.capture()]
+            XCTAssertTrue(option.waitForExistence(timeout: medium), "\(w.capture()) should be offered")
+            option.tap()
+        }
         r.define("I should see the \"(.+)\" section") { w in
             let label = w.capture()
             let element = w.app.staticTexts[label]
@@ -225,6 +248,9 @@ enum StepDefinitions {
         }
         r.define("I tap \"(.+)\"") { w in
             let button = w.app.buttons[w.capture()]
+            // A button below the fold of a lazy List (e.g. Settings) isn't
+            // realized until scrolled to; scroll only if it doesn't show up.
+            if !button.waitForExistence(timeout: short) { scrollToElement(w, button) }
             XCTAssertTrue(button.waitForExistence(timeout: medium), "“\(w.capture())” should be present")
             button.tap()
         }
@@ -301,6 +327,9 @@ enum StepDefinitions {
         // MARK: Audio / video mode
         r.define("I enable \"(.+)\"") { w in
             let button = w.app.buttons[w.capture()]
+            // A button below the fold of a lazy List (e.g. Settings) isn't
+            // realized until scrolled to; scroll only if it doesn't show up.
+            if !button.waitForExistence(timeout: short) { scrollToElement(w, button) }
             XCTAssertTrue(button.waitForExistence(timeout: medium), "“\(w.capture())” should be present")
             button.tap()
         }

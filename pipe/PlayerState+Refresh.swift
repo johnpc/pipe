@@ -43,7 +43,7 @@ extension PlayerState {
         guard let response = try? await PipedAPI.streams(item.videoId, bypassingCache: true) else { return nil }
         var copy = item
         copy.url = getStreamUrl(response)
-        copy.audioUrl = getAudioStreamUrl(response)
+        copy.audioUrl = getAudioStreamUrl(response, language: item.audioLanguage ?? pipedAudioLanguage)
         copy.castUrl = getCastStreamUrl(response)
         copy.resolvedAt = Date()
         guard !copy.url.isEmpty || !copy.audioUrl.isEmpty else { return nil }

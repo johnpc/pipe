@@ -15,6 +15,11 @@ class AppSettings: ObservableObject {
     @Published var castQuality: CastQuality {
         didSet { defaults.set(castQuality.rawValue, forKey: castQualityKey); pipedCastQuality = castQuality }
     }
+    /// Preferred audio language for dubbed videos (English unless changed).
+    /// Kept in sync with the `pipedAudioLanguage` global stream selection reads.
+    @Published var audioLanguage: String {
+        didSet { defaults.set(audioLanguage, forKey: audioLanguageKey); pipedAudioLanguage = audioLanguage }
+    }
 
     private let defaults: UserDefaults
     private let instanceKey = "pipedInstanceURL"
@@ -22,6 +27,7 @@ class AppSettings: ObservableObject {
     private let offlineKey = "offlineMode"
     private let diagnosticsKey = "diagnosticsUpload"
     private let castQualityKey = "castQuality"
+    private let audioLanguageKey = "audioLanguage"
     static let maxHistory = 10
 
     init(defaults: UserDefaults = .standard) {
@@ -30,12 +36,14 @@ class AppSettings: ObservableObject {
         self.offlineMode = defaults.bool(forKey: offlineKey)
         self.diagnosticsUpload = defaults.bool(forKey: diagnosticsKey)
         self.castQuality = CastQuality(rawValue: defaults.string(forKey: castQualityKey) ?? "") ?? .auto
+        self.audioLanguage = defaults.string(forKey: audioLanguageKey) ?? AudioLanguageLogic.english
         if let saved = defaults.stringArray(forKey: historyKey) {
             searchHistory = saved
         }
         // Keep the live network base in sync with the configured instance.
         pipedBase = SettingsLogic.normalizedInstance(instanceURL)
         pipedCastQuality = castQuality
+        pipedAudioLanguage = audioLanguage
     }
 
     nonisolated deinit {}

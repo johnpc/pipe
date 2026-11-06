@@ -16,7 +16,8 @@ extension QueueItem {
             audioUrl: try c.decode(String.self, forKey: .audioUrl),
             duration: try c.decode(Int.self, forKey: .duration),
             uploadedDate: try c.decodeIfPresent(String.self, forKey: .uploadedDate),
-            resolvedAt: try c.decodeIfPresent(Date.self, forKey: .resolvedAt)
+            resolvedAt: try c.decodeIfPresent(Date.self, forKey: .resolvedAt),
+            audioLanguage: try c.decodeIfPresent(String.self, forKey: .audioLanguage)
         )
     }
 }

@@ -36,6 +36,7 @@ struct SettingsView: View {
                 }
             }
 
+            AudioLanguageSection(settings: settings)
             CastQualitySection(settings: settings)
 
             Section("Sleep Timer") {

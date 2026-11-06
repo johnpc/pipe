@@ -7,6 +7,10 @@ var pipedBase = "https://pipedapi.jpc.io"
 /// stream-selection helpers can read it without a dependency on AppSettings.
 var pipedCastQuality: CastQuality = .auto
 
+/// Preferred audio language for dubbed videos, mirrored from Settings for the
+/// same reason as `pipedCastQuality`.
+var pipedAudioLanguage = AudioLanguageLogic.english
+
 /// Decides whether a failed request should be retried and how long to wait.
 /// Pure and synchronous so the policy is unit-testable without real delays.
 enum RetryPolicy {

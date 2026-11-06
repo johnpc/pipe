@@ -21,10 +21,14 @@ struct QueueItem: Identifiable, Equatable, Codable {
     /// URL and re-fetch before playback. `nil` for items persisted before this
     /// field existed — treated as stale so they're refreshed on next play.
     var resolvedAt: Date? = Date()
+    /// Audio language the user picked for this item in the player; nil means
+    /// the Settings preference. Kept so a URL refresh stays in that language.
+    var audioLanguage: String? = nil
 
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
         case videoId, title, artist, thumbnail, url, audioUrl, castUrl, duration, uploadedDate, resolvedAt
+        case audioLanguage
     }
 
     /// URL to play for the given mode: audio-only when available and not in
