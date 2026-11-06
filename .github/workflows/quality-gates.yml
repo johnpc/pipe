@@ -218,6 +218,22 @@ jobs:
                       print(f"  {cert['id']}: skip ({e})")
           EOF
 
+      - name: Create temporary signing keychain
+        run: |
+          # The runner is a LaunchDaemon with no login session, so the login
+          # keychain is locked and Xcode can't store the signing certificate it
+          # creates ("Write permissions error"). Sign from a throwaway keychain
+          # unlocked for this job only; the last step puts everything back.
+          KC="$RUNNER_TEMP/signing.keychain-db"
+          PW=$(uuidgen)
+          security list-keychains -d user | tr -d '"' > "$RUNNER_TEMP/keychains.orig"
+          security default-keychain -d user | tr -d ' "' > "$RUNNER_TEMP/default-keychain.orig"
+          security create-keychain -p "$PW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$PW" "$KC"
+          security list-keychains -d user -s "$KC" $(cat "$RUNNER_TEMP/keychains.orig")
+          security default-keychain -d user -s "$KC"
+
       - name: Increment build number
         run: |
           BUILD_NUM=$(date +%Y%m%d%H%M)
@@ -286,3 +302,18 @@ jobs:
             echo "$OUTPUT"
             exit 1
           fi
+
+      - name: Restore keychains and remove signing material
+        if: always()
+        run: |
+          # Self-hosted: nothing is wiped between jobs, so don't leave the ASC
+          # key, the diagnostics key, or a signing keychain on the Mac Mini.
+          if [ -f "$RUNNER_TEMP/default-keychain.orig" ]; then
+            security default-keychain -d user -s "$(cat "$RUNNER_TEMP/default-keychain.orig")"
+          fi
+          if [ -f "$RUNNER_TEMP/keychains.orig" ]; then
+            security list-keychains -d user -s $(cat "$RUNNER_TEMP/keychains.orig")
+          fi
+          security delete-keychain "$RUNNER_TEMP/signing.keychain-db" 2>/dev/null || true
+          rm -f ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 pipe/Secrets.xcconfig
+          rm -rf ~/Desktop/pipe.xcarchive ~/Desktop/export
