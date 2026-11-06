@@ -62,6 +62,7 @@ THEMES = {
         "recents.feature",
         "watch_history_management.feature",
         "following.feature",
+        "audio_language.feature",
     ],
     "navigation": [
         "tab_navigation.feature",
