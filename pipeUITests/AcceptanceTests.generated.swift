@@ -6,6 +6,21 @@ import XCTest
 extension AcceptanceTests {
 
 
+    // MARK: - Audio language
+
+    func test_Audio_language_defaults_to_English() {
+        runScenario(feature: "audio_language.feature", scenario: "Audio language defaults to English")
+    }
+
+    func test_A_dubbed_video_starts_in_English() {
+        runScenario(feature: "audio_language.feature", scenario: "A dubbed video starts in English")
+    }
+
+    func test_Switching_a_dubbed_video_to_another_language() {
+        runScenario(feature: "audio_language.feature", scenario: "Switching a dubbed video to another language")
+    }
+
+
     // MARK: - Audio and Video Playback Mode
 
     func test_Toggling_video_mode_from_the_full_player() {

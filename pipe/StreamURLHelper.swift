@@ -26,15 +26,13 @@ private func bestProgressiveMP4URL(_ s: StreamResponse) -> String {
     s.videoStreams.first { $0.mimeType.contains("mp4") && $0.videoOnly == false }?.url ?? ""
 }
 
-/// Best audio-only stream URL, kept in its proxied form (see `getStreamUrl`).
-/// Prefers the highest-bitrate MP4/M4A audio track; falls back to the
-/// highest-bitrate audio of any type, then to an empty string when the
-/// response carries no audio streams (caller falls back to the video URL).
-/// Lets audio playback avoid downloading video frames.
-func getAudioStreamUrl(_ s: StreamResponse) -> String {
-    let mp4 = s.audioStreams.filter { $0.mimeType.contains("mp4") || $0.mimeType.contains("m4a") }
-    let best = mp4.max { $0.bitrate < $1.bitrate } ?? s.audioStreams.max { $0.bitrate < $1.bitrate }
-    return best?.url ?? ""
+/// Best audio-only stream URL, kept in its proxied form (see `getStreamUrl`),
+/// in the preferred language on dubbed videos (see `AudioLanguageLogic`).
+/// Prefers the highest-bitrate MP4/M4A track; empty when the response carries
+/// no audio streams (caller falls back to the video URL). Lets audio playback
+/// avoid downloading video frames.
+func getAudioStreamUrl(_ s: StreamResponse, language: String = pipedAudioLanguage) -> String {
+    AudioLanguageLogic.bestURL(from: s.audioStreams, preferred: language)
 }
 
 func formatDuration(_ seconds: Int) -> String {

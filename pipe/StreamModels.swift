@@ -43,6 +43,11 @@ struct AudioStream: Codable, Equatable {
     let url: String
     let bitrate: Int
     let mimeType: String
+    /// BCP-47 language of this track ("en", "en-US", "zh-Hans"). Dubbed videos
+    /// offer one track per language; nil when the instance doesn't label them.
+    var audioTrackLocale: String? = nil
+    /// Piped's track kind: "ORIGINAL", "DUBBED", or "DESCRIPTIVE".
+    var audioTrackType: String? = nil
 }
 
 struct VideoStream: Codable, Equatable {
