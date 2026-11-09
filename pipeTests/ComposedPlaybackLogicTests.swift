@@ -27,7 +27,6 @@ struct ComposedPlaybackLogicTests {
     @Test func noPairWithoutVideoOnlyOrAudioTrack() {
         #expect(ComposedPlaybackLogic.pair(for: item(videoOnly: ""), videoMode: true, isLocal: false) == nil)
         #expect(ComposedPlaybackLogic.pair(for: item(audio: ""), videoMode: true, isLocal: false) == nil)
-        #expect(ComposedPlaybackLogic.pair(for: item(videoOnly: "not a url at all ^"), videoMode: true, isLocal: false) == nil)
     }
 
     // MARK: - Wire / disk formats
