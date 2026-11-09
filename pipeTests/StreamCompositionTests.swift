@@ -79,7 +79,8 @@ struct StreamCompositionTests {
         player.toggleVideoMode()
         let avPlayer = try #require(player.player)
         try? await Task.sleep(nanoseconds: 1_500_000_000)
+        let audioOnly = try Self.fixture("composition_audio").absoluteString
         #expect(player.player === avPlayer)
-        #expect((player.player?.currentItem?.asset as? AVURLAsset)?.url.absoluteString == Self.fixture("composition_audio").absoluteString)
+        #expect((player.player?.currentItem?.asset as? AVURLAsset)?.url.absoluteString == audioOnly)
     }
 }
