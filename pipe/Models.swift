@@ -15,6 +15,12 @@ struct QueueItem: Identifiable, Equatable, Codable {
     /// so it's re-resolved with `url` when the stream expires. Empty → falls back
     /// to `url` at cast time.
     var castUrl: String = ""
+    /// Video-only MP4 URL (no audio track). In video mode it's paired with
+    /// `audioUrl` in an `AVMutableComposition`, so the picture plays with the
+    /// chosen audio language — the muxed `url` carries one fixed track. Empty
+    /// when the source offers none (or for items queued before this existed);
+    /// playback then falls back to `url`.
+    var videoOnlyUrl: String = ""
     let duration: Int
     let uploadedDate: String?
     /// When the stream URLs were last resolved. Used to detect a stale (expired)
@@ -28,7 +34,7 @@ struct QueueItem: Identifiable, Equatable, Codable {
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
         case videoId, title, artist, thumbnail, url, audioUrl, castUrl, duration, uploadedDate, resolvedAt
-        case audioLanguage
+        case audioLanguage, videoOnlyUrl
     }
 
     /// URL to play for the given mode: audio-only when available and not in

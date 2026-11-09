@@ -76,13 +76,12 @@ class PlayerState: ObservableObject {
     /// jumping to a chapter. Overrides the saved-resume position for that play.
     var pendingSeek: Double?
 
-    let defaults: UserDefaults
-    let queueKey = "savedQueue"
-    let indexKey = "savedQueueIndex"
+    /// Bumped every time an item starts loading. The async composed-playback
+    /// path compares it after awaiting so a superseded load never installs its
+    /// player over the one the user asked for next.
+    var playGeneration = 0
 
-    let speedKey = "playbackSpeed"
-    let sponsorKey = "sponsorBlockEnabled"
-    let videoModeKey = "videoMode"
+    let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults

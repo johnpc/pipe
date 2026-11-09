@@ -35,6 +35,12 @@ func getAudioStreamUrl(_ s: StreamResponse, language: String = pipedAudioLanguag
     AudioLanguageLogic.bestURL(from: s.audioStreams, preferred: language)
 }
 
+/// Best video-only MP4 URL for video mode, paired at play time with the chosen
+/// audio track (see `VideoTrackLogic`). Empty when the instance offers none.
+func getVideoOnlyStreamUrl(_ s: StreamResponse) -> String {
+    VideoTrackLogic.bestVideoOnlyURL(from: s.videoStreams)
+}
+
 func formatDuration(_ seconds: Int) -> String {
     let h = seconds / 3600
     let m = (seconds % 3600) / 60

@@ -29,9 +29,10 @@ extension PlayerState {
         queue[currentIndex] = item
         persistQueue()
         log.event("play", "audio language", fields: ["videoId": item.videoId, "language": language])
-        // Video mode and casting play the muxed stream, which has one fixed
-        // track; the choice still applies once the user is back on audio.
-        guard !videoMode, !isCasting else { return }
+        // The receiver plays the muxed stream, which has one fixed track; the
+        // choice still applies once casting ends. Video mode reloads too: it
+        // pairs the video-only track with this audio track (see +Composed).
+        guard !isCasting else { return }
         if currentTime > 1 { pendingSeek = currentTime }
         playItem(item, skipRefresh: true)
     }

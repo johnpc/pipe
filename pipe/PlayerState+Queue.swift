@@ -4,13 +4,13 @@ import Foundation
 /// lives in +QueueRemove; reordering in +QueueEdit.
 extension PlayerState {
     /// Append to the end of the queue.
-    func addToQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
-        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, castUrl: castUrl, duration: duration, uploadedDate: uploadedDate), playNext: false)
+    func addToQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", videoOnlyUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, castUrl: castUrl, videoOnlyUrl: videoOnlyUrl, duration: duration, uploadedDate: uploadedDate), playNext: false)
     }
 
     /// Insert right after the current item so it plays next.
-    func playNextInQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
-        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, castUrl: castUrl, duration: duration, uploadedDate: uploadedDate), playNext: true)
+    func playNextInQueue(videoId: String, url: String, audioUrl: String = "", castUrl: String = "", videoOnlyUrl: String = "", title: String, artist: String, thumbnail: String, duration: Int = 0, uploadedDate: String? = nil) {
+        enqueue(QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail, url: url, audioUrl: audioUrl, castUrl: castUrl, videoOnlyUrl: videoOnlyUrl, duration: duration, uploadedDate: uploadedDate), playNext: true)
     }
 
     private func enqueue(_ item: QueueItem, playNext: Bool) {

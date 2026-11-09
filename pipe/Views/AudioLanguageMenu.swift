@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Picks the now-playing video's audio language. Shown only in audio mode on
-/// videos that offer more than one language (dubbed videos).
+/// Picks the now-playing video's audio language. Shown on videos that offer
+/// more than one language (dubbed videos), in both audio and video mode.
 struct AudioLanguageMenu: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var detail: NowPlayingDetail
@@ -14,7 +14,7 @@ struct AudioLanguageMenu: View {
     }
 
     var body: some View {
-        if !player.videoMode && languages.count > 1 {
+        if languages.count > 1 {
             Menu {
                 ForEach(languages, id: \.self) { code in
                     Button {
