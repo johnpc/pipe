@@ -45,6 +45,7 @@ extension PlayerState {
         copy.url = getStreamUrl(response)
         copy.audioUrl = getAudioStreamUrl(response, language: item.audioLanguage ?? pipedAudioLanguage)
         copy.castUrl = getCastStreamUrl(response)
+        copy.videoOnlyUrl = getVideoOnlyStreamUrl(response)
         copy.resolvedAt = Date()
         guard !copy.url.isEmpty || !copy.audioUrl.isEmpty else { return nil }
         return copy

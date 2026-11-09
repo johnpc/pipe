@@ -19,6 +19,10 @@ final class AudioLanguageFeatureTests: AcceptanceTests {
         runScenario(feature: "audio_language.feature", scenario: "Switching a dubbed video to another language")
     }
 
+    func test_Switching_language_while_watching_the_video() {
+        runScenario(feature: "audio_language.feature", scenario: "Switching language while watching the video")
+    }
+
 }
 
 

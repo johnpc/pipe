@@ -1,9 +1,10 @@
 import AVFoundation
 import MediaPlayer
 
-/// Core playback engine for PlayerState: load an item, wire observers, publish
-/// progress. End-of-item, stall, and status handling live in +Transport; the
-/// observer wiring lives in +Observers.
+/// Core playback engine for PlayerState: decide how an item loads (fresh URL,
+/// cast receiver, composed video + audio, or a single stream) and reset the
+/// item-scoped state. Starting the built player lives in +Start, the composed
+/// path in +Composed; end-of-item, stall, and status handling in +Transport.
 extension PlayerState {
     func playItem(_ item: QueueItem, skipRefresh: Bool = false) {
         error = nil
@@ -34,6 +35,23 @@ extension PlayerState {
             return
         }
 
+        beginItem(item, isLocal: isLocal)
+
+        // Video mode pairs the video-only track with the chosen audio track so
+        // the audio language applies there too; `url` (the muxed stream) is the
+        // fallback if the pair can't be loaded.
+        if let pair = ComposedPlaybackLogic.pair(for: item, videoMode: videoMode, isLocal: isLocal) {
+            startComposed(item, pair: pair, fallback: url)
+        } else {
+            startPlayer(AVPlayer(url: url), for: item)
+        }
+    }
+
+    /// Publish the item's metadata, reset per-item state, and retire the
+    /// previous player, so the UI reflects the new item even while its stream
+    /// is still being prepared.
+    func beginItem(_ item: QueueItem, isLocal: Bool) {
+        playGeneration += 1
         currentVideoId = item.videoId
         currentTitle = item.title
         currentArtist = item.artist
@@ -58,37 +76,5 @@ extension PlayerState {
             "source": isLocal ? "local" : "stream",
             "expectedDuration": String(item.duration),
         ])
-
-        player = AVPlayer(url: url)
-        installPlaybackObservers()
-
-        // Fetch + auto-skip SponsorBlock segments for this video.
-        loadSponsorSegments(for: item.videoId)
-
-        // Resume from saved position
-        let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
-
-        // Add to recents
-        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
-
-        // A pending chapter seek takes precedence over the saved-resume position.
-        if let target = pendingSeek {
-            pendingSeek = nil
-            currentTime = target
-            player?.seek(to: CMTime(seconds: target, preferredTimescale: 1))
-            log.event("play", "pendingSeek", fields: ["to": String(Int(target))])
-        } else if savedPos > 10 {
-            player?.seek(to: CMTime(seconds: savedPos, preferredTimescale: 1))
-            log.event("play", "resume", fields: ["from": String(Int(savedPos))])
-        }
-
-        // Start the instant any media is buffered rather than waiting for
-        // AVPlayer's default anti-stall margin — several silent seconds on a
-        // proxied stream. The stall observer already recovers any underruns
-        // this more eager start produces.
-        player?.playImmediately(atRate: playbackSpeed)
-        isPlaying = true
-        isBuffering = true  // cleared when timeControlStatus first hits .playing
-        updateNowPlaying()
     }
 }

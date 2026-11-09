@@ -10,6 +10,8 @@ struct ResolvedStream: Equatable {
     /// rather than the host-rewritten direct googlevideo URL the phone uses.
     var castURL: String = ""
     let audioUrl: String
+    /// Video-only MP4 paired with `audioUrl` in video mode (see `QueueItem`).
+    var videoOnlyURL: String = ""
     let title: String
     let artist: String
     let thumbnail: String

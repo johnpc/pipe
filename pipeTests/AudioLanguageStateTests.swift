@@ -56,12 +56,14 @@ struct AudioLanguageStateTests {
         #expect(player.currentTime == 42)
     }
 
-    @Test func selectingLanguageInVideoModeStoresChoiceOnly() {
+    @Test func selectingLanguageInVideoModeReloadsAtSamePosition() {
         let player = playerWithItem()
         player.toggleVideoMode()
+        player.handleProgress(currentTime: 42, itemDuration: 100)
         player.selectAudioLanguage("es", from: dubbedStreams)
         #expect(player.queue[0].audioUrl == "https://x/es")
         #expect(player.videoMode)
+        #expect(player.currentTime == 42)
     }
 
     @Test func selectingLanguageWithoutStreamsIsNoOp() {

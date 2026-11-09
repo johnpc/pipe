@@ -17,3 +17,12 @@ Feature: Audio language
     And I open the full player
     When I choose "Spanish" from the audio language menu
     Then the audio language menu should show "Spanish"
+
+  Scenario: Switching language while watching the video
+    Given a video is playing
+    And I open the full player
+    And I enable "Show Video"
+    Then the video surface should be shown (PiP-capable)
+    And the audio language menu should show "English"
+    When I choose "Spanish" from the audio language menu
+    Then the audio language menu should show "Spanish"

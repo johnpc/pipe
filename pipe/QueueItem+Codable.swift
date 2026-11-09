@@ -14,6 +14,7 @@ extension QueueItem {
             thumbnail: try c.decode(String.self, forKey: .thumbnail),
             url: try c.decode(String.self, forKey: .url),
             audioUrl: try c.decode(String.self, forKey: .audioUrl),
+            videoOnlyUrl: try c.decodeIfPresent(String.self, forKey: .videoOnlyUrl) ?? "",
             duration: try c.decode(Int.self, forKey: .duration),
             uploadedDate: try c.decodeIfPresent(String.self, forKey: .uploadedDate),
             resolvedAt: try c.decodeIfPresent(Date.self, forKey: .resolvedAt),
