@@ -81,11 +81,11 @@ struct FeedView: View {
     }
 
     private func queueVideo(_ v: RelatedStream) {
-        Task { await Playback.run(videoId: v.videoId, action: .queue, player: player) }
+        Playback.perform(QueueItem(pending: v), action: .queue, player: player)
     }
 
     private func playNextVideo(_ v: RelatedStream) {
-        Task { await Playback.run(videoId: v.videoId, action: .playNext, player: player) }
+        Playback.perform(QueueItem(pending: v), action: .playNext, player: player)
     }
 
     private func resume(_ item: RecentItem) {  // playItem seeks to saved position

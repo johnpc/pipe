@@ -49,6 +49,6 @@ struct ChannelVideoList: View {
     }
 
     private func play(_ v: RelatedStream, _ action: Playback.Action) {
-        Task { await Playback.run(videoId: v.videoId, action: action, player: player) }
+        Playback.perform(QueueItem(pending: v), action: action, player: player)
     }
 }

@@ -78,6 +78,6 @@ struct RecentsView: View {
     }
 
     private func queueItem(_ item: RecentItem) {
-        Task { await Playback.run(videoId: item.videoId, action: .queue, player: player) }
+        Playback.perform(QueueItem(pending: item), action: .queue, player: player)
     }
 }

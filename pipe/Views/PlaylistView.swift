@@ -54,6 +54,6 @@ struct PlaylistView: View {
     }
 
     private func queue(_ v: RelatedStream) {
-        Task { await Playback.run(videoId: v.videoId, action: .queue, player: player) }
+        Playback.perform(QueueItem(pending: v), action: .queue, player: player)
     }
 }
