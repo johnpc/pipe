@@ -279,6 +279,10 @@ final class QueueFeatureTests: AcceptanceTests {
         runScenario(feature: "queue.feature", scenario: "Queueing a result adds it to the queue")
     }
 
+    func test_Adding_to_the_queue_while_something_is_playing_is_immediate() {
+        runScenario(feature: "queue.feature", scenario: "Adding to the queue while something is playing is immediate")
+    }
+
     func test_A_video_with_a_malformed_related_entry_still_plays() {
         runScenario(feature: "queue.feature", scenario: "A video with a malformed related entry still plays")
     }

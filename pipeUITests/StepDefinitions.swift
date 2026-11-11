@@ -162,6 +162,23 @@ enum StepDefinitions {
             XCTAssertTrue(queue.waitForExistence(timeout: long), "A queue control should be present")
             queue.tap()
         }
+        r.define("I tap the queue button on the second result") { w in
+            let queue = w.app.buttons.matching(identifier: "queueButton").element(boundBy: 1)
+            XCTAssertTrue(queue.waitForExistence(timeout: long), "A second queue control should be present")
+            queue.tap()
+        }
+        // Opens the full player's Queue tab and checks its "N items" count — a
+        // signal only the queue renders, so a title visible in the list behind
+        // the sheet can't satisfy it.
+        r.define("the queue should contain (\\d+) items") { w in
+            let count = w.capture()
+            w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
+            let queueTab = w.app.buttons["playerTab-Queue"]
+            XCTAssertTrue(queueTab.waitForExistence(timeout: long), "The Queue player tab should be present")
+            queueTab.tap()
+            XCTAssertTrue(w.app.staticTexts["\(count) items"].waitForExistence(timeout: long),
+                          "The queue should list \(count) items")
+        }
         r.define("the video should be added to the queue") { w in
             XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long),
                           "Queued item should begin playing and show in the mini player")

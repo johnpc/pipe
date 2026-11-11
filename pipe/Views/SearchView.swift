@@ -66,10 +66,10 @@ struct SearchView: View {
         Task { await Playback.run(videoId: item.videoId, action: .play, player: player) }
     }
     private func queueItem(_ item: SearchItem) {
-        Task { await Playback.run(videoId: item.videoId, action: .queue, player: player) }
+        Playback.perform(QueueItem(pending: item), action: .queue, player: player)
     }
     private func playNextItem(_ item: SearchItem) {
-        Task { await Playback.run(videoId: item.videoId, action: .playNext, player: player) }
+        Playback.perform(QueueItem(pending: item), action: .playNext, player: player)
     }
     private func castItem(_ item: SearchItem) {
         Playback.cast(videoId: item.videoId, player: player)
