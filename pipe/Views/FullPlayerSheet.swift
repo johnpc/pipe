@@ -11,7 +11,7 @@ struct FullPlayerSheet: View {
                 Capsule().fill(.secondary).frame(width: 40, height: 5).padding(.top)
                 
                 if PiPLogic.isEligible(videoMode: player.videoMode, hasPlayer: player.player != nil), let avPlayer = player.player {
-                    PiPVideoPlayer(player: avPlayer)
+                    PiPVideoPlayer(player: avPlayer, log: player.log)
                         .frame(height: 200)
                         .cornerRadius(8)
                         .padding(.horizontal)

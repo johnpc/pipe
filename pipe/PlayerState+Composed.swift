@@ -1,10 +1,11 @@
 import AVFoundation
 
 /// Video mode plays the video-only track and the chosen audio track together
-/// as one composition, so a dubbed video honors the audio language with the
-/// picture showing — the muxed stream carries a single fixed track. Loading
-/// the two tracks is async; if either fails, the muxed `fallback` plays, so an
-/// instance without video-only tracks (or a dead track URL) behaves as before.
+/// as one HLS program (see `StreamComposition`), so a dubbed video honors the
+/// audio language with the picture showing — the muxed stream carries a single
+/// fixed track. Reading the two indexes is async; if either fails, the muxed
+/// `fallback` plays, so an instance without video-only tracks (or a dead track
+/// URL) behaves as before.
 extension PlayerState {
     func startComposed(_ item: QueueItem, pair: ComposedPlaybackLogic.Pair, fallback: URL) {
         let generation = playGeneration
@@ -24,20 +25,21 @@ extension PlayerState {
         }
     }
 
-    private static func compose(_ pair: ComposedPlaybackLogic.Pair) async -> Result<AVPlayerItem, Error> {
+    private static func compose(_ pair: ComposedPlaybackLogic.Pair) async -> Result<ComposedStream, Error> {
         do {
-            return .success(try await StreamComposition.playerItem(video: pair.video, audio: pair.audio))
+            return .success(try await StreamComposition.build(video: pair.video, audio: pair.audio))
         } catch {
             return .failure(error)
         }
     }
 
-    private func finishComposed(_ item: QueueItem, built: Result<AVPlayerItem, Error>, fallback: URL) {
+    private func finishComposed(_ item: QueueItem, built: Result<ComposedStream, Error>, fallback: URL) {
         switch built {
-        case .success(let playerItem):
-            startPlayer(AVPlayer(playerItem: playerItem), for: item)
+        case .success(let stream):
+            composedLoader = stream.loader
+            startPlayer(AVPlayer(playerItem: stream.item), for: item)
         case .failure(let error):
-            log.event("play", "compose failed, using muxed", fields: ["videoId": item.videoId, "error": error.localizedDescription])
+            log.event("play", "compose failed, using muxed", fields: ["videoId": item.videoId, "error": error.diagnosticDescription])
             startPlayer(AVPlayer(url: fallback), for: item)
         }
     }

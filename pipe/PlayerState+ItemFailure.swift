@@ -29,6 +29,7 @@ extension PlayerState {
             error = ItemFailurePolicy.failureMessage(title: item.title, reason: reason)
             isPlaying = false
             isBuffering = false
+            releaseTransitionHold("gave up")
             return
         }
         itemFailureRetries += 1

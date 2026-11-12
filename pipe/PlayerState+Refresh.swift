@@ -70,6 +70,7 @@ extension PlayerState {
     /// nothing (sponsor segments, expected duration, video id) leaks into the
     /// next playback session.
     func stop() {
+        releaseTransitionHold("stop")
         teardownPlaybackObservers()
         releaseCurrentPlayer()
         teardownCast()

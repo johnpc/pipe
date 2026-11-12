@@ -32,8 +32,12 @@ class PlayerState: ObservableObject {
     var wasPlayingBeforeInterruption = false
     
     var player: AVPlayer?
+    /// Serves the playlists of the composed (video mode) item now playing.
+    var composedLoader: HLSPlaylistLoader?
     /// Diagnostic logger (injectable so tests can capture emitted events).
     var log: PlaybackLog = .shared
+    /// Gapless hand-off state: background hold + next-item prefetch (injectable).
+    var transition = ItemTransition()
     /// Whether the opt-in remote diagnostics sink has been attached this launch.
     var remoteDiagnosticsAttached = false
     /// Whether the one-shot session-start event has been logged this launch.
@@ -51,13 +55,8 @@ class PlayerState: ObservableObject {
     /// abort/restart) an item that's already casting.
     var castLoadedVideoId: String?
     var currentVideoId: String?
-    var timeObserver: Any?
-    var endObserver: Any?
-    var failedEndObserver: Any?
-    var stallObserver: Any?
-    var statusObserver: NSKeyValueObservation?
-    var itemStatusObserver: NSKeyValueObservation?
-    var sponsorObserver: Any?
+    /// Handles for the observers on the live player (see +Observers).
+    var observers = PlaybackObserverHandles()
     /// Sponsor segments to auto-skip for the current item.
     var sponsorSegments: [SponsorSegment] = []
     /// Piped-reported duration (seconds) of the current item, used to detect an
