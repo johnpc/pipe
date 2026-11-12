@@ -18,36 +18,35 @@ enum ComposedPlaybackLogic {
     }
 }
 
-/// Builds the `AVPlayerItem` that plays a video-only track and a separate audio
-/// track in lockstep. Both are fragmented MP4s streamed over HTTP; AVFoundation
-/// reads each one's track table, and the composition references the remote
-/// tracks directly — nothing is downloaded up front.
+/// A playable video-only + audio pair, with the playlist server it depends on.
+struct ComposedStream {
+    let item: AVPlayerItem
+    /// Must outlive the item: AVFoundation holds its loader delegate weakly.
+    let loader: HLSPlaylistLoader
+}
+
+/// Plays a video-only track and a separate audio track in lockstep by
+/// describing both to AVPlayer as an HLS presentation: each stream's own
+/// segment index (its `sidx` box, a few hundred KB from the head of the file)
+/// becomes a byte-range media playlist, so AVPlayer streams and seeks them
+/// like any HLS program. Nothing is downloaded up front beyond the two indexes.
 enum StreamComposition {
     enum Failure: Error {
-        /// One of the sources lacks the expected media track (e.g. the "video"
-        /// URL actually served audio, or an unplayable codec hid the track).
-        case missingTrack
+        case badPlaylistURL
     }
 
-    @MainActor static func playerItem(video: URL, audio: URL) async throws -> AVPlayerItem {
-        let options = [AVURLAssetPreferPreciseDurationAndTimingKey: true]
-        let videoAsset = AVURLAsset(url: video, options: options)
-        let audioAsset = AVURLAsset(url: audio, options: options)
-        let (videoTracks, videoDuration) = try await videoAsset.load(.tracks, .duration)
-        let (audioTracks, audioDuration) = try await audioAsset.load(.tracks, .duration)
-
-        let composition = AVMutableComposition()
-        guard let videoTrack = videoTracks.first(where: { $0.mediaType == .video }),
-              let audioTrack = audioTracks.first(where: { $0.mediaType == .audio }),
-              let videoSlot = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
-              let audioSlot = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
-        else { throw Failure.missingTrack }
-
-        // Trim to the shorter track so the composition never has a silent or
-        // frozen tail where only one source still has samples.
-        let range = CMTimeRange(start: .zero, duration: CMTimeMinimum(videoDuration, audioDuration))
-        try videoSlot.insertTimeRange(range, of: videoTrack, at: .zero)
-        try audioSlot.insertTimeRange(range, of: audioTrack, at: .zero)
-        return AVPlayerItem(asset: composition)
+    static func build(video: URL, audio: URL) async throws -> ComposedStream {
+        async let videoIndex = MP4SegmentIndexLoader.load(video)
+        async let audioIndex = MP4SegmentIndexLoader.load(audio)
+        let (v, a) = try await (videoIndex, audioIndex)
+        let loader = HLSPlaylistLoader(playlists: [
+            HLSPlaylist.master: HLSPlaylist.masterPlaylist(),
+            HLSPlaylist.video: HLSPlaylist.mediaPlaylist(source: video, index: v),
+            HLSPlaylist.audio: HLSPlaylist.mediaPlaylist(source: audio, index: a),
+        ])
+        guard let url = HLSPlaylist.url(HLSPlaylist.master) else { throw Failure.badPlaylistURL }
+        let asset = AVURLAsset(url: url)
+        asset.resourceLoader.setDelegate(loader, queue: loader.queue)
+        return ComposedStream(item: AVPlayerItem(asset: asset), loader: loader)
     }
 }

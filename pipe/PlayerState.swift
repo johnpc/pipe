@@ -32,6 +32,8 @@ class PlayerState: ObservableObject {
     var wasPlayingBeforeInterruption = false
     
     var player: AVPlayer?
+    /// Serves the playlists of the composed (video mode) item now playing.
+    var composedLoader: HLSPlaylistLoader?
     /// Diagnostic logger (injectable so tests can capture emitted events).
     var log: PlaybackLog = .shared
     /// Gapless hand-off state: background hold + next-item prefetch (injectable).
