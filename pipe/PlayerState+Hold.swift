@@ -16,9 +16,12 @@ extension PlayerState {
         if transition.isHolding { log.event("hold", "begin") }
     }
 
+    /// Logged with the hold's duration: for `playing`, that is the time from the
+    /// item starting to load until audio came out — the start latency.
     func releaseTransitionHold(_ reason: String) {
         guard transition.isHolding else { return }
+        let ms = transition.heldSince.map { Int(Date().timeIntervalSince($0) * 1000) } ?? 0
         transition.releaseHold()
-        log.event("hold", "release", fields: ["reason": reason])
+        log.event("hold", "release", fields: ["reason": reason, "ms": String(ms)])
     }
 }

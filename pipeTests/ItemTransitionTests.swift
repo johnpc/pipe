@@ -9,6 +9,7 @@ struct ItemTransitionTests {
         transition.beginHold()
         transition.beginHold()  // idempotent while held
         #expect(transition.isHolding)
+        #expect(transition.heldSince != nil)
         #expect(activity.begun == ["pipe.itemTransition"])
     }
 
@@ -40,6 +41,7 @@ struct ItemTransitionTests {
         let transition = ItemTransition(activity: activity)
         transition.beginHold()
         #expect(!transition.isHolding)
+        #expect(transition.heldSince == nil)
         transition.releaseHold()
         #expect(activity.ended.isEmpty)
     }

@@ -57,6 +57,7 @@ struct PlayerTransitionHoldTests {
         p.pause()
         #expect(!p.transition.isHolding)
         #expect(buffer.exportText().contains("reason=pause"))
+        #expect(buffer.exportText().contains(" ms=")) // start latency travels with the release
     }
 
     @Test func stopReleasesTheHold() {

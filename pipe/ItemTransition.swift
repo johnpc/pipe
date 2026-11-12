@@ -24,6 +24,9 @@ struct UIKitBackgroundActivity: BackgroundActivity {
 final class ItemTransition {
     private let activity: BackgroundActivity
     private(set) var holdToken: UIBackgroundTaskIdentifier?
+    /// When the current hold began — i.e. when the item started loading — so
+    /// the release can report how long the start took.
+    private(set) var heldSince: Date?
     /// Called when iOS expires the hold before playback resumed.
     var onExpire: (() -> Void)?
     /// Video id of the upcoming item whose stream URL is being (or was last)
@@ -44,6 +47,7 @@ final class ItemTransition {
             self?.releaseHold()
         }
         holdToken = token == .invalid ? nil : token
+        heldSince = holdToken == nil ? nil : Date()
     }
 
     /// Release the hold; a no-op when none is active.
