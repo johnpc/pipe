@@ -13,5 +13,6 @@ extension PlayerState {
             updateCurrentChapter(for: vid, at: time)
         }
         logProgressHeartbeat(at: time)
+        prefetchNextIfNeeded(at: time)
     }
 }

@@ -36,6 +36,7 @@ extension PlayerState {
 
     func pause() {
         if isCasting { cast?.pause() } else { player?.pause() }
+        releaseTransitionHold("pause")
         isPlaying = false
         isBuffering = false
         log.event("transport", "pause", fields: ["at": String(Int(currentTime))])

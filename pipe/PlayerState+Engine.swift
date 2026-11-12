@@ -8,6 +8,7 @@ import MediaPlayer
 extension PlayerState {
     func playItem(_ item: QueueItem, skipRefresh: Bool = false) {
         error = nil
+        holdForTransition()
 
         let isLocal = downloads?.localURLString(for: item.videoId) != nil
         // Stream URLs are time-limited; re-resolve a stale one before playing so
@@ -22,6 +23,7 @@ extension PlayerState {
         // A connected receiver owns playback: hand it the video and skip building
         // a local AVPlayer entirely.
         if isCasting {
+            releaseTransitionHold("casting")
             castItem(item)
             return
         }
@@ -32,6 +34,7 @@ extension PlayerState {
         guard let url = URL(string: source) else {
             error = "Couldn't play \(item.title)"
             log.event("play", "bad url", fields: ["videoId": item.videoId, "result": "failed"])
+            releaseTransitionHold("bad url")
             return
         }
 

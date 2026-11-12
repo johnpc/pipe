@@ -25,7 +25,7 @@ extension PlayerState {
     func installSponsorObserver() {
         removeSponsorObserver()
         guard !sponsorSegments.isEmpty else { return }
-        sponsorObserver = player?.addPeriodicTimeObserver(
+        observers.sponsor = player?.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 1, preferredTimescale: 1), queue: .main
         ) { [weak self] time in
             self?.applySponsorSkip(at: time.seconds)
@@ -52,6 +52,6 @@ extension PlayerState {
     }
 
     func removeSponsorObserver() {
-        if let o = sponsorObserver, let p = player { p.removeTimeObserver(o); sponsorObserver = nil }
+        if let o = observers.sponsor, let p = player { p.removeTimeObserver(o); observers.sponsor = nil }
     }
 }

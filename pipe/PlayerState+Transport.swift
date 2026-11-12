@@ -70,6 +70,7 @@ extension PlayerState {
         // Surface (re)buffering: waiting means "intends to play, no audio yet";
         // reaching .playing or .paused ends it.
         isBuffering = status == .waitingToPlayAtSpecifiedRate
+        if status == .playing { releaseTransitionHold("playing") }
         let nowPlaying = PlaybackStatusPolicy.isPlaying(for: status, current: isPlaying)
         guard nowPlaying != isPlaying else { return }
         log.event("status", "adopt", fields: ["raw": String(status.rawValue), "from": String(isPlaying), "to": String(nowPlaying)])
