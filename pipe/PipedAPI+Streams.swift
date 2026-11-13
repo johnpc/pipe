@@ -7,12 +7,21 @@ extension PipedAPI {
     /// "Loading...", so repeat plays of a recently-resolved video start
     /// instantly. Recovery paths that exist to mint a NEW URL (dead-on-arrival
     /// stream, premature end) pass `bypassingCache: true` — re-serving the
-    /// cached URL there would just fail identically.
+    /// cached URL there would just fail identically. That also tells the
+    /// instance (`?refresh=1`) to drop *its* cached answer: the yt-dlp shim
+    /// otherwise returns the same URL for an hour, so a retry could never
+    /// recover from a URL that died mid-stream.
     static func streams(_ videoId: String, bypassingCache: Bool = false) async throws -> StreamResponse {
         if !bypassingCache, let cached = StreamCache.get(videoId) { return cached }
-        let response = try await fetch(StreamResponse.self, from: URL(string: "\(pipedBase)/streams/\(videoId)")!)
+        guard let url = streamsURL(videoId, refresh: bypassingCache) else { throw URLError(.badURL) }
+        let response = try await fetch(StreamResponse.self, from: url)
         StreamCache.put(videoId, response)
         return response
+    }
+
+    /// `<instance>/streams/<id>`, plus `?refresh=1` when a fresh URL is required.
+    static func streamsURL(_ videoId: String, refresh: Bool) -> URL? {
+        URL(string: "\(pipedBase)/streams/\(videoId)\(refresh ? "?refresh=1" : "")")
     }
 
     /// Fetch a raw text document (e.g. a TTML subtitle track) from an absolute

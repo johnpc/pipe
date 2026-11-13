@@ -26,6 +26,11 @@ struct PipedAPITests {
         #expect(url.absoluteString.contains("filter=all"))
     }
 
+    @Test func streamsURLAsksForAFreshURLOnlyWhenBypassingTheCache() {
+        #expect(PipedAPI.streamsURL("abc", refresh: false)?.absoluteString.hasSuffix("/streams/abc") == true)
+        #expect(PipedAPI.streamsURL("abc", refresh: true)?.absoluteString.hasSuffix("/streams/abc?refresh=1") == true)
+    }
+
     @Test func channelTabURLEncodesData() {
         let url = PipedAPI.channelTabURL("a b&c")
         #expect(url.absoluteString.contains("data="))

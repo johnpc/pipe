@@ -61,7 +61,7 @@ struct StreamCompositionTests {
     }
 
     private func waitForPlayer(_ player: PlayerState) async -> AVPlayer? {
-        let deadline = Date().addingTimeInterval(8)
+        let deadline = Date().addingTimeInterval(20)  // generous: the full suite runs in parallel
         while player.player == nil, Date() < deadline { try? await Task.sleep(nanoseconds: 50_000_000) }
         return player.player
     }
