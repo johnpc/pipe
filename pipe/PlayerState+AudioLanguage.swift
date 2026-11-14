@@ -22,8 +22,8 @@ extension PlayerState {
     func selectAudioLanguage(_ language: String, from streams: [AudioStream]) {
         guard currentIndex >= 0, currentIndex < queue.count else { return }
         let url = AudioLanguageLogic.bestURL(from: streams, preferred: language)
-        guard !url.isEmpty else { return }
         var item = queue[currentIndex]
+        guard !url.isEmpty || !item.hlsUrl.isEmpty else { return }
         item.audioLanguage = language
         item.audioUrl = url
         queue[currentIndex] = item

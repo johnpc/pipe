@@ -29,6 +29,14 @@ extension PlayerState {
         }
         setupAudioSession()
 
+        // YouTube's own HLS playlist, when offered, is the durable way to play:
+        // it keeps working when direct googlevideo URLs are culled (see +HLS).
+        if HLSPlaybackLogic.usesHLS(item, isLocal: isLocal) {
+            beginItem(item, isLocal: isLocal)
+            startHLS(item)
+            return
+        }
+
         // Prefer a downloaded local file (offline playback) over streaming.
         let source = downloads?.localURLString(for: item.videoId) ?? item.playbackURL(videoMode: videoMode)
         guard let url = URL(string: source) else {

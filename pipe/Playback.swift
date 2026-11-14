@@ -19,6 +19,7 @@ enum Playback {
             castURL: getCastStreamUrl(stream),
             audioUrl: getAudioStreamUrl(stream),
             videoOnlyURL: getVideoOnlyStreamUrl(stream),
+            hls: stream.hls ?? "",
             title: stream.title,
             artist: stream.uploader,
             thumbnail: stream.thumbnailUrl,
@@ -35,11 +36,11 @@ enum Playback {
         player.registerChapters(resolved.chapters, for: resolved.videoId)
         switch action {
         case .play:
-            player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, videoOnlyUrl: resolved.videoOnlyURL, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.play(videoId: resolved.videoId, urlString: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, videoOnlyUrl: resolved.videoOnlyURL, hlsUrl: resolved.hls, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         case .queue:
-            player.addToQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, videoOnlyUrl: resolved.videoOnlyURL, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.addToQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, videoOnlyUrl: resolved.videoOnlyURL, hlsUrl: resolved.hls, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         case .playNext:
-            player.playNextInQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, videoOnlyUrl: resolved.videoOnlyURL, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
+            player.playNextInQueue(videoId: resolved.videoId, url: resolved.url, audioUrl: resolved.audioUrl, castUrl: resolved.castURL, videoOnlyUrl: resolved.videoOnlyURL, hlsUrl: resolved.hls, title: resolved.title, artist: resolved.artist, thumbnail: resolved.thumbnail, duration: resolved.duration, uploadedDate: resolved.uploadedDate)
         }
     }
 
