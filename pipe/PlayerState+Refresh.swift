@@ -46,8 +46,9 @@ extension PlayerState {
         copy.audioUrl = getAudioStreamUrl(response, language: item.audioLanguage ?? pipedAudioLanguage)
         copy.castUrl = getCastStreamUrl(response)
         copy.videoOnlyUrl = getVideoOnlyStreamUrl(response)
+        copy.hlsUrl = response.hls ?? ""
         copy.resolvedAt = Date()
-        guard !copy.url.isEmpty || !copy.audioUrl.isEmpty else { return nil }
+        guard !copy.url.isEmpty || !copy.audioUrl.isEmpty || !copy.hlsUrl.isEmpty else { return nil }
         return copy
     }
 
@@ -70,6 +71,7 @@ extension PlayerState {
     /// nothing (sponsor segments, expected duration, video id) leaks into the
     /// next playback session.
     func stop() {
+        playGeneration += 1  // an in-flight async load (HLS/composed) must not revive playback
         releaseTransitionHold("stop")
         teardownPlaybackObservers()
         releaseCurrentPlayer()

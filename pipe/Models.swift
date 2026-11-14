@@ -21,6 +21,9 @@ struct QueueItem: Identifiable, Equatable, Codable {
     /// when the source offers none (or for items queued before this existed);
     /// playback then falls back to `url`.
     var videoOnlyUrl: String = ""
+    /// YouTube's HLS master playlist for the video (see `HLSPlaybackLogic`).
+    /// Empty when the instance offered none; then the direct URLs above play.
+    var hlsUrl: String = ""
     let duration: Int
     let uploadedDate: String?
     /// When the stream URLs were last resolved. Used to detect a stale (expired)
@@ -34,7 +37,7 @@ struct QueueItem: Identifiable, Equatable, Codable {
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
         case videoId, title, artist, thumbnail, url, audioUrl, castUrl, duration, uploadedDate, resolvedAt
-        case audioLanguage, videoOnlyUrl
+        case audioLanguage, videoOnlyUrl, hlsUrl
     }
 
     /// URL to play for the given mode: audio-only when available and not in
@@ -44,7 +47,7 @@ struct QueueItem: Identifiable, Equatable, Codable {
     }
 
     /// URL to hand a Cast receiver: the proxied MP4 when available, else `url`.
-    var castPlaybackURL: String { castUrl.isEmpty ? url : castUrl }
+    var castPlaybackURL: String { castUrl.isEmpty ? (url.isEmpty ? hlsUrl : url) : castUrl }
 }
 
 struct FollowedChannel: Codable, Identifiable, Equatable, Hashable {

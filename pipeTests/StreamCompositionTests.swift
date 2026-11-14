@@ -7,8 +7,11 @@ private final class FixtureToken {}
 
 /// Builds the HLS presentation of a video-only + audio pair from two bundled
 /// fragmented MP4s (the same container shape YouTube serves), and the player's
-/// use of it.
+/// use of it. Serialized (and `PlayerHLSTests` nests under it): these suites
+/// each build real AVPlayers from file URLs and timed out when the whole
+/// parallel run contended for the simulator.
 @MainActor
+@Suite(.serialized)
 struct StreamCompositionTests {
     static func fixture(_ name: String) throws -> URL {
         try #require(Bundle(for: FixtureToken.self).url(forResource: name, withExtension: "mp4"))

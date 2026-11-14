@@ -12,6 +12,8 @@ struct ResolvedStream: Equatable {
     let audioUrl: String
     /// Video-only MP4 paired with `audioUrl` in video mode (see `QueueItem`).
     var videoOnlyURL: String = ""
+    /// YouTube's HLS master playlist, when the instance offered one.
+    var hls: String = ""
     let title: String
     let artist: String
     let thumbnail: String

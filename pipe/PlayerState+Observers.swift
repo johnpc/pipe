@@ -46,7 +46,10 @@ extension PlayerState {
                     self?.handleItemFailure(error: itemError)
                 }
             case .readyToPlay:
-                Task { @MainActor in self?.noteItemPlaying() }
+                Task { @MainActor in
+                    self?.noteItemPlaying()
+                    self?.applyHLSAudioSelection()
+                }
             default:
                 break
             }
