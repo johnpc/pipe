@@ -36,6 +36,7 @@ extension PlayerState {
         queue[idx].videoOnlyUrl = resolved.videoOnlyURL
         queue[idx].hlsUrl = resolved.hls
         queue[idx].resolvedAt = Date()
+        queue[idx].resolveAttempt = .none
         persistQueue()
     }
 

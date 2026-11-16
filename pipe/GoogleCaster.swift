@@ -58,6 +58,16 @@ final class GoogleCaster: NSObject, Casting {
         sessionManager.currentCastSession?.remoteMediaClient?.approximateStreamPosition() ?? 0
     }
 
+    var playbackState: CastPlaybackState {
+        switch sessionManager.currentCastSession?.remoteMediaClient?.mediaStatus?.playerState ?? .unknown {
+        case .playing: return .playing
+        case .paused: return .paused
+        case .buffering, .loading: return .buffering
+        case .idle, .unknown: return .idle
+        @unknown default: return .idle
+        }
+    }
+
     func presentDevicePicker() {
         // presentCastDialog() silently no-ops when castState is
         // NoDevicesAvailable — the store logs `diagnostics` around this call so a

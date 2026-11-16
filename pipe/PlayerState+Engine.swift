@@ -1,42 +1,37 @@
 import AVFoundation
 import MediaPlayer
 
-/// Core playback engine for PlayerState: decide how an item loads (fresh URL,
-/// cast receiver, native HLS, composed video + audio, or a single stream) and
-/// reset the item-scoped state. Every branch reports where it is to the
-/// lifecycle (`apply`), which owns the phase and the background hold.
-/// Starting the built player lives in +Start, the composed path in +Composed;
-/// end-of-item, stall, and status handling in +Transport.
+/// Core playback engine for PlayerState. `playItem` only decides whether the
+/// item's URLs need refreshing and hands the item to the lifecycle; the
+/// lifecycle then asks for a resolve, a build, or a cast hand-off (see
+/// +Lifecycle). `buildPlayer` is the build: local file, native HLS, composed
+/// video + audio, or a single stream.
 extension PlayerState {
-    func playItem(_ item: QueueItem, refresh: RefreshMode = .ifStale) {
+    /// `casting` overrides the live `isCasting` check for the hand-off that
+    /// runs inside the connection publisher, which fires before the store's
+    /// state has changed.
+    func playItem(_ item: QueueItem, refresh: RefreshMode = .ifStale, casting: Bool? = nil) {
         error = nil
         let isLocal = downloads?.localURLString(for: item.videoId) != nil
-
         // Stream URLs are time-limited; re-resolve a stale (or known-dead) one
         // before playing so an item paused overnight doesn't load a dead URL.
         // Local files never expire. (Applies to the TV too: the receiver
         // fetches the URL directly, so a stale one would fail there as well.)
-        if StreamFreshness.shouldRefresh(refresh, resolvedAt: item.resolvedAt, now: Date(), isLocal: isLocal) {
-            apply(.load(videoId: item.videoId, refresh: true, casting: false))
-            refreshAndPlay(item)
-            return
-        }
+        let needsRefresh = StreamFreshness.shouldRefresh(refresh, resolvedAt: item.resolvedAt, now: Date(), isLocal: isLocal)
+        apply(.load(item: item, refresh: needsRefresh, casting: casting ?? isCasting))
+    }
 
-        // A connected receiver owns playback: hand it the video and skip
-        // building a local AVPlayer entirely.
-        if isCasting {
-            castItem(item)
-            return
-        }
-
-        apply(.load(videoId: item.videoId, refresh: false, casting: false))
+    /// Build a local player for `item` and start it. Async paths (HLS master
+    /// read, composed tracks) finish only if `generation` is still current.
+    func buildPlayer(for item: QueueItem, generation: Int) {
+        let isLocal = downloads?.localURLString(for: item.videoId) != nil
         setupAudioSession()
 
         // YouTube's own HLS playlist, when offered, is the durable way to play:
         // it keeps working when direct googlevideo URLs are culled (see +HLS).
         if HLSPlaybackLogic.usesHLS(item, isLocal: isLocal) {
             beginItem(item, isLocal: isLocal)
-            startHLS(item)
+            startHLS(item, generation: generation)
             return
         }
 
@@ -54,7 +49,7 @@ extension PlayerState {
         // the audio language applies there too; `url` (the muxed stream) is the
         // fallback if the pair can't be loaded.
         if let pair = ComposedPlaybackLogic.pair(for: item, videoMode: videoMode, isLocal: isLocal) {
-            startComposed(item, pair: pair, fallback: url)
+            startComposed(item, pair: pair, fallback: url, generation: generation)
         } else {
             startPlayer(AVPlayer(url: url), for: item)
         }
@@ -64,7 +59,6 @@ extension PlayerState {
     /// previous player, so the UI reflects the new item even while its stream
     /// is still being prepared.
     func beginItem(_ item: QueueItem, isLocal: Bool) {
-        playGeneration += 1
         currentVideoId = item.videoId
         currentTitle = item.title
         currentArtist = item.artist

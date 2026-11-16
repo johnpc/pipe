@@ -9,10 +9,15 @@ import Combine
 class DownloadStore: ObservableObject {
     // Mutated only within DownloadStore and its extensions (same module).
     @Published var items: [DownloadedItem] = []
-    /// Video ids currently downloading (for in-progress UI).
-    @Published var inProgress: Set<String> = []
-    /// Live download progress (0...1) keyed by video id, while in progress.
-    @Published var progress: [String: Double] = [:]
+    /// Video ids currently downloading, with their progress (0...1).
+    @Published var downloading: [String: Double] = [:]  // mutated only by +Ops
+
+    /// The one question a row asks about a video's download.
+    func state(for videoId: String) -> DownloadState {
+        if let fraction = downloading[videoId] { return .downloading(fraction) }
+        if let item = items.first(where: { $0.videoId == videoId }) { return .downloaded(item) }
+        return .none
+    }
 
     private let key = "downloadedItems"
     private let defaults: UserDefaults

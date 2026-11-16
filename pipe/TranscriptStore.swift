@@ -7,8 +7,11 @@ import Combine
 @MainActor
 final class TranscriptStore: ObservableObject {
     @Published private(set) var state: LoadState<[TranscriptCue]> = .loading
-    @Published private(set) var summary: String = ""
-    @Published private(set) var isSummarizing = false
+    /// The Apple Intelligence summary's own lifecycle.
+    @Published private(set) var summaryState: SummaryState = .idle
+    /// Text to show for the summary (partial while streaming); empty when idle.
+    var summary: String { summaryState.text }
+    var isSummarizing: Bool { if case .summarizing = summaryState { return true }; return false }
 
     private let summarizer: Summarizing
     private let fetch: (URL) async throws -> String
@@ -47,16 +50,17 @@ final class TranscriptStore: ObservableObject {
     func summarize() {
         guard case let .loaded(cues) = state, !isSummarizing else { return }
         let text = TranscriptLogic.plainText(from: cues)
-        isSummarizing = true
-        summary = ""
+        summaryState = .summarizing(partial: "")
         summarizeTask = Task { [summarizer] in
-            defer { isSummarizing = false }
+            var partial = ""
             do {
                 for try await snapshot in summarizer.stream(text) {
-                    summary = snapshot
+                    partial = snapshot
+                    summaryState = .summarizing(partial: partial)
                 }
+                summaryState = .done(partial)
             } catch {
-                if summary.isEmpty { summary = "Couldn't summarize — try again." }
+                summaryState = partial.isEmpty ? .failed("Couldn't summarize — try again.") : .done(partial)
             }
         }
     }
@@ -69,7 +73,23 @@ final class TranscriptStore: ObservableObject {
 
     private func resetSummary() {
         summarizeTask?.cancel()
-        isSummarizing = false
-        summary = ""
+        summaryState = .idle
+    }
+}
+
+/// Lifecycle of the on-demand transcript summary.
+enum SummaryState: Equatable {
+    case idle
+    case summarizing(partial: String)
+    case done(String)
+    /// The message to show in place of a summary.
+    case failed(String)
+
+    var text: String {
+        switch self {
+        case .idle: return ""
+        case let .summarizing(partial): return partial
+        case let .done(text), let .failed(text): return text
+        }
     }
 }

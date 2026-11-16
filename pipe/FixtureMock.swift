@@ -42,18 +42,31 @@ final class FixtureURLProtocol: URLProtocol {
 
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
-    /// When true, only `/streams/` requests fail — so search still returns
-    /// results but opening a video detail fails, exercising the Retry UI.
-    static var failStreams = false
+    /// How `/streams/` requests are answered (everything else always serves its
+    /// fixture). One value, since the modes are mutually exclusive.
+    static var streamMode: StreamMode = .normal
 
-    /// When true, `/streams/` requests return a Piped error envelope (HTTP 200
-    /// with `{error,message}`), exercising the real-message error toast.
-    static var errorStreams = false
+    enum StreamMode: Equatable {
+        /// The (personalized) streams fixture.
+        case normal
+        /// A network error — search still works but a video fails to open,
+        /// exercising the Retry UI.
+        case networkFailure
+        /// A Piped error envelope (HTTP 200 with `{error,message}`), exercising
+        /// the real-message error toast.
+        case pipedError
+        /// What the proxy in front of a dead instance returns — HTTP 502 with
+        /// an HTML body — exercising the status-naming error toast.
+        case instanceDown
 
-    /// When true, `/streams/` requests answer like the proxy in front of a dead
-    /// instance does — HTTP 502 with an HTML body — the actual failure mode of
-    /// an instance outage, exercising the status-naming error toast.
-    static var downStreams = false
+        /// The mode a UI-test launch asked for (first matching flag wins).
+        static func from(arguments args: [String]) -> StreamMode {
+            if args.contains(MockMode.failArgument) { return .networkFailure }
+            if args.contains(MockMode.errorArgument) { return .pipedError }
+            if args.contains(MockMode.downArgument) { return .instanceDown }
+            return .normal
+        }
+    }
 
     /// Body the 502 mode serves: what nginx returns when its upstream is gone.
     static let downBody = Data("<html><body><h1>502 Bad Gateway</h1></body></html>".utf8)
@@ -61,15 +74,16 @@ final class FixtureURLProtocol: URLProtocol {
     override func startLoading() {
         guard let url = request.url else { return }
         if url.path.hasPrefix("/streams/") {
-            if FixtureURLProtocol.failStreams {
+            switch FixtureURLProtocol.streamMode {
+            case .normal:
+                break
+            case .networkFailure:
                 client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
                 return
-            }
-            if FixtureURLProtocol.errorStreams {
+            case .pipedError:
                 let body = Data(#"{"error":"ParsingException","message":"JSON response is too short"}"#.utf8)
                 return respond(url: url, status: 200, body: body, contentType: "application/json")
-            }
-            if FixtureURLProtocol.downStreams {
+            case .instanceDown:
                 return respond(url: url, status: 502, body: FixtureURLProtocol.downBody, contentType: "text/html")
             }
         }

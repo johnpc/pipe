@@ -60,6 +60,8 @@ class PlayerState: ObservableObject {
     var castTimeCancellable: AnyCancellable?
     /// Watches the receiver connection so the current item hands off on connect.
     var castConnectionCancellable: AnyCancellable?
+    /// Mirrors the receiver's play/pause/buffering onto the phase while casting.
+    var castPlaybackCancellable: AnyCancellable?
     /// Video id currently loaded on the receiver, so we don't reload (and thereby
     /// abort/restart) an item that's already casting.
     var castLoadedVideoId: String?
@@ -88,14 +90,9 @@ class PlayerState: ObservableObject {
     /// Last 30s bucket for which a progress heartbeat was logged (dedupes the
     /// 5s time-observer ticks down to ~one heartbeat per 30s).
     var lastHeartbeatBucket = -1
-    /// One-shot start position (seconds) applied on the next playItem, e.g. when
-    /// jumping to a chapter. Overrides the saved-resume position for that play.
-    var pendingSeek: Double?
-
-    /// Bumped every time an item starts loading. The async composed-playback
-    /// path compares it after awaiting so a superseded load never installs its
-    /// player over the one the user asked for next.
-    var playGeneration = 0
+    /// Where the next player starts (chapter jump, mode/language switch, or a
+    /// premature-end recovery). Owned by the lifecycle; set via `.startAt`.
+    var pendingSeek: Double? { lifecycle.startAt }
 
     let defaults: UserDefaults
 

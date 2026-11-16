@@ -37,12 +37,14 @@ extension Playback {
     /// reports that failure.
     @MainActor
     static func resolvePending(_ videoId: String, action: Action = .queue, player: PlayerState, toast: ToastManaging? = nil) async {
+        player.setResolveAttempt(.inFlight, for: videoId)
         do {
             let stream = try await PipedAPI.streams(videoId)
             let resolved = resolve(stream, videoId: videoId)
             player.registerChapters(resolved.chapters, for: videoId)
             player.applyResolvedURLs(resolved)
         } catch {
+            player.setResolveAttempt(.failed, for: videoId)
             player.log.event("playbackError", errorEventName(for: action),
                              fields: ["videoId": videoId, "reason": errorReason(error),
                                       "error": error.localizedDescription])

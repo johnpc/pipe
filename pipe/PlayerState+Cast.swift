@@ -26,8 +26,16 @@ extension PlayerState {
                 guard let self, state == .connected,
                       self.currentIndex >= 0, self.currentIndex < self.queue.count,
                       self.currentVideoId != nil else { return }
-                self.castItem(self.queue[self.currentIndex])
+                // Through the lifecycle (refreshing a stale URL first), which
+                // then asks for the `cast` effect. `@Published` fires before the
+                // store's value changes, so say "casting" explicitly.
+                self.playItem(self.queue[self.currentIndex], casting: true)
             }
+        // The receiver's play/pause/buffering is the source of truth while
+        // casting, the way the AVPlayer's timeControlStatus is locally.
+        castPlaybackCancellable = store.$playbackState
+            .removeDuplicates()
+            .sink { [weak self] state in self?.apply(.receiver(state)) }
         // Advance the queue when the receiver finishes an item — the cast
         // equivalent of the local end-of-item observer.
         store.onEnded = { [weak self] in self?.castAdvanceToNext() }
@@ -52,7 +60,6 @@ extension PlayerState {
         // redundant loadMedia aborts the in-flight one and restarts playback.
         if castLoadedVideoId == item.videoId { return }
         castLoadedVideoId = item.videoId
-        apply(.load(videoId: item.videoId, refresh: false, casting: true))
         teardownPlaybackObservers()
         releaseCurrentPlayer()
 

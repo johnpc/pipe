@@ -19,7 +19,8 @@ extension PlayerState {
             // reloading the dead one, and resumes from where it died.
             log.event("end", "recover reload", fields: ["attempt": String(prematureEndRetries + 1), "from": String(Int(currentTime))])
         }
-        apply(.ended(reached: currentTime, expected: expectedDuration))
+        let item = currentIndex >= 0 && currentIndex < queue.count ? queue[currentIndex] : nil
+        apply(.ended(item: item, reached: currentTime, expected: expectedDuration))
     }
 
     /// Mark the finished item complete, drop it from the queue, and advance

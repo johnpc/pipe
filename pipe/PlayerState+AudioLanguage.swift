@@ -33,7 +33,7 @@ extension PlayerState {
         // choice still applies once casting ends. Video mode reloads too: it
         // pairs the video-only track with this audio track (see +Composed).
         guard !isCasting else { return }
-        if currentTime > 1 { pendingSeek = currentTime }
+        if currentTime > 1 { apply(.startAt(currentTime)) }
         playItem(item, refresh: .never)
     }
 }

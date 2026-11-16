@@ -9,39 +9,53 @@ file when you add or change one.
 ## 1. Item playback lifecycle — `PlaybackLifecycle` / `PlaybackPhase` (explicit)
 
 The core of the app. `PlayerState` feeds events into the pure reducer
-`PlaybackLifecycle.apply(_:)`, publishes the resulting `PlaybackPhase`, and
-performs the returned effects (`PlayerState+Lifecycle.swift`). `isPlaying` and
-`isBuffering` are derived from the phase; nothing assigns them.
+`PlaybackLifecycle.apply(_:)` and performs the returned effects
+(`PlayerState+Lifecycle.swift`); it makes no playback decisions of its own.
+The reducer owns the **whole load loop**: the phase, the load **generation**
+(async results from an older load are ignored), the **start position** for the
+next player, whether the load targets a **TV receiver**, and both retry
+budgets. `isPlaying` and `isBuffering` are derived from the phase; nothing
+assigns them.
 
 ```
-idle ──load(refresh)──▶ resolving ──load──▶ loading ──playerStarted──▶ buffering ──status(.playing)──▶ playing
-  ▲                        ▲                                                                           │  ▲
-  │                        │  ended(premature, budget left) / loadFailed(budget left)                  │  │
-  │                        └───────────────────────── retryWithFreshURL ◀─────────────────────────────┘  │
-  │                                                                                                      │
-  │   loadFailed(budget spent) / unplayable ──▶ failed ──resume──▶ load(force refresh) …                 │
-  │   status(.paused) / pause ──▶ paused ──resume──────────────────────────────────────────────────────┘
+idle ─load(refresh)─▶ resolving ─resolved / resolveFailed─▶ loading ─playerStarted─▶ buffering ─status(.playing)─▶ playing
+  ▲                      ▲                                                                                      │   ▲
+  │                      │  ended(premature, budget left) / loadFailed(budget left): resolve(item, gen+1)      │   │
+  │                      └────────────────────────────────────────────────────────────────────────────────────┘   │
+  │   loadFailed(budget spent) / unplayable ──▶ failed ──resume (PlayerState: load(force refresh)) …               │
+  │   status(.paused) / pause / receiver(.paused) ──▶ paused ──resume─────────────────────────────────────────────┘
   │   restored (queue restored at launch) ──▶ paused
   └── stop (queue empty, "stop after this episode", user clear)        ended(finished | budget spent) ──▶ advance
 ```
 
 | Event | From | To | Effects |
 |---|---|---|---|
-| `load(id, refresh:true)` | any | `resolving` | `beginHold`; a new id resets both retry budgets |
-| `load(id, refresh:false)` | any | `loading` | `beginHold` |
-| `load(id, casting:true)` | any | `playing` | `releaseHold("casting")` (the TV plays; no local player) |
+| `load(item, refresh:true, casting)` | any | `resolving` | gen+1; `beginHold`, `resolve(item, gen)`; a new id resets both retry budgets |
+| `load(item, refresh:false, casting:false)` | any | `loading` | gen+1; `beginHold`, `build(item, gen)` |
+| `load(item, refresh:false, casting:true)` | any | `playing` | gen+1; `releaseHold("casting")`, `cast(item)` |
+| `resolved(item, gen)` | resolving | `loading` / `playing` | ignored unless `gen` is current; `store(item)` then `build` or (casting) `cast` |
+| `resolveFailed(item, gen)` | resolving | `loading` / `playing` | ignored unless current; `build`/`cast` with the stored URLs |
+| `startAt(t)` | any | same | the next `build` seeks to `t`; consumed by `playerStarted`, dropped on failure |
 | `unplayable(title)` | any | `failed(msg)` | `surfaceError`, `releaseHold("bad url")` |
-| `playerStarted` | loading | `buffering` | — |
+| `playerStarted` | loading | `buffering` | clears `startAt` |
 | `status(.playing)` | any | `playing` | `releaseHold("playing")` (its `ms` field is the start latency) |
 | `status(.paused)` | loading/buffering/playing | `paused` | — (an external pause is adopted, never fought) |
 | `status(.waiting)` | intends to play | `buffering` | — (while paused: ignored) |
+| `receiver(state)` | casting, not idle/failed | `playing` / `paused` / `buffering` | — (`idle` is not mirrored; the finish arrives as `ended`) |
 | `ready` | any | same | clears the load-failure budget |
 | `pause` | not idle | `paused` | `releaseHold("pause")` |
 | `resume` | paused | `playing` | — (`PlayerState.resume` handles `failed` → force refresh, and `player == nil` → load) |
-| `ended(reached, expected)` | playing | same / `resolving` | `EndOfItemPolicy`: finished or budget spent → `advance`; premature → `retryWithFreshURL(seekTo: reached)` |
-| `loadFailed(title, reason, isLocal)` | any | `resolving` / `failed(msg)` | `ItemFailurePolicy`: retry → `retryWithFreshURL(seekTo: nil)`; give up → `surfaceError`, `releaseHold("gave up")` |
+| `ended(item, reached, expected)` | playing | same / `resolving` | `EndOfItemPolicy`: finished or budget spent → `advance`; premature → `startAt = reached`, gen+1, `beginHold`, `resolve(item, gen)` |
+| `loadFailed(item, reason, isLocal)` | any | `resolving` / `failed(msg)` | `ItemFailurePolicy`: retry → gen+1, `beginHold`, `resolve(item, gen)`; give up → `surfaceError`, `releaseHold("gave up")` |
 | `restored` | idle | `paused` | — |
-| `stop` | any | `idle` | `releaseHold("stop")`; forgets the item and budgets |
+| `stop` | any | `idle` | gen+1 (in-flight work is dropped); `releaseHold("stop")`; forgets the item, budgets, start position |
+
+Effects are performed by `PlayerState`: `resolve` → `resolveAndPlay` (the
+injectable `StreamResolving`, answering with `resolved`/`resolveFailed`);
+`build` → `buildPlayer(for:generation:)` (local file / native HLS / composed /
+single stream; its async completions check `lifecycle.isCurrent(generation)`);
+`cast` → `castItem`; `store` → `updateQueueItem`; `advance` →
+`advanceAfterFinish`; holds → `ItemTransition`.
 
 What the user sees (`PlaybackPhase.statusText`, mini player second line, and the
 play button's accessibility value = `phase.label`): *Loading…* during
@@ -55,28 +69,32 @@ Leaf policies it composes (each pure and unit-tested on its own):
 (premature end vs genuine finish), `ItemFailurePolicy` (retry budget + user copy),
 `NextItemPrefetchPolicy` (when to refresh the next item's URL).
 
-Still outside the reducer, on purpose: `pendingSeek` (a parameter for the next
-start, not a phase), `playGeneration` (guards async loads from installing a
-superseded player), `ItemTransition` (the UIKit background task the `beginHold`
-/ `releaseHold` effects drive).
+Still outside the reducer, on purpose: `ItemTransition` (the UIKit background
+task the `beginHold` / `releaseHold` effects drive) and `castLoadedVideoId`
+(a receiver-side dedupe, not a phase).
 
-## 2. Queue item resolution — `QueueItem.resolvedAt` + `RefreshMode` (semi-explicit)
+## 2. Queue item resolution — `QueueItem.resolution` (explicit)
 
-An item is **pending** (empty URLs, `resolvedAt == nil`, built from a list row),
-**resolved** (`resolvedAt` set), or **stale** (older than `StreamFreshness.maxAge`).
-Resolution happens in the background (`Playback.resolvePending`) or just before
-play (`refreshAndPlay`, via the injectable `StreamResolving`). The only in-flight
-marker is `ItemTransition.prefetching` for the next-item prefetch; a pending
-item being resolved by `Playback` has no marker, which is harmless because
-`applyResolvedURLs` ignores the item now playing. If a third resolver appears,
-give `QueueItem` an explicit `resolution` enum.
+`StreamResolution`: **pending** (queued from a list row, no URLs yet),
+**resolving** (a background fetch is in flight), **resolved(Date)** (stale once
+older than `StreamFreshness.maxAge`), or **failed** (a background fetch failed;
+the play path's own refresh is the retry). Derived from the persisted
+`resolvedAt` plus the in-memory `resolveAttempt`, which `Playback.resolvePending`
+(instant "Add to queue") and the next-item prefetch both record. `isBusy`
+(resolving or failed) is what `NextItemPrefetchPolicy` consults, so two
+resolvers never race for one item and a failed fetch is not retried every tick.
+`RefreshMode` (`.ifStale` / `.force` / `.never`) is how `playItem` treats the
+stored URLs.
 
-## 3. Cast session — `CastConnectionState` (explicit)
+## 3. Cast session — `CastConnectionState` + `CastPlaybackState` (explicit)
 
-`disconnected → connecting → connected`, mirrored from the SDK by `CastStore`.
-`PlayerState+Cast` hands the current item to the TV on the transition into
-`connected` (deduplicated) and routes transport to the receiver while
-`isCasting`. `castLoadedVideoId` prevents reloading the item already on the TV.
+Connection: `disconnected → connecting → connected`, mirrored from the SDK by
+`CastStore`. Playback: `idle / buffering / playing / paused`, read from the
+receiver's media status and mirrored onto the phone's `PlaybackPhase` by the
+lifecycle's `receiver` event, so the phone shows what the TV is doing. On the
+transition into `connected`, `PlayerState+Cast` runs the current item through
+`playItem(casting: true)`, so a stale URL is refreshed before the hand-off.
+`castLoadedVideoId` prevents reloading the item already on the TV.
 
 ## 4. Async content — `LoadState<Value>` (explicit)
 
@@ -84,28 +102,26 @@ give `QueueItem` an explicit `resolution` enum.
 and the list views, so "still loading", "empty", and "failed, offer Retry" are
 distinct.
 
-## 5. Transcript summary — implicit (`isSummarizing` + `summary` text)
+## 5. Transcript summary — `SummaryState` (explicit)
 
-`TranscriptStore` encodes idle / summarizing / done / failed in a boolean plus the
-summary string's content. Small and contained; convert to an enum if a fourth
-state appears.
+`idle / summarizing(partial) / done(text) / failed(message)` on
+`TranscriptStore.summaryState`; `summary` and `isSummarizing` are views onto it.
 
-## 6. Downloads — implicit (three collections)
+## 6. Downloads — `DownloadState` (explicit)
 
-A video's download state is spread over `items` (done), `inProgress` (set), and
-`progress` (dictionary). Views ask three questions to render one row. Candidate
-for `enum DownloadState { none, downloading(Double), downloaded(DownloadedItem) }`
-when the Downloads UI next changes.
+`DownloadStore.state(for:)` answers `none / downloading(progress) /
+downloaded(item)` from the persisted `items` plus the live `downloading`
+dictionary, so a row asks one question.
 
-## 7. Toast — implicit (`message` + `isLoading` + `isError`)
+## 7. Toast — `ToastState` (explicit)
 
-`ToastManager` shows loading / success / error / hidden with two booleans and an
-optional string. Contained in one file; fine until a fourth kind of toast.
+`hidden / loading(msg) / success(msg) / error(msg)` on `ToastManager.state`;
+`message`, `isLoading`, `isError` are derived.
 
-## 8. Mock stream behaviour — implicit (three flags)
+## 8. Mock stream behaviour — `FixtureURLProtocol.StreamMode` (explicit)
 
-`FixtureURLProtocol.failStreams / errorStreams / downStreams` are mutually
-exclusive modes modeled as booleans (set from launch arguments). Test-only.
+`normal / networkFailure / pipedError / instanceDown`, chosen from the launch
+flags by `StreamMode.from(arguments:)`. Test-only.
 
 ## 9. Sleep — implicit (`sleepMinutesRemaining` + `stopAfterCurrentEpisode`)
 

@@ -37,7 +37,8 @@ struct DownloadStoreTests {
         await store.download(videoId: "v", title: "T", artist: "A", thumbnail: "", duration: 1, audioUrl: "https://x/a", videoUrl: "")
         // Recorded as downloaded, and progress is cleared once finished.
         #expect(store.isDownloaded("v"))
-        #expect(store.progress["v"] == nil)
+        #expect(store.downloading["v"] == nil)
+        #expect(store.state(for: "v").isDownloaded)
     }
 
     @Test func downloadIsIdempotent() async {

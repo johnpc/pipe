@@ -25,9 +25,12 @@ struct ToastView: View {
 
 class ToastManager: ObservableObject {
     static let shared = ToastManager()
-    @Published var message: String?
-    @Published var isLoading = false
-    @Published var isError = false
+    /// The one value the overlay renders; `message`/`isLoading`/`isError` are
+    /// views onto it.
+    @Published private(set) var state: ToastState = .hidden
+    var message: String? { state.message }
+    var isLoading: Bool { if case .loading = state { return true }; return false }
+    var isError: Bool { if case .error = state { return true }; return false }
     private var hideTask: Task<Void, Never>?
 
     /// Auto-hide delays (nanoseconds). Injectable so tests aren't coupled to
@@ -45,35 +48,45 @@ class ToastManager: ObservableObject {
 
     func showLoading(_ msg: String) {
         hideTask?.cancel()
-        message = msg
-        isLoading = true
-        isError = false
+        state = .loading(msg)
     }
 
     func showSuccess(_ msg: String) {
-        autoHide(msg, error: false, after: successDelay)
+        autoHide(.success(msg), after: successDelay)
     }
 
     /// Show an error toast; lingers a little longer than success so it's readable.
     func showError(_ msg: String) {
-        autoHide(msg, error: true, after: errorDelay)
+        autoHide(.error(msg), after: errorDelay)
     }
 
-    private func autoHide(_ msg: String, error: Bool, after ns: UInt64) {
+    private func autoHide(_ next: ToastState, after ns: UInt64) {
         hideTask?.cancel()
-        message = msg
-        isLoading = false
-        isError = error
+        state = next
         hideTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: ns)
-            if !Task.isCancelled { message = nil }
+            if !Task.isCancelled { state = .hidden }
         }
     }
 
     func hide() {
         hideTask?.cancel()
-        message = nil
-        isLoading = false
-        isError = false
+        state = .hidden
+    }
+}
+
+/// What the toast overlay shows: nothing, a spinner with a message, or a
+/// transient success/error message.
+enum ToastState: Equatable {
+    case hidden
+    case loading(String)
+    case success(String)
+    case error(String)
+
+    var message: String? {
+        switch self {
+        case .hidden: return nil
+        case let .loading(m), let .success(m), let .error(m): return m
+        }
     }
 }

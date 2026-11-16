@@ -44,9 +44,7 @@ enum MockMode {
             pointInstance(at: instance, defaults: .standard)
             return
         }
-        FixtureURLProtocol.failStreams = args.contains(failArgument)
-        FixtureURLProtocol.errorStreams = args.contains(errorArgument)
-        FixtureURLProtocol.downStreams = args.contains(downArgument)
+        FixtureURLProtocol.streamMode = .from(arguments: args)
         activate()
     }
 

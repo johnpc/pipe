@@ -35,11 +35,11 @@ struct PlayerPrefetchTests {
         let (player, buffer) = playerNearTheEnd()
 
         player.handleProgress(currentTime: 290, itemDuration: 300)
-        #expect(player.transition.prefetching == "next")
+        #expect(player.queue[1].resolution == .resolving)
         await eventually { player.queue[1].resolvedAt != nil }
 
         #expect(player.queue[1].url == "https://x/fresh.mp4")
-        #expect(player.transition.prefetching == nil)
+        #expect(player.queue[1].resolution != .resolving)
         #expect(buffer.exportText().contains("[prefetch] done"))
         // Now fresh: the hand-off will play it without a fetch.
         #expect(!StreamFreshness.needsRefresh(resolvedAt: player.queue[1].resolvedAt, now: Date(), isLocal: false))
@@ -70,7 +70,7 @@ struct PlayerPrefetchTests {
         player.handleProgress(currentTime: 291, itemDuration: 300)
 
         #expect(player.queue[1].resolvedAt == nil)
-        #expect(player.transition.prefetching == "next")  // parked, not re-fetched
+        #expect(player.queue[1].resolution == .failed)  // parked, not re-fetched
         #expect(buffer.exportText().components(separatedBy: "[prefetch] start").count == 2)
     }
 

@@ -10,6 +10,7 @@ final class MockCaster: Casting {
     var connectionState: CastConnectionState { didSet { onStateChange?() } }
     var deviceName: String?
     var currentTime: Double { didSet { onTimeChange?() } }
+    var playbackState: CastPlaybackState = .idle { didSet { onStateChange?() } }
     var diagnostics: [String: String] = ["caster": "mock"]
 
     /// Recorded transport calls, in order, for assertions.

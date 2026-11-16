@@ -60,9 +60,12 @@ API + tests, just enough for the scenario, nothing speculative.
 - **State machines are explicit types, never bags of booleans.** The item
   lifecycle is `PlaybackLifecycle` (a pure reducer: event in → phase + effects
   out) publishing one `PlaybackPhase`; `PlayerState` only performs the effects.
-  `isPlaying`/`isBuffering` are *derived* from the phase, never assigned. Any new
-  multi-step behavior (a download, a cast session, a load) gets an `enum` state
-  and a tested transition function first. `docs/state-machines.md` lists them all —
+  `isPlaying`/`isBuffering` are *derived* from the phase, never assigned. Note
+  `isPlaying` means "intends to play" (true while resolving/loading too); code
+  that means "audio is coming out" checks `phase == .playing`. Any new
+  multi-step behavior gets an `enum` state and a tested transition function first
+  (`StreamResolution`, `CastPlaybackState`, `DownloadState`, `ToastState`,
+  `SummaryState` are the existing ones). `docs/state-machines.md` lists them all —
   update it when you add or change one.
 - **`PipedAPI` is the only network layer.** It exposes a static, injectable
   `session` and pure URL-builder functions so decoding and URL construction are

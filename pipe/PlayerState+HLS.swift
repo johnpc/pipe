@@ -6,7 +6,7 @@ import AVFoundation
 /// language's audio rendition playlist, so no video is downloaded. Direct
 /// googlevideo URLs stay as the fallback for instances that offer no `hls`.
 extension PlayerState {
-    func startHLS(_ item: QueueItem) {
+    func startHLS(_ item: QueueItem, generation: Int) {
         guard let master = URL(string: item.hlsUrl) else {
             log.event("play", "bad hls url", fields: ["videoId": item.videoId, "result": "failed"])
             apply(.unplayable(title: item.title))
@@ -17,7 +17,6 @@ extension PlayerState {
             startPlayer(AVPlayer(url: master), for: item)
             return
         }
-        let generation = playGeneration
         let language = item.audioLanguage ?? pipedAudioLanguage
         // The lifecycle is in .loading (spinner + pause glyph) while the master is read.
         log.event("play", "hls audio", fields: ["videoId": item.videoId, "language": language])
@@ -25,7 +24,7 @@ extension PlayerState {
             let rendition = await HLSMasterLoader.audioPlaylist(master: master, preferred: language)
             await MainActor.run {
                 // A newer load owns the player now (see +Composed for the same guard).
-                guard let self, self.playGeneration == generation else { return }
+                guard let self, self.lifecycle.isCurrent(generation) else { return }
                 if rendition == nil {
                     self.log.event("play", "hls audio rendition missing, using master", fields: ["videoId": item.videoId])
                 }
