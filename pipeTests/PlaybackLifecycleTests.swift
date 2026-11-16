@@ -236,6 +236,46 @@ struct PlaybackLifecycleTests {
         #expect(l.startAt == 1800)
     }
 
+    @Test func anEndBeforeAnythingPlayedIsNotAnEnd() {
+        // AVPlayer posts "failed to play to end" alongside "item failed" for a
+        // dead-on-arrival URL; the load-failure path owns that, so the end is
+        // ignored instead of advancing (which dropped the item from the queue).
+        var l = loaded()
+        _ = l.apply(.playerStarted)
+        #expect(l.apply(.ended(item: a, reached: 0, expected: 37)) == [])
+        #expect(l.phase == .buffering && l.prematureEnds == 0)
+        var r = loaded(refresh: true)
+        #expect(r.apply(.ended(item: a, reached: 0, expected: 37)) == [])
+        #expect(r.phase == .resolving)
+    }
+
+    @Test func aRetryStartsUnaudibleAgain() {
+        var l = playing()
+        _ = l.apply(.loadFailed(item: a, reason: "403", isLocal: false))   // resolving again
+        _ = l.apply(.resolved(item: a, generation: l.generation))
+        _ = l.apply(.playerStarted)
+        #expect(l.apply(.ended(item: a, reached: 0, expected: 100)) == [])  // not audible yet this load
+        _ = l.apply(.status(.playing))
+        #expect(l.apply(.ended(item: a, reached: 100, expected: 100)) == [.advance])
+    }
+
+    @Test func aSecondFailureAfterGivingUpIsIgnored() {
+        var l = loaded()
+        l.loadFailures = ItemFailurePolicy.maxRetries
+        _ = l.apply(.loadFailed(item: a, reason: "403", isLocal: false))
+        #expect(l.phase.isFailed)
+        #expect(l.apply(.loadFailed(item: a, reason: "403", isLocal: false)) == [])
+        #expect(l.apply(.ended(item: a, reached: 0, expected: 37)) == [])
+        #expect(l.phase.isFailed)
+    }
+
+    @Test func receiverPlayingCountsAsAudible() {
+        var l = PlaybackLifecycle()
+        _ = l.apply(.load(item: a, refresh: false, casting: true))
+        _ = l.apply(.receiver(.playing))
+        #expect(l.apply(.ended(item: a, reached: 100, expected: 100)) == [.advance])
+    }
+
     @Test func prematureEndWithoutAnItemAdvances() {
         var l = playing()
         #expect(l.apply(.ended(item: nil, reached: 1800, expected: 3600)) == [.advance])

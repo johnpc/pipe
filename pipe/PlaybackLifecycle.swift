@@ -28,6 +28,11 @@ struct PlaybackLifecycle: Equatable {
     private(set) var startAt: Double?
     /// The current load targets a TV receiver rather than a local player.
     private(set) var casting = false
+    /// Whether this load has produced audio yet. An end-of-item event can only
+    /// follow a start: AVPlayer posts "failed to play to end" alongside "item
+    /// failed" for a dead-on-arrival URL, and treating that as an end would
+    /// advance the queue (dropping the item) instead of retrying the load.
+    private(set) var audible = false
     /// Re-resolve attempts after the item failed to load at all.
     var loadFailures = 0
     /// Reloads after the item ended well short of its expected duration.
@@ -121,6 +126,7 @@ struct PlaybackLifecycle: Equatable {
     private mutating func load(_ item: QueueItem, refresh: Bool, casting: Bool) -> [Effect] {
         if itemId != item.videoId { itemId = item.videoId; loadFailures = 0; prematureEnds = 0 }
         self.casting = casting
+        audible = false
         generation += 1
         if refresh {
             phase = .resolving
@@ -143,6 +149,7 @@ struct PlaybackLifecycle: Equatable {
     private mutating func retry(_ item: QueueItem, from position: Double?) -> [Effect] {
         startAt = position
         casting = false
+        audible = false
         generation += 1
         phase = .resolving
         return [.beginHold, .resolve(item, generation: generation)]
@@ -168,6 +175,7 @@ struct PlaybackLifecycle: Equatable {
             itemId = nil
             startAt = nil
             casting = false
+            audible = false
             generation += 1
             loadFailures = 0
             prematureEnds = 0
@@ -187,6 +195,7 @@ struct PlaybackLifecycle: Equatable {
         switch status {
         case .playing:
             phase = .playing
+            audible = true
             return [.releaseHold("playing")]
         case .paused:
             if phase == .loading || phase == .buffering || phase == .playing { phase = .paused }
@@ -204,7 +213,7 @@ struct PlaybackLifecycle: Equatable {
     private mutating func mirror(_ state: CastPlaybackState) -> [Effect] {
         guard casting, phase != .idle, !phase.isFailed else { return [] }
         switch state {
-        case .playing: phase = .playing
+        case .playing: phase = .playing; audible = true
         case .paused: phase = .paused
         case .buffering: phase = .buffering
         case .idle: break
@@ -213,6 +222,9 @@ struct PlaybackLifecycle: Equatable {
     }
 
     private mutating func ended(_ item: QueueItem?, reached: Double, expected: Double?) -> [Effect] {
+        // Nothing has played: this is the load failing, which `loadFailed`
+        // handles (or already handled). Not an end.
+        guard audible, !phase.isFailed, phase != .idle else { return [] }
         switch EndOfItemPolicy.outcome(reached: reached, expected: expected, retries: prematureEnds) {
         case .finished, .giveUp:
             prematureEnds = 0
@@ -225,6 +237,9 @@ struct PlaybackLifecycle: Equatable {
     }
 
     private mutating func loadFailed(_ item: QueueItem, reason: String, isLocal: Bool) -> [Effect] {
+        // Already given up on this item (a second failure notification for the
+        // same dead player): nothing more to do until the user taps play.
+        guard !phase.isFailed, phase != .idle else { return [] }
         switch ItemFailurePolicy.outcome(retries: loadFailures, isLocal: isLocal) {
         case .retry:
             loadFailures += 1

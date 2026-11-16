@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import AVFoundation
 @testable import pipe
 
 @MainActor
@@ -18,6 +19,7 @@ struct PlayerPrematureEndTests {
         player.addToQueue(videoId: "next", url: "bad://next", title: "Next", artist: "x", thumbnail: "", duration: 60)
         // End fires at 30 min on a 1-hour item → premature.
         player.handleProgress(currentTime: 1800, itemDuration: 3600)
+        player.handleTimeControlStatus(.playing)  // an end can only follow a start
         player.handlePlaybackEnded()
         // Still on the same item (not advanced), and a recovery was logged.
         #expect(player.currentIndex == 0)
@@ -37,6 +39,7 @@ struct PlayerPrematureEndTests {
         player.addToQueue(videoId: "next", url: "bad://next", title: "Next", artist: "x", thumbnail: "", duration: 60)
         player.prematureEndRetries = EndOfItemPolicy.maxRetries // exhausted
         player.handleProgress(currentTime: 1800, itemDuration: 3600)
+        player.handleTimeControlStatus(.playing)  // an end can only follow a start
         player.handlePlaybackEnded()
         // Out of retries: finished item dropped, advanced to the next.
         #expect(player.queue.map(\.videoId) == ["next"])
@@ -49,6 +52,7 @@ struct PlayerPrematureEndTests {
         player.addToQueue(videoId: "b", url: "bad://b", title: "B", artist: "x", thumbnail: "", duration: 100)
         player.prematureEndRetries = 1 // a prior recovery happened
         player.handleProgress(currentTime: 100, itemDuration: 100) // played to end
+        player.handleTimeControlStatus(.playing)  // an end can only follow a start
         player.handlePlaybackEnded()
         #expect(player.prematureEndRetries == 0)
         #expect(player.queue.map(\.videoId) == ["b"])

@@ -372,6 +372,7 @@ struct PlayerStateTests {
         player.handleProgress(currentTime: 8, itemDuration: 10)
         #expect(recents.getTimestamp(videoId: "a") == 8)
 
+        player.handleTimeControlStatus(.playing)  // an end can only follow a start
         player.handlePlaybackEnded()
         #expect(recents.getTimestamp(videoId: "a") == 0) // marked complete in history
         // Finished item dropped from the queue; next item shifts into slot 0.
@@ -383,6 +384,7 @@ struct PlayerStateTests {
         let player = isolatedPlayer()
         player.addToQueue(videoId: "only", url: "bad://only", title: "Only", artist: "x", thumbnail: "", duration: 10)
         player.handleProgress(currentTime: 10, itemDuration: 10) // played to the end
+        player.handleTimeControlStatus(.playing)  // an end can only follow a start
         player.handlePlaybackEnded()
         #expect(player.queue.isEmpty)
         #expect(player.currentIndex == -1)
@@ -395,6 +397,7 @@ struct PlayerStateTests {
         player.addToQueue(videoId: "b", url: "bad://b", title: "B", artist: "x", thumbnail: "", duration: 10)
         player.handleProgress(currentTime: 10, itemDuration: 10) // played to the end
         player.stopAfterCurrentEpisode = true
+        player.handleTimeControlStatus(.playing)  // an end can only follow a start
         player.handlePlaybackEnded()
         // Finished item removed, but playback stopped rather than advancing to b.
         #expect(player.queue.map(\.videoId) == ["b"])

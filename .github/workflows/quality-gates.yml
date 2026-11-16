@@ -144,6 +144,13 @@ jobs:
         run: |
           xcrun xcresulttool get test-results summary --path AcceptanceResults.xcresult \
             | python3 -c "import json,sys; [print(f'❌ {f[\"testIdentifierString\"]}: {f[\"failureText\"]}') for f in json.load(sys.stdin).get('testFailures', [])]"
+      - name: Keep the result bundle (screenshots at each failure)
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: acceptance-results
+          path: AcceptanceResults.xcresult
+          retention-days: 7
 
   deploy:
     name: Deploy to App Store Connect
