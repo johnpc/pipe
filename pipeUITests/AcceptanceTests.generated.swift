@@ -331,8 +331,8 @@ final class SaveForLaterFeatureTests: AcceptanceTests {
 /// Search Videos
 final class SearchFeatureTests: AcceptanceTests {
 
-    func test_Empty_state_shows_suggestions() {
-        runScenario(feature: "search.feature", scenario: "Empty state shows suggestions")
+    func test_Empty_state_suggests_channels_trending_on_the_instance() {
+        runScenario(feature: "search.feature", scenario: "Empty state suggests channels trending on the instance")
     }
 
     func test_Searching_returns_results() {

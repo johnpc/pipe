@@ -34,7 +34,13 @@ class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.instanceURL = defaults.string(forKey: Self.instanceKey) ?? AppSettings.defaultInstance
+        // A fresh install starts on the demo library; an install from before the
+        // demo default existed keeps the instance it has been using. The choice
+        // is persisted so it is made exactly once.
+        let stored = defaults.string(forKey: Self.instanceKey)
+        let initial = SettingsLogic.initialInstance(stored: stored, hasPriorData: SettingsLogic.hasPriorData(in: defaults))
+        self.instanceURL = initial
+        if stored == nil { defaults.set(initial, forKey: Self.instanceKey) }
         self.offlineMode = defaults.bool(forKey: offlineKey)
         self.diagnosticsUpload = defaults.bool(forKey: diagnosticsKey)
         self.castQuality = CastQuality(rawValue: defaults.string(forKey: castQualityKey) ?? "") ?? .auto
@@ -50,7 +56,14 @@ class AppSettings: ObservableObject {
 
     nonisolated deinit {}
 
-    static let defaultInstance = "https://pipedapi.jpc.io"
+    /// Where a fresh install points: pipe's hosted demo library (the fake Piped
+    /// backend's static export — labelled sample clips, no streaming service
+    /// involved). Users enter their own Piped instance in Settings. This is also
+    /// what App Store review sees.
+    static let defaultInstance = "https://d2554qyjuoitlv.cloudfront.net"
+    /// The instance installs from before the demo default were using; kept for
+    /// them on upgrade (see `SettingsLogic.initialInstance`).
+    static let legacyInstance = "https://pipedapi.jpc.io"
 
     private func persistInstance() {
         let normalized = SettingsLogic.normalizedInstance(instanceURL)

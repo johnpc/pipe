@@ -9,9 +9,56 @@ struct AppSettingsTests {
         AppSettings(defaults: UserDefaults(suiteName: "settings-\(UUID().uuidString)")!)
     }
 
-    @Test func defaultsToConfiguredInstance() {
+    @Test func freshInstallStartsOnTheDemoLibrary() {
         let s = makeSettings()
         #expect(s.instanceURL == AppSettings.defaultInstance)
+        pipedBase = AppSettings.defaultInstance
+    }
+
+    @Test func anUpgradedInstallKeepsTheInstanceItWasUsing() {
+        // Before the demo default existed the instance key was never written;
+        // the presence of any app data proves the install predates it.
+        let suite = UserDefaults(suiteName: "settings-\(UUID().uuidString)")!
+        suite.set(Data(#"[{"videoId":"abc"}]"#.utf8), forKey: "savedQueue")  // a real queue, not the empty "[]" stores write at launch
+        let s = AppSettings(defaults: suite)
+        #expect(s.instanceURL == AppSettings.legacyInstance)
+        #expect(suite.string(forKey: AppSettings.instanceKey) == AppSettings.legacyInstance)  // decided once
+        pipedBase = AppSettings.defaultInstance
+    }
+
+    @Test func aStoredInstanceAlwaysWins() {
+        #expect(SettingsLogic.initialInstance(stored: "https://mine.test", hasPriorData: true) == "https://mine.test")
+        #expect(SettingsLogic.initialInstance(stored: "", hasPriorData: false) == AppSettings.defaultInstance)
+        #expect(SettingsLogic.initialInstance(stored: nil, hasPriorData: true) == AppSettings.legacyInstance)
+        #expect(SettingsLogic.initialInstance(stored: nil, hasPriorData: false) == AppSettings.defaultInstance)
+    }
+
+    @Test func priorDataMeansContentNotMerePresence() {
+        let suite = UserDefaults(suiteName: "settings-\(UUID().uuidString)")!
+        #expect(!SettingsLogic.hasPriorData(in: suite))
+        // What the stores write on a brand-new launch, before Settings exists.
+        suite.set(Data("[]".utf8), forKey: "recentItems")
+        suite.set([String](), forKey: "followedChannels")
+        suite.set(0, forKey: "playbackSpeed")
+        #expect(!SettingsLogic.hasPriorData(in: suite))
+        suite.set(1.5, forKey: "playbackSpeed")
+        #expect(SettingsLogic.hasPriorData(in: suite))
+    }
+
+    @Test func aBrandNewLaunchWithEmptyStoresStartsOnTheDemoLibrary() {
+        let suite = UserDefaults(suiteName: "settings-\(UUID().uuidString)")!
+        suite.set(Data("[]".utf8), forKey: "savedQueue")
+        suite.set(Data("[]".utf8), forKey: "recentItems")
+        #expect(AppSettings(defaults: suite).instanceURL == AppSettings.defaultInstance)
+        pipedBase = AppSettings.defaultInstance
+    }
+
+    @Test func hasContentByType() {
+        #expect(!SettingsLogic.hasContent(nil))
+        #expect(!SettingsLogic.hasContent(Data("[]".utf8)) && SettingsLogic.hasContent(Data("[{}]".utf8)))
+        #expect(!SettingsLogic.hasContent([String]()) && SettingsLogic.hasContent(["x"]))
+        #expect(!SettingsLogic.hasContent(0) && SettingsLogic.hasContent(2.0))
+        #expect(SettingsLogic.hasContent("anything"))
     }
 
     @Test func settingInstanceUpdatesPipedBase() {

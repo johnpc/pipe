@@ -20,7 +20,7 @@ struct SettingsView: View {
                 Text("Show your downloads and hide tabs that need a connection.")
             }
 
-            Section("Piped Instance") {
+            Section {
                 TextField("https://pipedapi…", text: $instanceDraft)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -34,6 +34,10 @@ struct SettingsView: View {
                         instanceDraft = settings.instanceURL
                     }.foregroundColor(.secondary)
                 }
+            } header: {
+                Text("Piped Instance")
+            } footer: {
+                Text("The default is pipe's demo library: labelled sample clips, no real videos. Enter the URL of your Piped instance to browse real content. Reset returns to the demo library.")
             }
 
             AudioLanguageSection(settings: settings)

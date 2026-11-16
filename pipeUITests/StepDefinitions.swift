@@ -11,6 +11,8 @@ enum StepDefinitions {
 
     // Known strings from the bundled fixtures (pipe/Fixtures/*.json).
     static let channelName = "MrBeast"
+    /// An uploader in the trending fixture — the suggestion chips are built from it.
+    static let trendingChannel = "Scump"
     static let searchStreamTitle = "Guess What Age Punched You"
     /// Every play flow starts the first search result, and the mock answers
     /// `/streams/<id>` with that video's own identity (FixtureCatalog), so the
@@ -48,8 +50,9 @@ enum StepDefinitions {
 
         // MARK: Search
         r.define("I am on the Search tab") { w in selectTab(w, "Search") }
-        r.define("I should see popular channel suggestions") { w in
-            XCTAssertTrue(w.app.buttons[channelName].waitForExistence(timeout: medium), "Suggestion should be visible")
+        r.define("I should see trending channel suggestions") { w in
+            XCTAssertTrue(w.app.buttons[trendingChannel].waitForExistence(timeout: medium),
+                          "A chip for a trending uploader should be visible")
         }
         r.define("I should see an inline search field") { w in
             XCTAssertTrue(w.app.textFields.firstMatch.exists || w.app.searchFields.firstMatch.exists)
@@ -436,7 +439,7 @@ enum StepDefinitions {
         // MARK: Chapters (streams fixture includes a chapters list)
         r.define("I have searched and opened a video that has chapters") { w in
             selectTab(w, "Search")
-            w.app.buttons[channelName].firstMatch.tap()
+            performSearch(w, channelName)
             let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
             XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
             firstVideo.tap()
@@ -486,7 +489,7 @@ enum StepDefinitions {
         r.define("I have downloaded nothing") { _ in }
         r.define("I have searched and opened a video") { w in
             selectTab(w, "Search")
-            w.app.buttons[channelName].firstMatch.tap()
+            performSearch(w, channelName)
             let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
             XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
             firstVideo.tap()
@@ -664,7 +667,7 @@ enum StepDefinitions {
         // MARK: Error recovery (scenario launches with --uitest-fail-streams)
         r.define("a video detail fails to load") { w in
             selectTab(w, "Search")
-            w.app.buttons[channelName].firstMatch.tap()
+            performSearch(w, channelName)
             let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
             XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
             firstVideo.tap()

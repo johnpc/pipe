@@ -56,11 +56,16 @@ thin, native client over Piped.
   thin vertical slice with a Gherkin acceptance scenario (`.feature` files run by
   a native Swift runner) plus colocated unit tests.
 
-### Default Piped server
+### Choosing a Piped instance
 
-By default pipe talks to **`https://pipedapi.jpc.io`**. You can point it at any
-Piped API instance in **Settings → Piped Instance** (handy if that instance is
-down or you self-host your own). "Reset" restores the default.
+pipe is an instance-agnostic client. A fresh install starts on **pipe's demo
+library** (`https://d2554qyjuoitlv.cloudfront.net`): a handful of labelled sample clips
+served from a static host, with no streaming service behind them. That is what
+App Store review sees, and it is what the app does until you tell it where your
+content lives. Point it at your Piped API instance in **Settings → Piped
+Instance** (for example your own self-hosted one). "Reset" returns to the demo
+library. Installs from before the demo default existed keep the instance they
+were already using.
 
 ### Diagnostics & telemetry (opt-in)
 
@@ -132,9 +137,11 @@ It is how:
 
 - **CI** proves playback end to end (scenarios tagged `@fake-server` play real
   audio and assert the position advances) without YouTube or the network.
-- **App Store review** gets a working app without proxied YouTube content:
-  `--export-static DIR --base-url https://…` writes the whole API as static files
-  to host anywhere; the reviewer enters that URL under Settings → Piped instance.
+- **App Store review** gets a working app with no YouTube content anywhere:
+  `--export-static` writes the whole API as static files with a labelled demo
+  catalogue (`--catalog demo`: "Demo Clip N", "Demo Channel X", comments off), and
+  `scripts/fake_piped/deploy.sh` hosts it (private S3 behind CloudFront). A fresh
+  install points there by default, so a reviewer never has to configure anything.
 - **Local development** gets a backend that never changes.
 
 ```bash

@@ -184,8 +184,8 @@ scripts/remote.sh app --uitest-instance http://127.0.0.1:8765   # run the app on
 scripts/remote.sh shot NAME | rec start|stop NAME | logs        # look at the real UX
 
 # A backend with no YouTube in it (CI, local dev, App Store review):
-python3 -I scripts/fake_piped/server.py --port 8765          # or --daemon
-python3 -I scripts/fake_piped/server.py --export-static out/ --base-url https://host/path
+python3 -I scripts/fake_piped/server.py --port 8765          # or --daemon; --catalog demo for placeholders
+scripts/fake_piped/deploy.sh                                  # publish the demo library (AWS profile personal)
 ```
 
 ## Key facts
@@ -193,13 +193,22 @@ python3 -I scripts/fake_piped/server.py --export-static out/ --base-url https://
 - **Repo:** `johnpc/pipe`.
 - **iOS bundle id:** `com.johncorser.pipe`. Apple **team id `JW5SC3NYUV`**.
   `ITSAppUsesNonExemptEncryption=NO` (no encryption prompt on upload).
-- **Piped instance:** `https://pipedapi.jpc.io` (configurable in Settings).
-- **App Store review builds:** reviewers may not accept proxied YouTube media. Host
-  the fake backend's static export (see Commands) and tell them in the review notes
-  to enter that URL under Settings → Piped instance; every screen then works on
-  synthetic, licence-free media. The export is plain files: any static host
-  (S3 + CloudFront) serves it, with `application/json` as the content type for the
-  extensionless API objects.
+- **Piped instance:** a fresh install defaults to the **demo library**
+  (`AppSettings.defaultInstance`, `https://d2554qyjuoitlv.cloudfront.net`); installs that
+  predate it keep `https://pipedapi.jpc.io` (`AppSettings.legacyInstance`, chosen by
+  `SettingsLogic.initialInstance`). Users set their instance in Settings.
+- **App Store review never depends on YouTube.** Apple rejects apps that stream
+  YouTube through unofficial means, so nothing a reviewer can reach may be YouTube:
+  the default instance is the demo library, the search chips come from the
+  instance's trending uploaders (never a hardcoded list of creators), and the demo
+  catalogue is labelled placeholders ("Demo Clip 12", "Demo Channel F", comments
+  disabled) with synthetic media. Keep it that way: no hardcoded channel or video
+  names in the app, and run the export leak check before a release
+  (`grep -rlE 'youtube|ytimg|googlevideo|pipedproxy' <export>` must be empty).
+  The demo library is the fake backend's static export, hosted by
+  `scripts/fake_piped/deploy.sh` (CloudFormation stack `pipe-demo-backend`, AWS
+  profile `personal`, us-west-2: private S3 behind CloudFront; rerun the script to
+  publish changes).
 - **Diagnostics/telemetry:** structured playback logs live on-device (share via
   Settings → Diagnostics) and, when the user opts in, upload to the **pipe-logs**
   backend (private repo `johnpc/pipe-logs`; AWS profile `personal`, us-west-2:
