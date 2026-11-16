@@ -7,6 +7,7 @@ Feature: Video Playback
     Given I have searched for "Lex Fridman"
     When I tap the play button on the first result
     Then the mini player bar should appear
+    And the mini player should show "Guess What Age Punched You"
 
   Scenario: Expanding the mini player shows full controls
     Given a video is playing

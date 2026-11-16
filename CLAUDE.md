@@ -56,7 +56,14 @@ API + tests, just enough for the scenario, nothing speculative.
 - **Stores own state + side effects.** `PlayerState` (playback + queue),
   `RecentsStore` (history), `FollowingStore` (subscriptions) are
   `ObservableObject`s. They take injectable dependencies (`UserDefaults`,
-  `URLSession`) so they're testable in isolation.
+  `URLSession`, `StreamResolving`) so they're testable in isolation.
+- **State machines are explicit types, never bags of booleans.** The item
+  lifecycle is `PlaybackLifecycle` (a pure reducer: event in → phase + effects
+  out) publishing one `PlaybackPhase`; `PlayerState` only performs the effects.
+  `isPlaying`/`isBuffering` are *derived* from the phase, never assigned. Any new
+  multi-step behavior (a download, a cast session, a load) gets an `enum` state
+  and a tested transition function first. `docs/state-machines.md` lists them all —
+  update it when you add or change one.
 - **`PipedAPI` is the only network layer.** It exposes a static, injectable
   `session` and pure URL-builder functions so decoding and URL construction are
   unit-testable via `MockURLProtocol`.
@@ -65,8 +72,8 @@ API + tests, just enough for the scenario, nothing speculative.
 
 ### Code organization (follow the existing shape)
 
-- **`X.swift` view** — renders only. ≤100 lines. Split subviews into their own
-  files (`VideoRow`, `QueueSection`, `SearchSuggestionsView`).
+- **`X.swift` view** — renders only. Split subviews into their own files
+  (`VideoRow`, `QueueSection`, `SearchSuggestionsView`).
 - **`XLogic.swift` / free functions** — pure, synchronous where possible, fully tested.
 - **`XStore.swift`** — `ObservableObject` state; injectable deps; `nonisolated deinit`.
 - **Tests colocated by type** under `pipeTests/` (unit) and `pipeUITests/` (Gherkin).
@@ -78,12 +85,13 @@ the code, never the gate.
 
 - **No force-unwraps in logic, no `as!`, no `try!` outside tests.** Handle the
   optional/error path. (Test fixtures may use `try!`/`!` for brevity.)
-- **Every source file ≤ 100 lines** (`scripts/check_file_lines.sh`) — views *and*
-  logic/stores. The limit is a proxy for **one file, one purpose**: when a file
-  goes over, **split it** — extract a focused helper, a subview, or another type
-  across `Type+Feature.swift` extension files — so each piece does one thing.
-  **Do not** squeak under the limit by deleting comments or collapsing lines;
-  that defeats the purpose. **Never raise the limit.**
+- **Every source file ≤ 300 lines** (`scripts/check_file_lines.sh`) — views *and*
+  logic/stores. The limit is a backstop for **one file, one purpose**, not a
+  target: a file that needs anywhere near it is doing more than one job. Split
+  along a responsibility boundary — a focused helper, a subview, or another type
+  across `Type+Feature.swift` extension files — never at an arbitrary line count,
+  and **do not** squeak under by deleting comments or collapsing lines. **Never
+  raise the limit.**
 - **≥ 80% line coverage** across the app target (`scripts/coverage_check.py`). Fix by
   **writing tests** — never by adding exclusions. 80% is a floor; push to 90%+.
 - **CRAP ≤ 15 per function** (`scripts/crap_check.py`, decision-point based). Over →
@@ -100,21 +108,48 @@ the code, never the gate.
 ### Honest e2e: exercise the real behavior, not just navigation
 
 - An acceptance test must assert on **observable app behavior** (a control appears,
-  state changes, the mini player shows up), never merely that a tab is selected.
-- Network-dependent scenarios (search, playback) use generous waits and
-  `XCTSkip` gracefully when the live Piped instance returns nothing — so CI stays
-  green when the backend is flaky — but **offline-deterministic flows** (tab nav,
-  empty states, suggestions, Settings) are asserted **strictly**.
+  the phase changes, the mini player shows the tapped video's title), never merely
+  that a tab is selected.
+- **Every scenario is strict and deterministic.** The app never talks to the live
+  Piped instance under test. Two backends exist for that:
+  - **In-process fixtures** (`--uitest-mock`, the default): `FixtureURLProtocol`
+    answers from `pipe/Fixtures/*.json`; `/streams/<id>` is personalized per id
+    (`FixtureCatalog`), so "the mini player shows *this* video" is assertable.
+    The fixture stream URLs are dead, which is exactly the condition the
+    failure-recovery scenarios need.
+  - **The fake Piped backend** (`scripts/fake_piped`, tag a scenario
+    `@fake-server`): a loopback HTTP server serving the same fixtures plus a
+    synthetic 30-second clip as HLS/MP4/M4A, so playback is proven end to end —
+    position advances, pause holds. CI starts it; `scripts/remote.sh fake start`
+    does locally. `--export-static` writes it as files for static hosting, which
+    is how an App Store reviewer gets a working backend without YouTube content.
 - A feature whose logic can be unit-tested deterministically (stream selection,
-  queue math, persistence) **must** have those unit tests in addition to the
-  Gherkin flow. The Gherkin proves the wiring; the unit tests prove the logic.
+  queue math, the lifecycle reducer, persistence) **must** have those unit tests in
+  addition to the Gherkin flow. The Gherkin proves the wiring; the unit tests prove
+  the logic.
+
+### There is no such thing as a flaky test
+
+A test that passes sometimes is a failing test. CI runs every test **exactly
+once**, with no retries, no re-runs, no `XCTSkip`, and no quarantine list. When a
+test fails:
+
+1. Read the failure. It is a bug in the app or a bug in the test — find which.
+2. Fix that root cause (a race, a missing wait on an observable condition, shared
+   state between scenarios, a real app defect). Never "fix" it by rerunning,
+   loosening the assertion, adding a sleep, skipping, or marking it expected.
+3. If the test exercises something outside our control (a live network), move it
+   onto the in-process fixtures or the fake backend so it is in our control.
+
+Reviewers should reject any PR that adds retries, skips, or `continue-on-error` to
+make CI green.
 
 ## Definition of done
 
 A slice is done only when **all** of these hold:
 
-1. Full quality gate green locally (`bash scripts/quality.sh`): view-line limit,
-   coverage ≥80%, CRAP ≤15, build.
+1. Full quality gate green locally (`bash scripts/quality.sh`, or on the Mac mini via
+   `scripts/remote.sh gate`): file-line limit, coverage ≥80%, CRAP ≤15, build.
 2. Gherkin acceptance Scenario(s) added as `.feature` files in
    `pipeUITests/Features/` (generated methods regenerated), and colocated unit
    tests, all passing.
@@ -131,11 +166,23 @@ A slice is done only when **all** of these hold:
 ## Commands
 
 ```bash
-bash scripts/quality.sh          # full local gate: view-lines + tests + coverage + CRAP + build
+bash scripts/quality.sh          # full local gate: file-lines + tests + coverage + CRAP + build
 bash scripts/install-hooks.sh    # install the pre-commit hook
 # Run tests directly:
 xcodebuild test -scheme pipe -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   -only-testing:pipeTests -enableCodeCoverage YES -resultBundlePath TestResults.xcresult
+
+# No Xcode on this machine? Everything runs on the Mac mini (the CI runner):
+scripts/remote.sh unit [TestClass]   # sync + unit tests + coverage + CRAP
+scripts/remote.sh gate               # sync + the full quality gate
+scripts/remote.sh ui [FeatureTests]  # sync + Gherkin acceptance tests
+scripts/remote.sh fake start         # the fake Piped backend on 127.0.0.1:8765
+scripts/remote.sh app --uitest-instance http://127.0.0.1:8765   # run the app on the simulator
+scripts/remote.sh shot NAME | rec start|stop NAME | logs        # look at the real UX
+
+# A backend with no YouTube in it (CI, local dev, App Store review):
+python3 -I scripts/fake_piped/server.py --port 8765          # or --daemon
+python3 -I scripts/fake_piped/server.py --export-static out/ --base-url https://host/path
 ```
 
 ## Key facts
@@ -144,6 +191,12 @@ xcodebuild test -scheme pipe -destination 'platform=iOS Simulator,name=iPhone 17
 - **iOS bundle id:** `com.johncorser.pipe`. Apple **team id `JW5SC3NYUV`**.
   `ITSAppUsesNonExemptEncryption=NO` (no encryption prompt on upload).
 - **Piped instance:** `https://pipedapi.jpc.io` (configurable in Settings).
+- **App Store review builds:** reviewers may not accept proxied YouTube media. Host
+  the fake backend's static export (see Commands) and tell them in the review notes
+  to enter that URL under Settings → Piped instance; every screen then works on
+  synthetic, licence-free media. The export is plain files: any static host
+  (S3 + CloudFront) serves it, with `application/json` as the content type for the
+  extensionless API objects.
 - **Diagnostics/telemetry:** structured playback logs live on-device (share via
   Settings → Diagnostics) and, when the user opts in, upload to the **pipe-logs**
   backend (private repo `johnpc/pipe-logs`; AWS profile `personal`, us-west-2:

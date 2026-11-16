@@ -16,13 +16,14 @@ struct PlayerItemFailureTests {
         let (player, buffer) = playerWithLog()
         player.addToQueue(videoId: "dead", url: "bad://dead", title: "Dead", artist: "x", thumbnail: "", duration: 604)
         player.handleItemFailure()
-        // Same item, marked stale so playItem mints a fresh URL rather than
+        // Same item, re-resolving: playItem mints a fresh URL rather than
         // replaying the dead one.
         #expect(player.currentIndex == 0)
         #expect(player.queue.first?.videoId == "dead")
-        #expect(player.queue.first?.resolvedAt == nil)
+        #expect(player.phase == .resolving)
         #expect(player.itemFailureRetries == 1)
         #expect(buffer.exportText().contains("recovery"))
+        #expect(buffer.exportText().contains("refreshing stale url"))
     }
 
     @Test func failedItemSurfacesErrorAfterRetriesExhausted() {
@@ -33,6 +34,7 @@ struct PlayerItemFailureTests {
         // Out of retries: tell the user rather than retrying forever.
         #expect(player.error?.contains("Dead Video") == true)
         #expect(player.isPlaying == false)
+        #expect(player.phase.isFailed)
         #expect(player.itemFailureRetries == 0)  // budget reset for the next item
     }
 

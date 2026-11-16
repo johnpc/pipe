@@ -13,7 +13,6 @@ struct BottomTabBar: View {
             TabButton(icon: "clock", label: "Recents", isSelected: selectedTab == 2) { selectedTab = 2 }
             TabButton(icon: "heart.fill", label: "Following", isSelected: selectedTab == 3) { selectedTab = 3 }
             TabButton(icon: "gearshape", label: "Settings", isSelected: false, action: onSettings)
-                .accessibilityIdentifier("Settings")
         }
         .padding(.top, 8)
         .padding(.bottom, 2)

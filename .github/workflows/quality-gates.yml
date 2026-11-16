@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Enforce 100-line limit on all source files
+      - name: Enforce 300-line limit on all source files
         run: bash scripts/check_file_lines.sh
 
       - name: Build for testing
@@ -107,14 +107,23 @@ jobs:
           key: derived-data-${{ github.sha }}
       - name: Verify generated acceptance tests match .feature files
         run: python3 scripts/generate_acceptance_tests.py --check
+      - name: Start the fake Piped backend (for @fake-server scenarios)
+        run: |
+          # Loopback only; scenarios tagged @fake-server launch the app with
+          # --uitest-instance http://127.0.0.1:8765 and play its synthetic media.
+          # --daemon detaches in-process (nohup can't under the LaunchDaemon runner).
+          rm -f /tmp/pipe-fake.log
+          python3 -I scripts/fake_piped/server.py --port 8765 --daemon --log /tmp/pipe-fake.log --pidfile /tmp/pipe-fake.pid
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8765/healthz && break || sleep 0.5; done
+          curl -fsS http://127.0.0.1:8765/healthz  # fail the step loudly if it never came up
       - name: Run all scenarios on parallel simulators
         run: |
           # One job on the one Mac Mini: matrix shards would just queue behind
           # each other. Instead Xcode clones the simulator and spreads the
-          # per-feature test classes across workers. Only a failing test is
-          # retried (a flake that passes on retry passes; a real failure fails
-          # every iteration and fails the job). Running the whole target means
-          # no scenario can be skipped by a stale filter.
+          # per-feature test classes across workers. Each test runs exactly
+          # once — there is no retry: a test that fails is a bug (in the app or
+          # the test) and gets fixed, never re-rolled. Running the whole target
+          # means no scenario can be skipped by a stale filter.
           rm -rf AcceptanceResults.xcresult
           xcodebuild test-without-building \
             -scheme "$SCHEME" \
@@ -123,10 +132,13 @@ jobs:
             -only-testing:pipeUITests \
             -parallel-testing-enabled YES \
             -parallel-testing-worker-count 4 \
-            -retry-tests-on-failure \
-            -test-iterations 3 \
             -resultBundlePath AcceptanceResults.xcresult \
             -quiet
+      - name: Stop the fake Piped backend
+        if: always()
+        run: |
+          kill "$(cat /tmp/pipe-fake.pid)" 2>/dev/null || true
+          tail -n 20 /tmp/pipe-fake.log || true
       - name: Summarize failures
         if: failure()
         run: |

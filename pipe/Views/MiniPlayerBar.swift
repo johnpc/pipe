@@ -16,7 +16,13 @@ struct MiniPlayerBar: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(player.currentTitle ?? "").font(.footnote).lineLimit(1)
-                    Text(player.currentArtist ?? "").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        .accessibilityIdentifier("miniPlayerTitle")
+                    // The second line says what the player is doing while that
+                    // matters (loading, buffering, failed); otherwise the artist.
+                    Text(player.phase.subtitle(artist: player.currentArtist))
+                        .font(.caption2).lineLimit(1)
+                        .foregroundStyle(player.phase.isFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                        .accessibilityIdentifier("miniPlayerStatus")
                 }
                 Spacer()
                 // While buffering, dim the control under a spinner but keep it
@@ -28,7 +34,9 @@ struct MiniPlayerBar: View {
                         .opacity(player.isBuffering ? 0.35 : 1)
                         .overlay { if player.isBuffering { ProgressView().accessibilityIdentifier("bufferingIndicator") } }
                 }
+                .accessibilityIdentifier("miniPlayPauseButton")
                 .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+                .accessibilityValue(player.phase.label)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

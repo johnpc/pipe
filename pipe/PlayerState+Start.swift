@@ -33,8 +33,7 @@ extension PlayerState {
         // proxied stream. The stall observer already recovers any underruns
         // this more eager start produces.
         player?.playImmediately(atRate: playbackSpeed)
-        isPlaying = true
-        isBuffering = true  // cleared when timeControlStatus first hits .playing
+        apply(.playerStarted)  // .buffering until timeControlStatus reports .playing
         updateNowPlaying()
     }
 }

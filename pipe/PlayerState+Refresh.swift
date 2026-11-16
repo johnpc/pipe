@@ -2,9 +2,10 @@ import Foundation
 import AVFoundation
 
 /// Re-resolves an item's stream URLs from its videoId when the stored URL is
-/// stale/expired, then plays the fresh URL. This fixes both the "paused
-/// overnight won't resume" and "long video ends early" symptoms, which share a
-/// root cause: time-limited googlevideo URLs captured at enqueue time.
+/// stale, expired, or dead, then plays the fresh URL. This fixes both the
+/// "paused overnight won't resume" and "long video ends early" symptoms, which
+/// share a root cause: time-limited googlevideo URLs captured at enqueue time.
+/// The lifecycle is already in `.resolving` when this runs (see +Engine).
 extension PlayerState {
     func refreshAndPlay(_ item: QueueItem) {
         // Reflect the now-playing metadata immediately so the UI isn't blank
@@ -15,41 +16,25 @@ extension PlayerState {
         currentThumbnail = item.thumbnail
         log.event("play", "refreshing stale url", fields: ["videoId": item.videoId])
 
+        let resolver = self.resolver
         Task { [weak self] in
-            guard let self else { return }
-            let refreshed = await Self.reresolve(item)
+            let refreshed = await resolver.fresh(item)
             await MainActor.run {
+                guard let self else { return }
                 // Bail if the user moved on to a different item meanwhile.
                 guard self.currentVideoId == item.videoId else { return }
                 if let refreshed {
                     self.updateQueueItem(refreshed)
-                    self.playItem(refreshed, skipRefresh: true)
+                    self.playItem(refreshed, refresh: .never)
                 } else {
                     // Re-resolution failed (offline/instance down): fall back to
                     // the stored URL so a still-valid URL or the error path both
                     // behave as before.
                     self.log.event("play", "refresh failed, using stored url", fields: ["videoId": item.videoId])
-                    self.playItem(item, skipRefresh: true)
+                    self.playItem(item, refresh: .never)
                 }
             }
         }
-    }
-
-    /// Fetch fresh streams and return a copy of `item` with updated URLs and a
-    /// current `resolvedAt`, or nil if the fetch/decoding fails. Bypasses the
-    /// stream cache: this path exists to mint a NEW URL (expired or dead on
-    /// arrival) — re-serving the cached one would fail identically.
-    static func reresolve(_ item: QueueItem) async -> QueueItem? {
-        guard let response = try? await PipedAPI.streams(item.videoId, bypassingCache: true) else { return nil }
-        var copy = item
-        copy.url = getStreamUrl(response)
-        copy.audioUrl = getAudioStreamUrl(response, language: item.audioLanguage ?? pipedAudioLanguage)
-        copy.castUrl = getCastStreamUrl(response)
-        copy.videoOnlyUrl = getVideoOnlyStreamUrl(response)
-        copy.hlsUrl = response.hls ?? ""
-        copy.resolvedAt = Date()
-        guard !copy.url.isEmpty || !copy.audioUrl.isEmpty || !copy.hlsUrl.isEmpty else { return nil }
-        return copy
     }
 
     /// Persist refreshed URLs back into the queue so we don't refetch next time.
@@ -72,12 +57,10 @@ extension PlayerState {
     /// next playback session.
     func stop() {
         playGeneration += 1  // an in-flight async load (HLS/composed) must not revive playback
-        releaseTransitionHold("stop")
+        apply(.stop)
         teardownPlaybackObservers()
         releaseCurrentPlayer()
         teardownCast()
-        isPlaying = false
-        isBuffering = false
         currentTitle = nil
         currentArtist = nil
         currentThumbnail = nil

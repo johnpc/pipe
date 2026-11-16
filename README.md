@@ -114,6 +114,34 @@ aws s3api select-object-content --bucket $B --key '<key>' \
   --output-serialization '{"JSON":{}}' /dev/stdout
 ```
 
+## Testing philosophy: no flaky tests
+
+Every test in CI runs exactly once and must pass every time. There are no retries,
+no re-runs, no skips, and no quarantine list. A test that only passes sometimes is
+a failing test: find the root cause (a race, a missing wait, shared state, a real
+bug), fix it, and keep the assertion strict. Acceptance scenarios never touch the
+live Piped instance — they run against in-process fixtures (`--uitest-mock`) or the
+bundled fake backend (`scripts/fake_piped`, see below), both fully under our control.
+
+### The fake Piped backend
+
+`scripts/fake_piped/server.py` is a dependency-free Python server that speaks the
+subset of the Piped API the app uses, answers from the same fixtures the UI tests
+use (per video id), and serves a synthetic 30-second clip as HLS, MP4, and M4A.
+It is how:
+
+- **CI** proves playback end to end (scenarios tagged `@fake-server` play real
+  audio and assert the position advances) without YouTube or the network.
+- **App Store review** gets a working app without proxied YouTube content:
+  `--export-static DIR --base-url https://…` writes the whole API as static files
+  to host anywhere; the reviewer enters that URL under Settings → Piped instance.
+- **Local development** gets a backend that never changes.
+
+```bash
+python3 -I scripts/fake_piped/server.py --port 8765          # 127.0.0.1 only
+python3 -I scripts/fake_piped/server.py --export-static out/ --base-url https://demo.example/pipe
+```
+
 ## Building from source
 
 ```bash

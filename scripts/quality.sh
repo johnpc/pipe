@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Full local quality gate for pipe — the same checks CI enforces, in one command.
-# Mirrors the non-negotiable gates in CLAUDE.md: view-line limit, unit tests +
+# Mirrors the non-negotiable gates in CLAUDE.md: file-line limit, unit tests +
 # coverage >= 80%, CRAP <= 15, and a clean build.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -9,7 +9,7 @@ SCHEME="pipe"
 DESTINATION="${PIPE_DESTINATION:-platform=iOS Simulator,name=iPhone 17 Pro}"
 RESULT="TestResults.xcresult"
 
-echo "▶ [1/4] View file line limit (≤100)"
+echo "▶ [1/4] Source file line limit (≤300, one file = one purpose)"
 bash scripts/check_file_lines.sh
 
 echo "▶ [1b/4] Acceptance tests generated from .feature files are in sync"

@@ -21,7 +21,7 @@ struct PlayerAudioSessionTests {
 
     @Test func interruptionBeganPausesAndRemembersState() {
         let player = isolatedPlayer()
-        player.isPlaying = true
+        player.setPhase(.playing)
         player.handleInterruption(interruption(.began))
         #expect(player.isPlaying == false)
         #expect(player.wasPlayingBeforeInterruption == true)
@@ -46,21 +46,21 @@ struct PlayerAudioSessionTests {
 
     @Test func routeChangePausesWhenHeadphonesUnplugged() {
         let player = isolatedPlayer()
-        player.isPlaying = true
+        player.setPhase(.playing)
         player.handleRouteChange(routeChange(.oldDeviceUnavailable))
         #expect(player.isPlaying == false)
     }
 
     @Test func routeChangeIgnoresOtherReasons() {
         let player = isolatedPlayer()
-        player.isPlaying = true
+        player.setPhase(.playing)
         player.handleRouteChange(routeChange(.newDeviceAvailable))
         #expect(player.isPlaying == true)
     }
 
     @Test func malformedNotificationsAreIgnored() {
         let player = isolatedPlayer()
-        player.isPlaying = true
+        player.setPhase(.playing)
         player.handleInterruption(Notification(name: AVAudioSession.interruptionNotification))
         player.handleRouteChange(Notification(name: AVAudioSession.routeChangeNotification))
         #expect(player.isPlaying == true)

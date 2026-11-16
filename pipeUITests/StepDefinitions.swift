@@ -12,7 +12,13 @@ enum StepDefinitions {
     // Known strings from the bundled fixtures (pipe/Fixtures/*.json).
     static let channelName = "MrBeast"
     static let searchStreamTitle = "Guess What Age Punched You"
-    static let nowPlayingTitle = "Survive 30 Days Chained To A Stranger, Win $250,000"
+    /// Every play flow starts the first search result, and the mock answers
+    /// `/streams/<id>` with that video's own identity (FixtureCatalog), so the
+    /// now-playing title IS the tapped row's title — assertable strictly.
+    static let nowPlayingTitle = searchStreamTitle
+    /// Where UI tests find the fake Piped backend (scripts/fake_piped). CI
+    /// starts it before the suite; `remote.sh fake start` does locally.
+    static let fakeServerURL = ProcessInfo.processInfo.environment["PIPE_FAKE_SERVER"] ?? "http://127.0.0.1:8765"
 
     private static let short: TimeInterval = 5
     private static let medium: TimeInterval = 10
@@ -34,14 +40,14 @@ enum StepDefinitions {
             }
         }
         r.define("I tap the (\\w+) tab") { w in
-            w.app.buttons[w.capture()].tap()
+            selectTab(w, w.capture())
         }
         r.define("the (\\w+) screen should appear") { w in
             XCTAssertTrue(w.app.navigationBars[w.capture()].waitForExistence(timeout: short))
         }
 
         // MARK: Search
-        r.define("I am on the Search tab") { w in w.app.buttons["Search"].tap() }
+        r.define("I am on the Search tab") { w in selectTab(w, "Search") }
         r.define("I should see popular channel suggestions") { w in
             XCTAssertTrue(w.app.buttons[channelName].waitForExistence(timeout: medium), "Suggestion should be visible")
         }
@@ -68,7 +74,7 @@ enum StepDefinitions {
             s.tap()
         }
         r.define("I have searched for \"(.+)\"") { w in
-            w.app.buttons["Search"].tap()
+            selectTab(w, "Search")
             performSearch(w, w.capture())
         }
 
@@ -79,25 +85,62 @@ enum StepDefinitions {
             play.tap()
         }
         r.define("the mini player bar should appear") { w in
-            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long),
-                          "Mini player should show the now-playing title")
+            let title = miniPlayerTitle(w)
+            XCTAssertTrue(title.waitForExistence(timeout: long), "Mini player should appear")
+            XCTAssertEqual(title.label, nowPlayingTitle, "Mini player should show the tapped video's title")
+        }
+        r.define("the mini player should show \"(.+)\"") { w in
+            let title = miniPlayerTitle(w)
+            XCTAssertTrue(title.waitForExistence(timeout: long), "Mini player should appear")
+            XCTAssertEqual(title.label, w.capture())
+        }
+        // The explicit playback phase (PlaybackPhase.label), exposed as the
+        // mini play/pause button's accessibility value: Loading, Buffering,
+        // Playing, Paused, Failed. Waits because the phase is reached asynchronously.
+        r.define("the player should report \"(.+)\"") { w in
+            let expected = w.capture()
+            let button = w.app.buttons["miniPlayPauseButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: long))
+            XCTAssertTrue(waitUntil(long * 2) { (button.value as? String) == expected },
+                          "Player should report \(expected); it reports \(String(describing: button.value))")
+        }
+        r.define("the mini player status should say \"(.+)\"") { w in
+            let status = w.app.staticTexts["miniPlayerStatus"]
+            let expected = w.capture()
+            XCTAssertTrue(waitUntil(long) { status.exists && status.label == expected },
+                          "Mini player status should say \(expected); it says \(status.exists ? status.label : "nothing")")
+        }
+        r.define("I pause from the mini player") { w in
+            let button = w.app.buttons["miniPlayPauseButton"]
+            XCTAssertTrue(button.waitForExistence(timeout: long))
+            button.tap()
+        }
+        // Reads the elapsed-time label in the full player (m:ss) until it passes
+        // the given position — proof that audio is really advancing.
+        r.define("the playback position should pass (\\d+:\\d\\d)") { w in
+            let target = seconds(w.capture())
+            if !w.app.buttons["playPauseButton"].exists { miniPlayerTitle(w).tap() }
+            XCTAssertTrue(w.app.buttons["playPauseButton"].waitForExistence(timeout: long))
+            let clock = w.app.staticTexts["elapsedTime"]
+            XCTAssertTrue(waitUntil(long * 2) { clock.exists && seconds(clock.label) > target },
+                          "Position should pass \(target)s; clock shows \(clock.exists ? clock.label : "nothing")")
         }
         r.define("a video is playing") { w in searchAndPlayFirstStream(w) }
         r.define("I have searched and played a video") { w in searchAndPlayFirstStream(w) }
         r.define("I have played a video") { w in searchAndPlayFirstStream(w) }
         r.define("I tap the mini player bar") { w in
-            w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
+            miniPlayerTitle(w).tap()
         }
         r.define("the full player sheet should appear with playback controls") { w in
             XCTAssertTrue(w.app.buttons["1x"].waitForExistence(timeout: medium), "Full player should show speed controls")
         }
         r.define("I have opened the full player") { w in
-            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long))
-            w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
+            XCTAssertTrue(miniPlayerTitle(w).waitForExistence(timeout: long))
+            miniPlayerTitle(w).tap()
         }
         r.define("I open the full player") { w in
-            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long))
-            w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
+            XCTAssertTrue(miniPlayerTitle(w).waitForExistence(timeout: long))
+            miniPlayerTitle(w).tap()
         }
         r.define("I open the \"(.+)\" player tab") { w in
             let pill = w.app.buttons["playerTab-\(w.capture())"]
@@ -172,7 +215,7 @@ enum StepDefinitions {
         // the sheet can't satisfy it.
         r.define("the queue should contain (\\d+) items") { w in
             let count = w.capture()
-            w.app.staticTexts[nowPlayingTitle].firstMatch.tap()
+            miniPlayerTitle(w).tap()
             let queueTab = w.app.buttons["playerTab-Queue"]
             XCTAssertTrue(queueTab.waitForExistence(timeout: long), "The Queue player tab should be present")
             queueTab.tap()
@@ -180,8 +223,9 @@ enum StepDefinitions {
                           "The queue should list \(count) items")
         }
         r.define("the video should be added to the queue") { w in
-            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long),
-                          "Queued item should begin playing and show in the mini player")
+            let title = miniPlayerTitle(w)
+            XCTAssertTrue(title.waitForExistence(timeout: long), "Queued item should begin playing and show in the mini player")
+            XCTAssertEqual(title.label, nowPlayingTitle)
         }
 
         // MARK: Channel browsing
@@ -201,7 +245,7 @@ enum StepDefinitions {
         }
 
         // MARK: Following / Recents tabs + tolerant empty states
-        r.define("I open the (Following|Recents|Settings) tab") { w in w.app.buttons[w.capture()].tap() }
+        r.define("I open the (Following|Recents|Settings) tab") { w in selectTab(w, w.capture()) }
         r.define("I should see a \"(.+)\" empty state") { w in
             // Tolerant: persisted state may carry over between launches on the
             // shared simulator, so accept the empty state OR existing content.
@@ -214,18 +258,19 @@ enum StepDefinitions {
             heart.tap()
         }
         r.define("the channel should appear on the Following tab") { w in
-            w.app.buttons["Following"].tap()
+            selectTab(w, "Following")
             XCTAssertTrue(w.app.staticTexts[channelName].waitForExistence(timeout: medium),
                           "Followed channel should appear on the Following tab")
         }
         r.define("the played video should appear in my history") { w in
-            XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: medium),
+            // Inside a list row — the mini player (which shows the same title) doesn't count.
+            XCTAssertTrue(w.app.cells.staticTexts[nowPlayingTitle].waitForExistence(timeout: medium),
                           "Played video should appear in Recents")
         }
 
         // MARK: Settings
         r.define("I am on the Settings tab") { w in
-            w.app.buttons["Settings"].tap()
+            selectTab(w, "Settings")
             XCTAssertTrue(w.app.navigationBars["Settings"].waitForExistence(timeout: medium))
         }
         // MARK: Audio language
@@ -277,11 +322,11 @@ enum StepDefinitions {
                           "Remaining time should be shown")
         }
         r.define("I have performed a search") { w in
-            w.app.buttons["Search"].tap()
+            selectTab(w, "Search")
             performSearch(w, "temporary query")
         }
         r.define("I open Settings and tap \"(.+)\"") { w in
-            w.app.buttons["Settings"].tap()
+            selectTab(w, "Settings")
             let button = w.app.buttons[w.capture()]
             if !button.waitForExistence(timeout: 3) || !button.isHittable { w.app.swipeUp() }
             XCTAssertTrue(button.waitForExistence(timeout: short), "“\(w.capture())” should be present")
@@ -312,16 +357,16 @@ enum StepDefinitions {
 
         // MARK: Offline mode
         r.define("I open Settings") { w in
-            w.app.buttons["Settings"].tap()
+            selectTab(w, "Settings")
             XCTAssertTrue(w.app.navigationBars["Settings"].waitForExistence(timeout: medium), "Settings should open")
         }
         r.define("I turn on Offline Mode") { w in enableOfflineMode(w) }
         r.define("offline mode is on") { w in
-            w.app.buttons["Settings"].tap()
+            selectTab(w, "Settings")
             enableOfflineMode(w)
         }
         r.define("the home tab should show Downloads") { w in
-            w.app.buttons["Feed"].tap()
+            selectTab(w, "Feed", screen: "Downloads")
             // After the hermetic reset there are no downloads, so the Downloads
             // screen shows its "No Downloads" empty state. Accept the nav bar or
             // the empty-state copy.
@@ -330,11 +375,8 @@ enum StepDefinitions {
                           "Home tab should show Downloads while offline")
         }
         r.define("I open the Search tab") { w in
-            // The tab-bar Search button label collides with the search-field
-            // placeholder; target the bottom tab button explicitly.
-            let tab = w.app.buttons["Search"].firstMatch
-            XCTAssertTrue(tab.waitForExistence(timeout: medium))
-            tab.tap()
+            // Online this shows the Search screen; offline, the placeholder.
+            selectTab(w, "Search", shown: { w.app.navigationBars["Search"].exists || w.app.staticTexts["You're Offline"].exists })
         }
         r.define("I should see the offline placeholder") { w in
             XCTAssertTrue(w.app.staticTexts["You're Offline"].waitForExistence(timeout: long),
@@ -393,7 +435,7 @@ enum StepDefinitions {
 
         // MARK: Chapters (streams fixture includes a chapters list)
         r.define("I have searched and opened a video that has chapters") { w in
-            w.app.buttons["Search"].tap()
+            selectTab(w, "Search")
             w.app.buttons[channelName].firstMatch.tap()
             let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
             XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
@@ -425,7 +467,7 @@ enum StepDefinitions {
         }
 
         // MARK: Feed sorting
-        r.define("I am on the Feed tab") { w in w.app.buttons["Feed"].tap() }
+        r.define("I am on the Feed tab") { w in selectTab(w, "Feed") }
         r.define("I open the feed options menu") { w in
             let menu = w.app.buttons["feedMenu"]
             XCTAssertTrue(menu.waitForExistence(timeout: medium))
@@ -443,7 +485,7 @@ enum StepDefinitions {
         // MARK: Downloads
         r.define("I have downloaded nothing") { _ in }
         r.define("I have searched and opened a video") { w in
-            w.app.buttons["Search"].tap()
+            selectTab(w, "Search")
             w.app.buttons[channelName].firstMatch.tap()
             let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
             XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
@@ -467,7 +509,7 @@ enum StepDefinitions {
         }
         r.define("I open the Downloads screen from the Feed") { w in
             // Ensure we're on the Feed first (a prior step may have navigated away).
-            w.app.buttons["Feed"].tap()
+            selectTab(w, "Feed")
             let button = w.app.buttons["downloadsButton"]
             XCTAssertTrue(button.waitForExistence(timeout: medium))
             button.tap()
@@ -563,7 +605,7 @@ enum StepDefinitions {
         // "I tap \"Play All\"" / "I tap \"Save Playlist\"" reuse the generic
         // `I tap "(.+)"` step (matched by the buttons' labels).
         r.define("I open Saved Playlists from the Feed") { w in
-            w.app.buttons["Feed"].tap()
+            selectTab(w, "Feed")
             let button = w.app.buttons["savedPlaylistsButton"]
             XCTAssertTrue(button.waitForExistence(timeout: medium))
             button.tap()
@@ -573,11 +615,9 @@ enum StepDefinitions {
         }
         r.define("I should see a playlist result") { w in
             let row = w.app.buttons["playlistRow"].firstMatch
-            if !row.waitForExistence(timeout: long) {
-                // The playlist result may be below the fold — scroll to it.
-                w.app.swipeUp()
-            }
-            XCTAssertTrue(row.waitForExistence(timeout: medium),
+            // The playlist result sits below the fold of the fixture results;
+            // scroll until it is on screen (bounded).
+            XCTAssertTrue(row.waitForExistence(timeout: long) || scrollUntilExists(w, row),
                           "A playlist search result should be present")
         }
         r.define("I tap the first playlist result") { w in
@@ -623,7 +663,7 @@ enum StepDefinitions {
 
         // MARK: Error recovery (scenario launches with --uitest-fail-streams)
         r.define("a video detail fails to load") { w in
-            w.app.buttons["Search"].tap()
+            selectTab(w, "Search")
             w.app.buttons[channelName].firstMatch.tap()
             let firstVideo = w.app.staticTexts[searchStreamTitle].firstMatch
             XCTAssertTrue(firstVideo.waitForExistence(timeout: long))
@@ -652,12 +692,7 @@ enum StepDefinitions {
             let toggle = w.app.switches["diagnosticsUploadToggle"]
             scrollToElement(w, toggle)
             XCTAssertTrue(toggle.waitForExistence(timeout: medium), "Upload toggle should be present")
-            // In a SwiftUI List the switch spans the row; the control is on the
-            // trailing edge, so a trailing-edge coordinate tap is reliable where
-            // a plain .tap() is not (same pattern as the Offline Mode toggle).
-            if toggle.value as? String != "1" {
-                toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-            }
+            turnOn(toggle, "Diagnostics upload")
         }
         r.define("diagnostics upload should be on") { w in
             let toggle = w.app.switches["diagnosticsUploadToggle"]
@@ -674,19 +709,9 @@ enum StepDefinitions {
     private static func enableOfflineMode(_ w: GherkinWorld) {
         let toggle = w.app.switches["offlineModeToggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: medium), "Offline Mode toggle should be present")
-        // SwiftUI toggles don't reliably flip from a plain .tap() on the switch
-        // frame; tapping its center coordinate does. Confirm the flip committed
-        // before dismissing (a lost tap leaves the app online).
-        if toggle.value as? String != "1" {
-            // In a SwiftUI List the Switch element spans the whole row but the
-            // interactive control sits on the trailing edge, so a center tap
-            // misses. Tap near the right edge.
-            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-            let on = NSPredicate(format: "value == '1'")
-            let exp = XCTNSPredicateExpectation(predicate: on, object: toggle)
-            XCTAssertEqual(XCTWaiter().wait(for: [exp], timeout: medium), .completed,
-                           "Offline Mode toggle should switch on")
-        }
+        // Confirm the flip committed before dismissing (a lost tap leaves the
+        // app online).
+        turnOn(toggle, "Offline Mode")
         // Dismiss the sheet via its Done button so the tabs underneath are
         // interactive again (a swipe-to-dismiss on the List is unreliable).
         let done = w.app.buttons["settingsDone"]
@@ -731,7 +756,7 @@ enum StepDefinitions {
     /// Search for the fixture channel and open its channel screen (tapping the
     /// channel result row, not the suggestion — the suggestion only runs a search).
     private static func openChannel(_ w: GherkinWorld) {
-        w.app.buttons["Search"].tap()
+        selectTab(w, "Search")
         performSearch(w, channelName)
         let row = w.app.buttons["channelRow"].firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: long), "Channel result should be present")
@@ -753,11 +778,75 @@ enum StepDefinitions {
 
     /// Search, then play the first stream result, leaving the mini player active.
     private static func searchAndPlayFirstStream(_ w: GherkinWorld) {
-        w.app.buttons["Search"].tap()
+        selectTab(w, "Search")
         performSearch(w, "anything")
         let play = w.app.buttons["playButton"].firstMatch
         XCTAssertTrue(play.waitForExistence(timeout: long), "A play control should be present in results")
         play.tap()
-        XCTAssertTrue(w.app.staticTexts[nowPlayingTitle].waitForExistence(timeout: long))
+        XCTAssertTrue(miniPlayerTitle(w).waitForExistence(timeout: long))
+    }
+
+    /// Switch to a bottom tab and wait for its screen. iOS drops a touch that
+    /// lands during the app's launch transition, so if the screen hasn't appeared
+    /// the tap is repeated once; the final assertion stays strict.
+    private static func selectTab(_ w: GherkinWorld, _ name: String, screen title: String? = nil) {
+        selectTab(w, name, shown: { w.app.navigationBars[title ?? name].exists })
+    }
+
+    /// Same, with any observable sign the tab's screen is up (for screens that
+    /// have no navigation title, like the offline placeholder).
+    private static func selectTab(_ w: GherkinWorld, _ name: String, shown: @escaping () -> Bool) {
+        let button = w.app.buttons["tab-\(name)"]
+        XCTAssertTrue(button.waitForExistence(timeout: medium), "\(name) tab should exist")
+        for _ in 0..<2 where !shown() {
+            button.tap()
+            _ = waitUntil(short, shown)
+        }
+        XCTAssertTrue(shown(), "The \(name) tab's screen should appear after tapping it")
+    }
+
+    /// Swipe up a bounded number of times until `element` exists.
+    private static func scrollUntilExists(_ w: GherkinWorld, _ element: XCUIElement, swipes: Int = 5) -> Bool {
+        for _ in 0..<swipes where !element.exists {
+            w.app.swipeUp()
+            _ = element.waitForExistence(timeout: 1)
+        }
+        return element.exists
+    }
+
+    /// Flip a SwiftUI List toggle on. The interactive control sits on the row's
+    /// trailing edge, and a tap that lands during a sheet's appear animation is
+    /// dropped, so the tap is repeated once if the value didn't commit; the
+    /// final assertion stays strict.
+    private static func turnOn(_ toggle: XCUIElement, _ what: String) {
+        let on = NSPredicate(format: "value == '1'")
+        for _ in 0..<2 where toggle.value as? String != "1" {
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+            _ = XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: on, object: toggle)], timeout: short)
+        }
+        XCTAssertEqual(toggle.value as? String, "1", "\(what) toggle should switch on")
+    }
+
+    /// The mini player's title label (the only element carrying this id, so it
+    /// can't be confused with the same title in a list row behind it).
+    private static func miniPlayerTitle(_ w: GherkinWorld) -> XCUIElement {
+        w.app.staticTexts["miniPlayerTitle"]
+    }
+
+    /// Poll `condition` until it holds or `timeout` passes.
+    private static func waitUntil(_ timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        }
+        return condition()
+    }
+
+    /// "1:05" → 65. Anything unparsable → -1.
+    private static func seconds(_ clock: String) -> Double {
+        let parts = clock.split(separator: ":").compactMap { Double($0) }
+        guard parts.count == 2 else { return -1 }
+        return parts[0] * 60 + parts[1]
     }
 }

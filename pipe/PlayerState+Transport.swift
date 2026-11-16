@@ -2,39 +2,24 @@ import AVFoundation
 import Combine
 
 /// End-of-item advancement and stall/status recovery. (`stop()` lives with the
-/// teardown helpers in +Refresh.)
+/// teardown helpers in +Refresh.) The lifecycle decides; this logs and feeds it.
 extension PlayerState {
+    /// The item played to its end — or claimed to. A truncated/expired stream
+    /// fires this far short of the real duration (the "1-hour video ends at
+    /// 30 min" bug); the lifecycle then reloads in place instead of advancing.
     func handlePlaybackEnded() {
-        // Distinguish a genuine finish from a stream that died early (the
-        // "1-hour video ends at 30 min" bug). Recover in place when premature.
         let outcome = EndOfItemPolicy.outcome(reached: currentTime, expected: expectedDuration, retries: prematureEndRetries)
         log.event("end", "fired", fields: [
             "reached": String(Int(currentTime)),
             "expected": expectedDuration.map { String(Int($0)) } ?? "unknown",
             "outcome": "\(outcome)",
         ])
-        if outcome != .finished { handlePrematureEnd(giveUp: outcome == .giveUp); return }
-        prematureEndRetries = 0
-        advanceAfterFinish()
-    }
-
-    /// A premature end: reload the current item from its last position to keep
-    /// playing, or (out of retries) fall through to a normal advance.
-    func handlePrematureEnd(giveUp: Bool = false) {
-        let outcome = EndOfItemPolicy.outcome(reached: currentTime, expected: expectedDuration, retries: prematureEndRetries)
-        guard !giveUp, outcome == .recover, currentIndex >= 0, currentIndex < queue.count else {
-            prematureEndRetries = 0
-            advanceAfterFinish()
-            return
+        if outcome == .recover {
+            // Recovery re-resolves the (likely expired) URL rather than
+            // reloading the dead one, and resumes from where it died.
+            log.event("end", "recover reload", fields: ["attempt": String(prematureEndRetries + 1), "from": String(Int(currentTime))])
         }
-        prematureEndRetries += 1
-        log.event("end", "recover reload", fields: ["attempt": String(prematureEndRetries), "from": String(Int(currentTime))])
-        pendingSeek = currentTime
-        // Force a fresh stream URL on recovery: a premature end is usually an
-        // expired URL, so reloading the same one would just fail again. Marking
-        // it stale makes playItem re-resolve from the videoId.
-        queue[currentIndex].resolvedAt = nil
-        playItem(queue[currentIndex])
+        apply(.ended(reached: currentTime, expected: expectedDuration))
     }
 
     /// Mark the finished item complete, drop it from the queue, and advance
@@ -64,17 +49,12 @@ extension PlayerState {
     /// Adopt AVPlayer's real play/pause state when `timeControlStatus` changes,
     /// so an external pause (Picture-in-Picture, lock screen, Control Center) —
     /// which pauses the AVPlayer directly without calling `pause()` — keeps our
-    /// `isPlaying` and now-playing info in sync instead of being fought.
-    /// Decision is delegated to the pure `PlaybackStatusPolicy` for testability.
+    /// phase and now-playing info in sync instead of being fought.
     func handleTimeControlStatus(_ status: AVPlayer.TimeControlStatus) {
-        // Surface (re)buffering: waiting means "intends to play, no audio yet";
-        // reaching .playing or .paused ends it.
-        isBuffering = status == .waitingToPlayAtSpecifiedRate
-        if status == .playing { releaseTransitionHold("playing") }
-        let nowPlaying = PlaybackStatusPolicy.isPlaying(for: status, current: isPlaying)
-        guard nowPlaying != isPlaying else { return }
-        log.event("status", "adopt", fields: ["raw": String(status.rawValue), "from": String(isPlaying), "to": String(nowPlaying)])
-        isPlaying = nowPlaying
+        let before = phase
+        apply(.status(status))
+        guard phase != before else { return }
+        log.event("status", "adopt", fields: ["raw": String(status.rawValue), "from": before.label, "to": phase.label])
         updateNowPlaying()
     }
 
@@ -86,5 +66,4 @@ extension PlayerState {
         guard isPlaying else { return }
         player?.playImmediately(atRate: playbackSpeed)
     }
-
 }

@@ -8,3 +8,4 @@ coverage.json
 
 # Local secrets (API keys); populate from AWS, never commit
 pipe/Secrets.xcconfig
+AcceptanceResults.xcresult/
