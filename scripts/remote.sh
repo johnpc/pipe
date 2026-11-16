@@ -72,7 +72,7 @@ case "${1:-}" in
     ;;
   fake)
     case "${2:-}" in
-      start) sync_tree; "${SSH[@]}" "cd $REMOTE_DIR && (pgrep -f 'fake_piped/server.py' >/dev/null && echo 'already running') || (nohup python3 -I scripts/fake_piped/server.py --port $FAKE_PORT > /tmp/pipe-fake.log 2>&1 & sleep 1; curl -fsS http://127.0.0.1:$FAKE_PORT/healthz && echo && lsof -nP -iTCP:$FAKE_PORT -sTCP:LISTEN | tail -n 1)" ;;
+      start) sync_tree; "${SSH[@]}" "cd $REMOTE_DIR && (pgrep -f 'fake_piped/server.py' >/dev/null && echo 'already running') || (python3 -I scripts/fake_piped/server.py --port $FAKE_PORT --daemon && sleep 1 && curl -fsS http://127.0.0.1:$FAKE_PORT/healthz && echo && lsof -nP -iTCP:$FAKE_PORT -sTCP:LISTEN | tail -n 1)" ;;
       stop) "${SSH[@]}" "pkill -f 'fake_piped/server.py' && echo stopped || echo 'not running'" ;;
       log) "${SSH[@]}" "tail -n ${3:-40} /tmp/pipe-fake.log" ;;
       *) echo "usage: remote.sh fake start|stop|log"; exit 2 ;;

@@ -111,9 +111,11 @@ jobs:
         run: |
           # Loopback only; scenarios tagged @fake-server launch the app with
           # --uitest-instance http://127.0.0.1:8765 and play its synthetic media.
-          nohup python3 -I scripts/fake_piped/server.py --port 8765 > /tmp/pipe-fake.log 2>&1 &
-          echo $! > /tmp/pipe-fake.pid
-          for i in $(seq 1 20); do curl -fsS http://127.0.0.1:8765/healthz && break || sleep 0.5; done
+          # --daemon detaches in-process (nohup can't under the LaunchDaemon runner).
+          rm -f /tmp/pipe-fake.log
+          python3 -I scripts/fake_piped/server.py --port 8765 --daemon --log /tmp/pipe-fake.log --pidfile /tmp/pipe-fake.pid
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:8765/healthz && break || sleep 0.5; done
+          curl -fsS http://127.0.0.1:8765/healthz  # fail the step loudly if it never came up
       - name: Run all scenarios on parallel simulators
         run: |
           # One job on the one Mac Mini: matrix shards would just queue behind

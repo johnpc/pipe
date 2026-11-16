@@ -319,6 +319,25 @@ def serve(host: str, port: int, fixtures: Fixtures, media: Path):
         server.server_close()
 
 
+def daemonize(log: Path, pidfile: Path):
+    """Detach so the caller's shell (a CI step, an SSH session) can exit while
+    the server keeps running. Done in-process rather than with `nohup`, which
+    fails under a LaunchDaemon-hosted CI runner ("can't detach from console")
+    and leaves the step hanging on the inherited stdio. Double-fork, new
+    session, stdio onto the log file, pid written for the matching stop step."""
+    if os.fork() > 0:
+        return False  # parent: let main() exit
+    os.setsid()
+    if os.fork() > 0:
+        os._exit(0)
+    sys.stdout.flush(); sys.stderr.flush()
+    fd = os.open(str(log), os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
+    null = os.open(os.devnull, os.O_RDONLY)
+    os.dup2(null, 0); os.dup2(fd, 1); os.dup2(fd, 2)
+    pidfile.write_text(str(os.getpid()))
+    return True
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="127.0.0.1", help="bind address (default loopback; use an SSH tunnel for devices)")
@@ -327,12 +346,18 @@ def main(argv=None):
     ap.add_argument("--media", type=Path, default=DEFAULT_MEDIA)
     ap.add_argument("--export-static", type=Path, metavar="DIR", help="write the API as static files and exit")
     ap.add_argument("--base-url", default="", help="public base URL baked into exported stream/media links")
+    ap.add_argument("--daemon", action="store_true", help="detach and keep serving after this shell exits")
+    ap.add_argument("--log", type=Path, default=Path("/tmp/pipe-fake.log"), help="request log when daemonized")
+    ap.add_argument("--pidfile", type=Path, default=Path("/tmp/pipe-fake.pid"), help="pid file when daemonized")
     args = ap.parse_args(argv)
     fixtures = Fixtures(args.fixtures)
     if args.export_static:
         if not args.base_url:
             ap.error("--export-static needs --base-url (the URL the files will be served from)")
         export_static(fixtures, args.media, args.export_static, args.base_url)
+        return 0
+    if args.daemon and not daemonize(args.log, args.pidfile):
+        print(f"fake Piped backend starting in the background on http://{args.host}:{args.port} (log {args.log}, pid file {args.pidfile})")
         return 0
     serve(args.host, args.port, fixtures, args.media)
     return 0

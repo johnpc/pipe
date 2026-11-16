@@ -181,7 +181,7 @@ scripts/remote.sh app --uitest-instance http://127.0.0.1:8765   # run the app on
 scripts/remote.sh shot NAME | rec start|stop NAME | logs        # look at the real UX
 
 # A backend with no YouTube in it (CI, local dev, App Store review):
-python3 -I scripts/fake_piped/server.py --port 8765
+python3 -I scripts/fake_piped/server.py --port 8765          # or --daemon
 python3 -I scripts/fake_piped/server.py --export-static out/ --base-url https://host/path
 ```
 
