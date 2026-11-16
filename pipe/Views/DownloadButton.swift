@@ -8,19 +8,18 @@ struct DownloadButton: View {
     @ObservedObject var downloads: DownloadStore
 
     var body: some View {
-        let isDownloaded = downloads.isDownloaded(videoId)
-        let inProgress = downloads.inProgress.contains(videoId)
-        Button { toggle(isDownloaded: isDownloaded) } label: {
-            if inProgress {
+        let state = downloads.state(for: videoId)
+        Button { toggle(isDownloaded: state.isDownloaded) } label: {
+            if let progress = state.progress {
                 // Determinate ring showing real download progress.
-                ProgressView(value: downloads.progress[videoId] ?? 0)
+                ProgressView(value: progress)
                     .progressViewStyle(.circular)
             } else {
-                Image(systemName: isDownloaded ? "arrow.down.circle.fill" : "arrow.down.circle")
+                Image(systemName: state.isDownloaded ? "arrow.down.circle.fill" : "arrow.down.circle")
             }
         }
         .accessibilityIdentifier("downloadButton")
-        .disabled(inProgress)
+        .disabled(state.isDownloading)
     }
 
     private func toggle(isDownloaded: Bool) {

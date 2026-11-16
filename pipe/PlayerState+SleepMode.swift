@@ -34,15 +34,15 @@ extension PlayerState {
 
     /// Toggle audio-only vs video and re-load the current item at the same
     /// position so the switch actually changes which stream is downloaded.
-    /// The position rides through `pendingSeek` (not a post-hoc `seek`) because
-    /// a stale item takes the async refresh path, where an immediate seek would
-    /// land on the OLD player and the position would be lost when the fresh
-    /// stream finally loads at the saved-resume offset instead.
+    /// The position rides through the lifecycle's `startAt` (not a post-hoc
+    /// `seek`) because a stale item takes the async refresh path, where an
+    /// immediate seek would land on the OLD player and the position would be
+    /// lost when the fresh stream finally loads at the saved-resume offset.
     func toggleVideoMode() {
         videoMode.toggle()
         defaults.set(videoMode, forKey: videoModeKey)
         guard currentIndex >= 0, currentIndex < queue.count else { return }
-        if currentTime > 1 { pendingSeek = currentTime }
+        if currentTime > 1 { apply(.startAt(currentTime)) }
         playItem(queue[currentIndex])
     }
 }

@@ -1,13 +1,14 @@
 import Foundation
 import AVFoundation
 
-/// Re-resolves an item's stream URLs from its videoId when the stored URL is
-/// stale, expired, or dead, then plays the fresh URL. This fixes both the
-/// "paused overnight won't resume" and "long video ends early" symptoms, which
-/// share a root cause: time-limited googlevideo URLs captured at enqueue time.
-/// The lifecycle is already in `.resolving` when this runs (see +Engine).
+/// The lifecycle's `resolve` effect: fetch fresh stream URLs for an item from
+/// its videoId (stale, expired, or dead on arrival), then report back with the
+/// generation the fetch started under so a superseded load is ignored. This
+/// fixes both the "paused overnight won't resume" and "long video ends early"
+/// symptoms, which share a root cause: time-limited googlevideo URLs captured
+/// at enqueue time.
 extension PlayerState {
-    func refreshAndPlay(_ item: QueueItem) {
+    func resolveAndPlay(_ item: QueueItem, generation: Int) {
         // Reflect the now-playing metadata immediately so the UI isn't blank
         // while we fetch (playback itself starts once the fresh URL arrives).
         currentVideoId = item.videoId
@@ -21,17 +22,14 @@ extension PlayerState {
             let refreshed = await resolver.fresh(item)
             await MainActor.run {
                 guard let self else { return }
-                // Bail if the user moved on to a different item meanwhile.
-                guard self.currentVideoId == item.videoId else { return }
                 if let refreshed {
-                    self.updateQueueItem(refreshed)
-                    self.playItem(refreshed, refresh: .never)
+                    self.apply(.resolved(item: refreshed, generation: generation))
                 } else {
-                    // Re-resolution failed (offline/instance down): fall back to
-                    // the stored URL so a still-valid URL or the error path both
+                    // Re-resolution failed (offline/instance down): the stored URL
+                    // is tried as-is, so a still-valid URL or the error path both
                     // behave as before.
                     self.log.event("play", "refresh failed, using stored url", fields: ["videoId": item.videoId])
-                    self.playItem(item, refresh: .never)
+                    self.apply(.resolveFailed(item: item, generation: generation))
                 }
             }
         }
@@ -54,9 +52,9 @@ extension PlayerState {
 
     /// Full stop: tear everything down and clear all item-scoped state so
     /// nothing (sponsor segments, expected duration, video id) leaks into the
-    /// next playback session.
+    /// next playback session. The lifecycle bumps its generation, so an
+    /// in-flight async load cannot revive playback.
     func stop() {
-        playGeneration += 1  // an in-flight async load (HLS/composed) must not revive playback
         apply(.stop)
         teardownPlaybackObservers()
         releaseCurrentPlayer()

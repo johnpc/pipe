@@ -97,7 +97,7 @@ extension PlayerState {
             if !isPlaying { resume() }
             return
         }
-        pendingSeek = startAt
+        apply(.startAt(startAt))
         play(videoId: videoId, urlString: url, audioUrl: audioUrl, title: title, artist: artist, thumbnail: thumbnail, duration: duration)
     }
 }

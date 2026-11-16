@@ -9,14 +9,15 @@ enum NextItemPrefetchPolicy {
 
     /// The upcoming item to prefetch, or nil when none is due: there is no
     /// next item, the current one isn't near its end, the next item's URL will
-    /// still be fresh when it plays, or that item is already being fetched.
+    /// still be fresh when it plays, or a fetch for it is in flight or already
+    /// failed (`StreamResolution.isBusy`; the hand-off's own refresh retries).
     static func candidate(queue: [QueueItem], currentIndex: Int, currentTime: Double, duration: Double,
-                          now: Date, inFlight: String?, isLocal: (String) -> Bool) -> QueueItem? {
+                          now: Date, isLocal: (String) -> Bool) -> QueueItem? {
         guard duration > 0, currentIndex >= 0, currentIndex + 1 < queue.count else { return nil }
         let remaining = duration - currentTime
         guard remaining <= leadTime else { return nil }
         let next = queue[currentIndex + 1]
-        guard next.videoId != inFlight else { return nil }
+        guard !next.resolution.isBusy else { return nil }
         // Judge freshness as of when it will actually play, not now, so a URL
         // that expires during these last minutes is still caught.
         let playsAt = now.addingTimeInterval(max(0, remaining))

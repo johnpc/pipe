@@ -33,6 +33,20 @@ struct QueueItem: Identifiable, Equatable, Codable {
     /// Audio language the user picked for this item in the player; nil means
     /// the Settings preference. Kept so a URL refresh stays in that language.
     var audioLanguage: String? = nil
+    /// Progress of a background URL resolution for this item (prefetch of the
+    /// next item, or the resolve behind an instant "Add to queue"). In-memory
+    /// only; a relaunch starts over.
+    var resolveAttempt: ResolveAttempt = .none
+
+    /// Where this item's stream URLs stand. Derived from `resolvedAt` and
+    /// `resolveAttempt`, so every reader asks one question instead of two.
+    var resolution: StreamResolution {
+        switch resolveAttempt {
+        case .inFlight: return .resolving
+        case .failed: return .failed
+        case .none: return resolvedAt.map { .resolved($0) } ?? .pending
+        }
+    }
 
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
@@ -48,6 +62,29 @@ struct QueueItem: Identifiable, Equatable, Codable {
 
     /// URL to hand a Cast receiver: the proxied MP4 when available, else `url`.
     var castPlaybackURL: String { castUrl.isEmpty ? (url.isEmpty ? hlsUrl : url) : castUrl }
+}
+
+/// A background resolution in progress (`inFlight`) or one that failed, so the
+/// periodic prefetch neither starts a second fetch nor hammers the instance.
+/// The play path's own refresh is the retry after `failed`.
+enum ResolveAttempt: Equatable {
+    case none
+    case inFlight
+    case failed
+}
+
+/// The lifecycle of a queue item's stream URLs: queued from a list row with no
+/// URLs yet (`pending`), being fetched (`resolving`), fetched at a time
+/// (`resolved`; stale once older than `StreamFreshness.maxAge`), or a
+/// background fetch failed (`failed`; the play path refreshes before playing).
+enum StreamResolution: Equatable {
+    case pending
+    case resolving
+    case resolved(Date)
+    case failed
+
+    /// True when a background fetch should not be started for this item.
+    var isBusy: Bool { self == .resolving || self == .failed }
 }
 
 struct FollowedChannel: Codable, Identifiable, Equatable, Hashable {

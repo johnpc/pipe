@@ -18,9 +18,8 @@ struct UIKitBackgroundActivity: BackgroundActivity {
     }
 }
 
-/// State for moving from one queue item to the next without a gap: the
-/// background hold that keeps the app alive while the next stream loads, and
-/// the id of the upcoming item whose URL is being prefetched.
+/// The background hold that keeps the app alive while the next stream loads,
+/// so moving from one queue item to the next has no gap.
 final class ItemTransition {
     private let activity: BackgroundActivity
     private(set) var holdToken: UIBackgroundTaskIdentifier?
@@ -29,9 +28,6 @@ final class ItemTransition {
     private(set) var heldSince: Date?
     /// Called when iOS expires the hold before playback resumed.
     var onExpire: (() -> Void)?
-    /// Video id of the upcoming item whose stream URL is being (or was last)
-    /// prefetched, so the periodic tick doesn't start the same fetch twice.
-    var prefetching: String?
 
     init(activity: BackgroundActivity = UIKitBackgroundActivity()) {
         self.activity = activity

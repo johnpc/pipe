@@ -27,7 +27,7 @@ extension PlayerState {
             // from the exported/uploaded log without guessing.
             log.event("itemError", "giveUp", fields: ["videoId": item.videoId, "reason": reason])
         }
-        apply(.loadFailed(title: item.title, reason: reason, isLocal: isLocal))
+        apply(.loadFailed(item: item, reason: reason, isLocal: isLocal))
     }
 
     /// The item genuinely loaded: clear the retry budget so a later failure on

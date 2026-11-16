@@ -17,9 +17,9 @@ extension PlayerState {
         // Add to recents
         recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
 
-        // A pending chapter seek takes precedence over the saved-resume position.
-        if let target = pendingSeek {
-            pendingSeek = nil
+        // A requested start position (chapter jump, recovery, mode switch) takes
+        // precedence over the saved-resume position. `.playerStarted` consumes it.
+        if let target = lifecycle.startAt {
             currentTime = target
             player?.seek(to: CMTime(seconds: target, preferredTimescale: 1))
             log.event("play", "pendingSeek", fields: ["to": String(Int(target))])

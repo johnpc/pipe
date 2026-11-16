@@ -25,6 +25,19 @@ struct PlayerStateCastTests {
         #expect(player.currentTitle == "T")
     }
 
+    @Test func receiverPlaybackStateIsMirroredOntoThePhase() {
+        let (player, caster) = castingPlayer()
+        player.attachCast(player.cast!)
+        player.play(videoId: "v", urlString: "https://x/v.mp4", title: "T", artist: "A", thumbnail: "th", duration: 30)
+        #expect(player.phase == .playing)
+        caster.playbackState = .buffering
+        #expect(player.phase == .buffering && player.isBuffering)
+        caster.playbackState = .paused
+        #expect(player.phase == .paused && !player.isPlaying)
+        caster.playbackState = .playing
+        #expect(player.phase == .playing)
+    }
+
     @Test func pauseAndResumeDriveTheReceiver() {
         let (player, caster) = castingPlayer()
         player.play(videoId: "v", urlString: "https://x/v.mp4", title: "T", artist: "A", thumbnail: "th", duration: 30)

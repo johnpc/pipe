@@ -16,6 +16,9 @@ final class CastStore: ObservableObject {
     /// Receiver playback position, republished so the phone's scrubber can mirror
     /// the TV while casting.
     @Published private(set) var currentTime: Double = 0
+    /// What the receiver is doing with the loaded item; `PlayerState` mirrors
+    /// it onto the playback phase while casting.
+    @Published private(set) var playbackState: CastPlaybackState = .idle
 
     private let caster: Casting
     private let log: PlaybackLog
@@ -79,6 +82,7 @@ final class CastStore: ObservableObject {
         connectionState = caster.connectionState
         deviceName = caster.deviceName
         hasDevices = caster.isAvailable
+        playbackState = caster.playbackState
     }
 
     private func syncTime() {

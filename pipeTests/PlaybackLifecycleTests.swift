@@ -6,9 +6,12 @@ import AVFoundation
 /// The item state machine, transition by transition. Pure: no player, no
 /// network, no PlayerState.
 struct PlaybackLifecycleTests {
+    private let a = QueueItem(videoId: "a", title: "A", artist: "x", thumbnail: "", url: "https://x/a.mp4", audioUrl: "", duration: 100, uploadedDate: nil)
+    private let b = QueueItem(videoId: "b", title: "B", artist: "x", thumbnail: "", url: "https://x/b.mp4", audioUrl: "", duration: 100, uploadedDate: nil)
+
     private func loaded(refresh: Bool = false) -> PlaybackLifecycle {
         var l = PlaybackLifecycle()
-        _ = l.apply(.load(videoId: "a", refresh: refresh, casting: false))
+        _ = l.apply(.load(item: a, refresh: refresh, casting: false))
         return l
     }
 
@@ -21,22 +24,55 @@ struct PlaybackLifecycleTests {
 
     // MARK: Loading
 
-    @Test func loadingTakesTheHoldAndShowsLoading() {
+    @Test func loadingTakesTheHoldAndBuilds() {
         var l = PlaybackLifecycle()
-        #expect(l.apply(.load(videoId: "a", refresh: false, casting: false)) == [.beginHold])
+        #expect(l.apply(.load(item: a, refresh: false, casting: false)) == [.beginHold, .build(a, generation: 1)])
         #expect(l.phase == .loading)
         #expect(l.phase.intendsToPlay && l.phase.isWaiting)
     }
 
-    @Test func loadingWithRefreshIsResolving() {
+    @Test func loadingWithRefreshResolvesFirst() {
         var l = PlaybackLifecycle()
-        #expect(l.apply(.load(videoId: "a", refresh: true, casting: false)) == [.beginHold])
+        #expect(l.apply(.load(item: a, refresh: true, casting: false)) == [.beginHold, .resolve(a, generation: 1)])
         #expect(l.phase == .resolving)
+        var fresh = a; fresh.url = "https://x/fresh.mp4"
+        #expect(l.apply(.resolved(item: fresh, generation: 1)) == [.store(fresh), .build(fresh, generation: 1)])
+        #expect(l.phase == .loading)
     }
 
-    @Test func castingPlaysWithoutAHold() {
+    @Test func failedRefreshBuildsFromTheStoredURL() {
+        var l = loaded(refresh: true)
+        #expect(l.apply(.resolveFailed(item: a, generation: 1)) == [.build(a, generation: 1)])
+        #expect(l.phase == .loading)
+    }
+
+    @Test func aStaleResolveResultIsIgnored() {
+        var l = loaded(refresh: true)                       // generation 1, resolving a
+        _ = l.apply(.load(item: b, refresh: false, casting: false))  // user moved on: generation 2
+        #expect(l.apply(.resolved(item: a, generation: 1)) == [])
+        #expect(l.apply(.resolveFailed(item: a, generation: 1)) == [])
+        #expect(l.phase == .loading && l.itemId == "b")
+        #expect(l.isCurrent(2) && !l.isCurrent(1))
+    }
+
+    @Test func stopInvalidatesInFlightWork() {
+        var l = loaded(refresh: true)
+        _ = l.apply(.stop)
+        #expect(!l.isCurrent(1))
+        #expect(l.apply(.resolved(item: a, generation: 1)) == [])
+        #expect(l.phase == .idle)
+    }
+
+    @Test func castingHandsOffWithoutAHold() {
         var l = PlaybackLifecycle()
-        #expect(l.apply(.load(videoId: "a", refresh: false, casting: true)) == [.releaseHold("casting")])
+        #expect(l.apply(.load(item: a, refresh: false, casting: true)) == [.releaseHold("casting"), .cast(a)])
+        #expect(l.phase == .playing)
+    }
+
+    @Test func castingWithRefreshResolvesThenCasts() {
+        var l = PlaybackLifecycle()
+        #expect(l.apply(.load(item: a, refresh: true, casting: true)) == [.beginHold, .resolve(a, generation: 1)])
+        #expect(l.apply(.resolved(item: a, generation: 1)) == [.store(a), .releaseHold("casting"), .cast(a)])
         #expect(l.phase == .playing)
     }
 
@@ -44,9 +80,9 @@ struct PlaybackLifecycleTests {
         var l = loaded()
         l.loadFailures = 1
         l.prematureEnds = 1
-        _ = l.apply(.load(videoId: "a", refresh: true, casting: false))  // same item: kept
+        _ = l.apply(.load(item: a, refresh: true, casting: false))  // same item: kept
         #expect(l.loadFailures == 1 && l.prematureEnds == 1)
-        _ = l.apply(.load(videoId: "b", refresh: false, casting: false))
+        _ = l.apply(.load(item: b, refresh: false, casting: false))
         #expect(l.loadFailures == 0 && l.prematureEnds == 0)
     }
 
@@ -56,6 +92,25 @@ struct PlaybackLifecycleTests {
         #expect(effects == [.surfaceError("Couldn't play T"), .releaseHold("bad url")])
         #expect(l.phase == .failed("Couldn't play T"))
         #expect(!l.phase.intendsToPlay)
+    }
+
+    // MARK: Start position
+
+    @Test func startPositionSurvivesTheLoadAndIsConsumedByTheStart() {
+        var l = PlaybackLifecycle()
+        _ = l.apply(.startAt(90))
+        _ = l.apply(.load(item: a, refresh: true, casting: false))
+        _ = l.apply(.resolved(item: a, generation: 1))
+        #expect(l.startAt == 90)
+        _ = l.apply(.playerStarted)
+        #expect(l.startAt == nil)
+    }
+
+    @Test func givingUpDropsAPendingStartPosition() {
+        var l = loaded()
+        _ = l.apply(.startAt(42))
+        _ = l.apply(.unplayable(title: "T"))
+        #expect(l.startAt == nil)
     }
 
     // MARK: Player status
@@ -104,6 +159,30 @@ struct PlaybackLifecycleTests {
         #expect(l.phase.isFailed)
     }
 
+    // MARK: Receiver (casting)
+
+    @Test func receiverStateIsMirroredWhileCasting() {
+        var l = PlaybackLifecycle()
+        _ = l.apply(.load(item: a, refresh: false, casting: true))
+        _ = l.apply(.receiver(.buffering))
+        #expect(l.phase == .buffering)
+        _ = l.apply(.receiver(.playing))
+        #expect(l.phase == .playing)
+        _ = l.apply(.receiver(.paused))
+        #expect(l.phase == .paused)
+        _ = l.apply(.receiver(.idle))          // the finish arrives as `ended`, not here
+        #expect(l.phase == .paused)
+    }
+
+    @Test func receiverStateIsIgnoredWhenNotCasting() {
+        var l = playing()
+        _ = l.apply(.receiver(.paused))
+        #expect(l.phase == .playing)
+        var idle = PlaybackLifecycle()
+        _ = idle.apply(.receiver(.playing))
+        #expect(idle.phase == .idle)
+    }
+
     // MARK: User transport
 
     @Test func pauseAndResume() {
@@ -139,51 +218,58 @@ struct PlaybackLifecycleTests {
     @Test func genuineFinishAdvances() {
         var l = playing()
         l.prematureEnds = 1
-        #expect(l.apply(.ended(reached: 100, expected: 100)) == [.advance])
+        #expect(l.apply(.ended(item: a, reached: 100, expected: 100)) == [.advance])
         #expect(l.prematureEnds == 0)
         #expect(l.phase == .playing)  // the next item's load sets the phase
     }
 
     @Test func unknownDurationCountsAsFinished() {
         var l = playing()
-        #expect(l.apply(.ended(reached: 5, expected: nil)) == [.advance])
+        #expect(l.apply(.ended(item: a, reached: 5, expected: nil)) == [.advance])
     }
 
-    @Test func prematureEndRetriesWithAFreshURLFromWhereItDied() {
+    @Test func prematureEndResolvesAFreshURLAndResumesWhereItDied() {
         var l = playing()
-        #expect(l.apply(.ended(reached: 1800, expected: 3600)) == [.retryWithFreshURL(seekTo: 1800)])
+        #expect(l.apply(.ended(item: a, reached: 1800, expected: 3600)) == [.beginHold, .resolve(a, generation: 2)])
         #expect(l.phase == .resolving)
         #expect(l.prematureEnds == 1)
+        #expect(l.startAt == 1800)
+    }
+
+    @Test func prematureEndWithoutAnItemAdvances() {
+        var l = playing()
+        #expect(l.apply(.ended(item: nil, reached: 1800, expected: 3600)) == [.advance])
     }
 
     @Test func prematureEndGivesUpAfterMaxRetriesAndAdvances() {
         var l = playing()
         l.prematureEnds = EndOfItemPolicy.maxRetries
-        #expect(l.apply(.ended(reached: 1800, expected: 3600)) == [.advance])
+        #expect(l.apply(.ended(item: a, reached: 1800, expected: 3600)) == [.advance])
         #expect(l.prematureEnds == 0)
     }
 
     // MARK: Load failure
 
-    @Test func loadFailureRetriesWithAFreshURL() {
+    @Test func loadFailureResolvesAFreshURL() {
         var l = loaded()
-        #expect(l.apply(.loadFailed(title: "T", reason: "r", isLocal: false)) == [.retryWithFreshURL(seekTo: nil)])
+        #expect(l.apply(.loadFailed(item: a, reason: "r", isLocal: false)) == [.beginHold, .resolve(a, generation: 2)])
         #expect(l.phase == .resolving)
         #expect(l.loadFailures == 1)
+        #expect(l.startAt == nil)
     }
 
     @Test func loadFailureGivesUpAfterMaxRetries() {
         var l = loaded()
         l.loadFailures = ItemFailurePolicy.maxRetries
-        let message = ItemFailurePolicy.failureMessage(title: "T", reason: "no connection")
-        #expect(l.apply(.loadFailed(title: "T", reason: "no connection", isLocal: false)) == [.surfaceError(message), .releaseHold("gave up")])
+        let message = ItemFailurePolicy.failureMessage(title: "A", reason: "no connection")
+        #expect(l.apply(.loadFailed(item: a, reason: "no connection", isLocal: false)) == [.surfaceError(message), .releaseHold("gave up")])
         #expect(l.phase == .failed(message))
         #expect(l.loadFailures == 0)
     }
 
     @Test func localFileFailureGivesUpImmediately() {
         var l = loaded()
-        _ = l.apply(.loadFailed(title: "T", reason: "corrupt", isLocal: true))
+        _ = l.apply(.loadFailed(item: a, reason: "corrupt", isLocal: true))
         #expect(l.phase.isFailed)
     }
 

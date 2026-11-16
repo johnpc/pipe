@@ -10,9 +10,9 @@ struct NextItemPrefetchPolicyTests {
     }
 
     private func candidate(_ queue: [QueueItem], index: Int = 0, time: Double = 950, duration: Double = 1000,
-                           inFlight: String? = nil, local: Set<String> = []) -> String? {
+                           local: Set<String> = []) -> String? {
         NextItemPrefetchPolicy.candidate(queue: queue, currentIndex: index, currentTime: time, duration: duration,
-                                         now: now, inFlight: inFlight, isLocal: { local.contains($0) })?.videoId
+                                         now: now, isLocal: { local.contains($0) })?.videoId
     }
 
     @Test func staleNextItemNearTheEndIsDue() {
@@ -52,7 +52,11 @@ struct NextItemPrefetchPolicyTests {
 
     @Test func inFlightAndLocalItemsAreSkipped() {
         let q = [item("a", resolvedAt: now), item("b", resolvedAt: nil)]
-        #expect(candidate(q, inFlight: "b") == nil)
+        var busy = q
+        busy[1].resolveAttempt = .inFlight
+        #expect(candidate(busy) == nil)
+        busy[1].resolveAttempt = .failed
+        #expect(candidate(busy) == nil)  // parked after a failed fetch; the hand-off retries
         #expect(candidate(q, local: ["b"]) == nil)
     }
 }

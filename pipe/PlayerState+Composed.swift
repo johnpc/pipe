@@ -7,8 +7,7 @@ import AVFoundation
 /// `fallback` plays, so an instance without video-only tracks (or a dead track
 /// URL) behaves as before.
 extension PlayerState {
-    func startComposed(_ item: QueueItem, pair: ComposedPlaybackLogic.Pair, fallback: URL) {
-        let generation = playGeneration
+    func startComposed(_ item: QueueItem, pair: ComposedPlaybackLogic.Pair, fallback: URL, generation: Int) {
         // The lifecycle is in .loading (spinner + pause glyph) while the tracks load.
         log.event("play", "composing", fields: ["videoId": item.videoId])
         Task { [weak self] in
@@ -16,7 +15,7 @@ extension PlayerState {
             await MainActor.run {
                 // A newer load (next item, mode toggle, language switch) owns
                 // the player now; installing this one would overlap audio.
-                guard let self, self.playGeneration == generation else { return }
+                guard let self, self.lifecycle.isCurrent(generation) else { return }
                 self.finishComposed(item, built: built, fallback: fallback)
             }
         }

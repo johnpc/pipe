@@ -8,6 +8,16 @@ enum CastConnectionState: Equatable {
     case connected
 }
 
+/// What the receiver is doing with the loaded item, mirrored onto the phone's
+/// `PlaybackPhase` while casting. `idle` covers "nothing loaded" and "finished"
+/// (the finish itself is reported through `onEnded`).
+enum CastPlaybackState: Equatable {
+    case idle
+    case buffering
+    case playing
+    case paused
+}
+
 /// Everything a Cast receiver needs to start an item. Built by `CastLogic` from a
 /// resolved stream — always the full A/V video URL (never audio-only), since we
 /// cast to a TV. `startTime` lets a mid-video handoff resume where the phone was.
@@ -36,6 +46,8 @@ protocol Casting: AnyObject {
     /// Current playback position on the receiver (seconds), for mirroring the
     /// phone's scrubber and resuming locally when the session ends.
     var currentTime: Double { get }
+    /// Whether the receiver is playing, paused, or buffering the loaded item.
+    var playbackState: CastPlaybackState { get }
     /// SDK-state snapshot for diagnostics (cast state, device count, whether
     /// discovery is active). Logged when the user taps Cast so a "nothing
     /// happens" report is explained by the actual state — e.g. no devices found
@@ -73,6 +85,7 @@ final class NoopCaster: Casting {
     var connectionState: CastConnectionState { .disconnected }
     var deviceName: String? { nil }
     var currentTime: Double { 0 }
+    var playbackState: CastPlaybackState { .idle }
     var diagnostics: [String: String] { ["caster": "noop"] }
     func load(_ media: CastMedia) {}
     func play() {}
