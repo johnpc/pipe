@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Empty-state screen for Search: inline field + popular-channel suggestions.
+/// Empty-state screen for Search: inline field, recent searches, and chips for
+/// the channels trending on the configured instance.
 struct SearchSuggestionsView: View {
     @Binding var query: String
     let suggestions: [String]
@@ -48,8 +49,10 @@ struct SearchSuggestionsView: View {
                 }
                 .padding(.horizontal, 40)
 
-                Text("Or try one of these popular channels")
-                    .foregroundStyle(.secondary)
+                if !suggestions.isEmpty {
+                    Text("Or try a channel that's trending")
+                        .foregroundStyle(.secondary)
+                }
 
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                     ForEach(suggestions, id: \.self) { suggestion in

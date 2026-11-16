@@ -47,6 +47,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import demo_catalog  # noqa: E402  (sibling module; stdlib-only)
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
 DEFAULT_FIXTURES = REPO / "pipe" / "Fixtures"
@@ -66,10 +69,19 @@ WATCH_RE = re.compile(r"/watch\?v=([^&]+)")
 
 
 class Fixtures:
-    """Fixture JSON plus the per-id catalogue, independent of HTTP."""
+    """Fixture JSON plus the per-id catalogue, independent of HTTP.
 
-    def __init__(self, fixtures_dir: Path):
+    `catalog` is "fixtures" (real captured titles, what the UI tests assert on)
+    or "demo" (plainly-labelled placeholders, what a reviewer or demo user sees;
+    the static export always uses this)."""
+
+    def __init__(self, fixtures_dir: Path, catalog: str = "fixtures"):
         self.dir = fixtures_dir
+        self.catalog = catalog
+
+    @property
+    def demo(self) -> bool:
+        return self.catalog == "demo"
 
     def load(self, name: str):
         path = self.dir / f"{name}.json"
@@ -145,6 +157,8 @@ def streams_for(fixtures: Fixtures, video_id: str, base: str):
         doc["uploader"] = video["uploader"]
         if video["duration"]:
             doc["duration"] = video["duration"]
+    if fixtures.demo:
+        doc = demo_catalog.demoize_streams(doc, video_id)
     doc = rewrite_images(doc, f"{base}/media/thumb.jpg")
     doc["duration"] = 30  # the synthetic clip's real length, so end-of-item is genuine
     doc["hls"] = f"{base}/media/hls/master.m3u8"
@@ -164,24 +178,32 @@ def streams_for(fixtures: Fixtures, video_id: str, base: str):
 def route(fixtures: Fixtures, path: str, query: str, base: str):
     """(status, json-serialisable body) for an API path, or None if not an API path."""
     qs = parse_qs(query)
+    thumb = f"{base}/media/thumb.jpg"
+
+    def doc(name, transform=None):
+        loaded = fixtures.load(name)
+        if fixtures.demo:
+            loaded = transform(loaded) if transform else demo_catalog.demoize(loaded)
+        return rewrite_images(loaded, thumb)
+
     if path == "/healthz":
         return 200, {"ok": True}
     if path.startswith("/search"):
-        return 200, rewrite_images(fixtures.load("search"), f"{base}/media/thumb.jpg")
+        return 200, doc("search")
     if path.startswith("/trending"):
-        return 200, rewrite_images(fixtures.load("trending"), f"{base}/media/thumb.jpg")
+        return 200, doc("trending")
     if path.startswith("/channels/tabs"):
         data = (qs.get("data") or [""])[0]
-        name = "channelPlaylistTab" if "playlist" in data else "channelTab"
-        return 200, rewrite_images(fixtures.load(name), f"{base}/media/thumb.jpg")
+        return 200, doc("channelPlaylistTab" if "playlist" in data else "channelTab")
     if path.startswith("/nextpage/"):
         return 200, {"content": [], "nextpage": None}
     if path.startswith("/channel/"):
-        return 200, rewrite_images(fixtures.load("channel"), f"{base}/media/thumb.jpg")
+        return 200, doc("channel", demo_catalog.demoize_channel)
     if path.startswith("/playlists/"):
-        return 200, rewrite_images(fixtures.load("playlist"), f"{base}/media/thumb.jpg")
+        playlist_id = unquote(path[len("/playlists/"):])
+        return 200, doc("playlist", lambda d: demo_catalog.demoize_playlist(d, playlist_id))
     if path.startswith("/comments/"):
-        return 200, rewrite_images(fixtures.load("comments"), f"{base}/media/thumb.jpg")
+        return 200, demo_catalog.demo_comments() if fixtures.demo else doc("comments")
     if path.startswith("/streams/"):
         video_id = unquote(path[len("/streams/"):])
         if not video_id:
@@ -297,7 +319,7 @@ def export_static(fixtures: Fixtures, media: Path, out: Path, base: str):
         for row in (fixtures.load("channelPlaylistTab") or {}).get("content", []):
             pid = (row.get("url") or "").split("list=")[-1]
             if pid:
-                write(f"/playlists/{pid}", rewrite_images(playlist, f"{base}/media/thumb.jpg"))
+                write(f"/playlists/{pid}", route(fixtures, f"/playlists/{pid}", "", base)[1])
     if (out / "media").exists():
         shutil.rmtree(out / "media")
     shutil.copytree(media, out / "media")
@@ -344,13 +366,16 @@ def main(argv=None):
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--fixtures", type=Path, default=DEFAULT_FIXTURES)
     ap.add_argument("--media", type=Path, default=DEFAULT_MEDIA)
+    ap.add_argument("--catalog", choices=["fixtures", "demo"], default=None,
+                    help="fixtures: real captured titles (UI tests; the default when serving). "
+                         "demo: labelled placeholders (the default for --export-static)")
     ap.add_argument("--export-static", type=Path, metavar="DIR", help="write the API as static files and exit")
     ap.add_argument("--base-url", default="", help="public base URL baked into exported stream/media links")
     ap.add_argument("--daemon", action="store_true", help="detach and keep serving after this shell exits")
     ap.add_argument("--log", type=Path, default=Path("/tmp/pipe-fake.log"), help="request log when daemonized")
     ap.add_argument("--pidfile", type=Path, default=Path("/tmp/pipe-fake.pid"), help="pid file when daemonized")
     args = ap.parse_args(argv)
-    fixtures = Fixtures(args.fixtures)
+    fixtures = Fixtures(args.fixtures, catalog=args.catalog or ("demo" if args.export_static else "fixtures"))
     if args.export_static:
         if not args.base_url:
             ap.error("--export-static needs --base-url (the URL the files will be served from)")

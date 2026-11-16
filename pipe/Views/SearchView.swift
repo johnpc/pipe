@@ -9,7 +9,7 @@ struct SearchView: View {
     @State private var query = ""
     @State private var results: [SearchItem] = []
     @State private var loading = false
-    private let suggestions = SearchLogic.suggestions
+    @State private var suggestions: [String] = []
     var body: some View {
         Group {
             if results.isEmpty && !loading {
@@ -30,6 +30,7 @@ struct SearchView: View {
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search")
         .onSubmit(of: .search) { search(query) }
         .task(id: query) { await autoSearch(query) }
+        .task(id: settings.instanceURL) { suggestions = await SearchLogic.loadChannelSuggestions() }
         .onChange(of: query) { _, q in if q.isEmpty { results = [] } }
         .overlay { if loading { ProgressView() } }
     }

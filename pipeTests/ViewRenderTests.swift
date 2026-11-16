@@ -133,11 +133,11 @@ final class ViewRenderTests: XCTestCase {
     }
 
     func testRenderSearchSuggestionsView() {
-        render(SearchSuggestionsView(query: .constant(""), suggestions: SearchLogic.suggestions, onSearch: { _ in }))
+        render(SearchSuggestionsView(query: .constant(""), suggestions: ["Demo Channel A", "Demo Channel B"], onSearch: { _ in }))
     }
 
     func testRenderSearchSuggestionsViewWithHistory() {
-        render(SearchSuggestionsView(query: .constant(""), suggestions: SearchLogic.suggestions, history: ["jazz", "lofi"], onSearch: { _ in }))
+        render(SearchSuggestionsView(query: .constant(""), suggestions: ["Demo Channel A", "Demo Channel B"], history: ["jazz", "lofi"], onSearch: { _ in }))
     }
 
     func testRenderSettingsView() {

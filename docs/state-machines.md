@@ -138,3 +138,9 @@ Interruption began/ended and route changes are decided by the pure
 `MockMode`: `--uitest-mock` (in-process fixtures, `/streams/<id>` personalized
 by `FixtureCatalog`) or `--uitest-instance <url>` (the fake Piped backend,
 `scripts/fake_piped`). Both wipe persisted state and keep the Cast SDK inert.
+
+## Instance choice — `SettingsLogic.initialInstance` (explicit, decided once)
+
+stored URL → that; else prior app data present → `legacyInstance` (upgrade keeps
+what the user had); else `defaultInstance` (the hosted demo library). Persisted on
+first launch so the decision is never re-evaluated.

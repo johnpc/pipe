@@ -2,17 +2,30 @@ import Foundation
 
 /// Pure, testable search-related data and helpers, kept out of the view.
 enum SearchLogic {
-    /// Default popular-channel suggestions shown on the empty search screen.
-    static let suggestions = [
-        "Joe Rogan Experience",
-        "Lex Fridman",
-        "Huberman Lab",
-        "MrBeast",
-        "Veritasium",
-        "Marques Brownlee",
-        "Kurzgesagt",
-        "3Blue1Brown"
-    ]
+    /// How many channel chips the empty search screen offers.
+    static let maxSuggestions = 8
+
+    /// Channel suggestions for the empty search screen: the uploaders of what
+    /// is trending on the configured instance, deduplicated in order. Nothing
+    /// is hardcoded, so the chips describe the instance the user chose — the
+    /// demo library shows demo channels, a real instance shows real ones.
+    static func channelSuggestions(from trending: [RelatedStream], limit: Int = maxSuggestions) -> [String] {
+        var seen: Set<String> = []
+        var out: [String] = []
+        for name in trending.compactMap(\.uploaderName) {
+            let trimmed = name.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty, seen.insert(trimmed).inserted else { continue }
+            out.append(trimmed)
+            if out.count == limit { break }
+        }
+        return out
+    }
+
+    /// Fetch the suggestions from the instance; empty when it can't be reached
+    /// (the empty screen then just shows the field and recent searches).
+    static func loadChannelSuggestions() async -> [String] {
+        channelSuggestions(from: (try? await PipedAPI.trending()) ?? [])
+    }
 
     /// Whether a query is submittable (non-empty after trimming whitespace).
     static func isSubmittable(_ query: String) -> Bool {
@@ -34,6 +47,37 @@ enum SearchLogic {
 
 /// Pure helpers for Settings: instance-URL normalization and search history.
 enum SettingsLogic {
+    /// Keys whose presence proves the app has been used before the demo default
+    /// existed (queue, history, follows, saves, a chosen speed).
+    static let priorDataKeys = ["savedQueue", "recentItems", "followedChannels", "savedItems", "playbackSpeed"]
+
+    /// Whether `defaults` carries data from an earlier install. Only *content*
+    /// counts: the stores persist empty arrays at launch (before Settings is
+    /// created), so a key's mere presence is true on a brand-new install.
+    static func hasPriorData(in defaults: UserDefaults) -> Bool {
+        priorDataKeys.contains { hasContent(defaults.object(forKey: $0)) }
+    }
+
+    /// A stored value that proves use: a non-empty JSON blob or array, or a
+    /// chosen (non-zero) number.
+    static func hasContent(_ value: Any?) -> Bool {
+        switch value {
+        case nil: return false
+        case let data as Data: return data.count > 2          // more than "[]"
+        case let array as [Any]: return !array.isEmpty
+        case let number as NSNumber: return number.doubleValue != 0
+        default: return true
+        }
+    }
+
+    /// The instance to start on: the stored choice; else the instance earlier
+    /// installs were using (so an upgrade changes nothing for them); else the
+    /// demo library for a genuinely fresh install.
+    static func initialInstance(stored: String?, hasPriorData: Bool) -> String {
+        if let stored, !stored.isEmpty { return stored }
+        return hasPriorData ? AppSettings.legacyInstance : AppSettings.defaultInstance
+    }
+
     /// Normalize a user-entered instance URL: trim, default scheme to https,
     /// drop a trailing slash. Falls back to the default when blank.
     static func normalizedInstance(_ raw: String) -> String {
