@@ -79,5 +79,8 @@ struct TabButton: View {
             .foregroundColor(isSelected ? .accentColor : .secondary)
             .frame(maxWidth: .infinity)
         }
+        // Stable id for UI tests: the label alone collides with other controls
+        // (the search field's own "Search" button).
+        .accessibilityIdentifier("tab-\(label)")
     }
 }

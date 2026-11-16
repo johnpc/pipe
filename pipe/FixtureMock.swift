@@ -23,7 +23,9 @@ enum FixtureRouter {
 
 /// URLProtocol that answers Piped API requests from bundled JSON fixtures, so
 /// the app can run against deterministic real-shaped data in UI tests — no live
-/// backend, no flakiness, no skips. Activated only via `MockMode`.
+/// backend, no flakiness, no skips. `/streams/<id>` answers with that video's
+/// own title (see `FixtureCatalog`), so a scenario can assert that the video it
+/// tapped is the one that plays. Activated only via `MockMode`.
 final class FixtureURLProtocol: URLProtocol {
     /// Test seam: overridable loader so the routing can be unit-tested without
     /// reading from the app bundle.
@@ -76,7 +78,15 @@ final class FixtureURLProtocol: URLProtocol {
             client?.urlProtocol(self, didFailWithError: URLError(.fileDoesNotExist))
             return
         }
-        respond(url: url, status: 200, body: data, contentType: "application/json")
+        respond(url: url, status: 200, body: FixtureURLProtocol.personalized(data, for: url), contentType: "application/json")
+    }
+
+    /// The streams template rewritten for the requested id when the catalog
+    /// knows it; other requests (and unknown ids) pass through unchanged.
+    static func personalized(_ data: Data, for url: URL) -> Data {
+        guard let id = FixtureCatalog.videoId(fromStreamsPath: url.path),
+              let video = FixtureCatalog.video(id, loader: loader) else { return data }
+        return FixtureCatalog.personalize(data, for: video)
     }
 
     private func respond(url: URL, status: Int, body: Data, contentType: String) {

@@ -25,8 +25,9 @@ struct PlayerPrematureEndTests {
         #expect(player.prematureEndRetries == 1)
         #expect(buffer.exportText().contains("recover reload"))
         // Recovery re-resolves the (likely expired) URL rather than reloading the
-        // dead one: the item is marked stale and it resumes from where it died.
-        #expect(player.queue.first?.resolvedAt == nil)  // forced refresh
+        // dead one, and resumes from where it died.
+        #expect(player.phase == .resolving)
+        #expect(buffer.exportText().contains("refreshing stale url"))
         #expect(player.pendingSeek == 1800)             // seek target set for reload
     }
 

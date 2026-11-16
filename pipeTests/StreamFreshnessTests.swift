@@ -75,7 +75,7 @@ struct StreamReresolveTests {
         defer { PipedAPI.session = .shared }
 
         let stale = QueueItem(videoId: "abc", title: "Old", artist: "A", thumbnail: "", url: "https://expired/old.mp4", audioUrl: "https://expired/old.m4a", duration: 100, uploadedDate: nil)
-        let fresh = try #require(await PlayerState.reresolve(stale))
+        let fresh = try #require(await PipedStreamResolver().fresh(stale))
         #expect(fresh.videoId == "abc")           // identity preserved
         #expect(fresh.url == "https://fresh.example/video.mp4")
         #expect(fresh.audioUrl == "https://fresh.example/audio.m4a")
@@ -87,7 +87,7 @@ struct StreamReresolveTests {
         MockURLProtocol.stub(json: "not json", status: 500)
         defer { PipedAPI.session = .shared }
         let stale = QueueItem(videoId: "abc", title: "Old", artist: "A", thumbnail: "", url: "u", audioUrl: "", duration: 100, uploadedDate: nil)
-        let result = await PlayerState.reresolve(stale)
+        let result = await PipedStreamResolver().fresh(stale)
         #expect(result == nil)
     }
 }

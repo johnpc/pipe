@@ -15,9 +15,14 @@ import XCTest
 /// generated file is mechanical and kept in sync by a quality gate.
 ///
 /// The app launches in mock mode (`--uitest-mock`), serving bundled real Piped
-/// fixtures, so every flow is deterministic. A scenario (or feature) tagged
-/// `@fail-streams` additionally launches with `--uitest-fail-streams` to make
-/// `/streams/` requests fail and exercise the Retry UI.
+/// fixtures, so every flow is deterministic. Tags change the launch:
+///   `@fail-streams`   `/streams/` requests fail (network error) → Retry UI
+///   `@error-streams`  `/streams/` returns a Piped error envelope
+///   `@down-instance`  `/streams/` answers 502 like a dead instance
+///   `@fake-server`    talk to the fake Piped backend over HTTP instead of
+///                     in-process fixtures (`--uitest-instance <url>`), so the
+///                     scenario plays real media (scripts/fake_piped)
+/// There is no skip path: every scenario must pass, every time.
 ///
 /// Base class only: the generator emits one subclass per feature file so CI's
 /// parallel simulators can split the suite (Xcode parallelizes by class).
@@ -41,6 +46,7 @@ class AcceptanceTests: XCTestCase {
         if scenario.tags.contains("@fail-streams") { args.append("--uitest-fail-streams") }
         if scenario.tags.contains("@error-streams") { args.append("--uitest-error-streams") }
         if scenario.tags.contains("@down-instance") { args.append("--uitest-down-instance") }
+        if scenario.tags.contains("@fake-server") { args = ["--uitest-instance", StepDefinitions.fakeServerURL] }
         app.launchArguments = args
         app.launch()
 

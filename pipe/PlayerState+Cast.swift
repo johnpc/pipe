@@ -52,6 +52,7 @@ extension PlayerState {
         // redundant loadMedia aborts the in-flight one and restarts playback.
         if castLoadedVideoId == item.videoId { return }
         castLoadedVideoId = item.videoId
+        apply(.load(videoId: item.videoId, refresh: false, casting: true))
         teardownPlaybackObservers()
         releaseCurrentPlayer()
 
@@ -66,7 +67,6 @@ extension PlayerState {
 
         log.event("cast", "load", fields: ["videoId": item.videoId, "from": String(Int(savedPos))])
         cast.load(CastLogic.media(from: item, startTime: savedPos))
-        isPlaying = true
         observeCastTime(cast)
         updateNowPlaying()
     }

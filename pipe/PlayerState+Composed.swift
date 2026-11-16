@@ -9,10 +9,7 @@ import AVFoundation
 extension PlayerState {
     func startComposed(_ item: QueueItem, pair: ComposedPlaybackLogic.Pair, fallback: URL) {
         let generation = playGeneration
-        // Show intent (playing + spinner) while the tracks load; the observers
-        // that would otherwise maintain these aren't installed yet.
-        isPlaying = true
-        isBuffering = true
+        // The lifecycle is in .loading (spinner + pause glyph) while the tracks load.
         log.event("play", "composing", fields: ["videoId": item.videoId])
         Task { [weak self] in
             let built = await Self.compose(pair)

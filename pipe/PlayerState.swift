@@ -3,8 +3,12 @@ import MediaPlayer
 import Combine
 
 class PlayerState: ObservableObject {
+    /// One-shot error channel: ContentView turns a non-nil value into a toast
+    /// and clears it. The lasting state lives in `phase` (`.failed`).
     @Published var error: String?
-    @Published var isPlaying = false
+    /// The item state machine (see `PlaybackLifecycle`). Mutated only through
+    /// `apply(_:)` so phase and retry bookkeeping always agree.
+    @Published var lifecycle = PlaybackLifecycle()
     @Published var currentTime: Double = 0
     @Published var duration: Double = 0
     @Published var currentTitle: String?
@@ -21,10 +25,15 @@ class PlayerState: ObservableObject {
     @Published var stopAfterCurrentEpisode = false
     /// Active chapter title at the current time; drives the now-playing label.
     @Published var currentChapterTitle: String?
-    /// True while the player intends to play but audio hasn't started (initial
-    /// buffering / rebuffering). Drives the spinner on the play controls so the
-    /// wait after "Loading..." is visible instead of a silent dead pause button.
-    @Published var isBuffering = false
+
+    /// Where the current item is in its life; the single source of truth the
+    /// derived flags below read from.
+    var phase: PlaybackPhase { lifecycle.phase }
+    /// The player intends to produce audio (pause glyph shown).
+    var isPlaying: Bool { phase.intendsToPlay }
+    /// Intends to play but nothing is audible yet (spinner shown) — initial
+    /// resolve/load/buffer or a mid-play rebuffer.
+    var isBuffering: Bool { phase.isWaiting }
 
     var sleepTimer: Timer?
     var chaptersByVideo: [String: [Chapter]] = [:]  // chapters keyed by video id
@@ -62,12 +71,20 @@ class PlayerState: ObservableObject {
     /// Piped-reported duration (seconds) of the current item, used to detect an
     /// end-of-item that fires suspiciously early (a truncated/expired stream).
     var expectedDuration: Double?
-    /// How many times we've reloaded the current item to recover a premature
-    /// end, so recovery is bounded and never loops forever.
-    var prematureEndRetries = 0
-    /// How many times we've re-resolved the current item after it failed to load
-    /// at all (dead-on-arrival URL), so that recovery is likewise bounded.
-    var itemFailureRetries = 0
+    /// Reloads of the current item to recover a premature end (bounded by
+    /// `EndOfItemPolicy`). Lives in the lifecycle; exposed for tests/logs.
+    var prematureEndRetries: Int {
+        get { lifecycle.prematureEnds }
+        set { lifecycle.prematureEnds = newValue }
+    }
+    /// Re-resolves of the current item after it failed to load at all (bounded
+    /// by `ItemFailurePolicy`). Lives in the lifecycle; exposed for tests/logs.
+    var itemFailureRetries: Int {
+        get { lifecycle.loadFailures }
+        set { lifecycle.loadFailures = newValue }
+    }
+    /// Mints fresh stream URLs (injectable; see `StreamResolver`).
+    var resolver: StreamResolving = PipedStreamResolver()
     /// Last 30s bucket for which a progress heartbeat was logged (dedupes the
     /// 5s time-observer ticks down to ~one heartbeat per 30s).
     var lastHeartbeatBucket = -1

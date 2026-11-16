@@ -18,7 +18,7 @@ extension PlayerState {
         observers.failedEnd = NotificationCenter.default.addObserver(forName: .AVPlayerItemFailedToPlayToEndTime, object: player?.currentItem, queue: .main) { [weak self] note in
             let err = note.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
             self?.log.event("itemError", "failedToPlayToEnd", fields: ["error": err?.localizedDescription ?? "unknown"])
-            self?.handlePrematureEnd()
+            self?.handlePlaybackEnded()
         }
 
         // Recover from involuntary stalls (audio stream buffer underruns) that

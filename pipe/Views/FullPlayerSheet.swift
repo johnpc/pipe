@@ -22,6 +22,11 @@ struct FullPlayerSheet: View {
                 
                 Text(player.currentTitle ?? "").font(.title3).bold().lineLimit(2).multilineTextAlignment(.center).padding(.horizontal)
                 Text(player.currentArtist ?? "").foregroundStyle(.secondary)
+                if let status = player.phase.statusText {
+                    Text(status).font(.caption)
+                        .foregroundStyle(player.phase.isFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                        .accessibilityIdentifier("playerStatus")
+                }
                 
                 PlayerModeControls(player: player, detail: detail)
 
@@ -34,9 +39,9 @@ struct FullPlayerSheet: View {
                     ), in: 0...max(player.duration, 1))
                     .tint(.accentColor)
                     HStack {
-                        Text(formatTime(player.currentTime)).font(.caption)
+                        Text(formatTime(player.currentTime)).font(.caption).accessibilityIdentifier("elapsedTime")
                         Spacer()
-                        Text(formatTime(player.duration)).font(.caption)
+                        Text(formatTime(player.duration)).font(.caption).accessibilityIdentifier("totalTime")
                     }.foregroundStyle(.secondary)
                     if let chapter = player.currentChapterTitle {
                         Label(chapter, systemImage: "list.bullet")
@@ -59,6 +64,7 @@ struct FullPlayerSheet: View {
                     }
                     .accessibilityIdentifier("playPauseButton")
                     .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+                    .accessibilityValue(player.phase.label)
                     Button { player.skip(10) } label: { Image(systemName: "goforward.10").font(.title2) }
                     Button { player.playNext() } label: { Image(systemName: "forward.fill").font(.title2) }
                         .disabled(player.currentIndex >= player.queue.count - 1)

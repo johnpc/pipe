@@ -15,30 +15,36 @@ extension PlayerState {
                 playItem(queue[currentIndex])
             } else {
                 cast?.play()
+                apply(.resume)
             }
-            isPlaying = true
             log.event("cast", "resume", fields: ["at": String(Int(currentTime))])
             updateNowPlaying()
             return
         }
+        guard currentIndex >= 0, currentIndex < queue.count else { return }
+        // A failed item has a dead player: pressing play means "try again", so
+        // start over with a fresh URL (the retry budget was reset at give-up).
+        if phase.isFailed {
+            log.event("transport", "retry after failure", fields: ["videoId": queue[currentIndex].videoId])
+            playItem(queue[currentIndex], refresh: .force)
+            return
+        }
         // After a cold launch the queue is restored but no AVPlayer exists yet;
         // start the current item instead of a silent no-op.
-        if player == nil, currentIndex >= 0, currentIndex < queue.count {
+        if player == nil {
             playItem(queue[currentIndex])
             return
         }
         // Resume without waiting for AVPlayer's anti-stall buffer margin.
         player?.playImmediately(atRate: playbackSpeed)
-        isPlaying = true
+        apply(.resume)
         log.event("transport", "resume", fields: ["at": String(Int(currentTime))])
         updateNowPlaying()
     }
 
     func pause() {
         if isCasting { cast?.pause() } else { player?.pause() }
-        releaseTransitionHold("pause")
-        isPlaying = false
-        isBuffering = false
+        apply(.pause)
         log.event("transport", "pause", fields: ["at": String(Int(currentTime))])
         updateNowPlaying()
     }

@@ -19,3 +19,24 @@ enum StreamFreshness {
         return now.timeIntervalSince(resolvedAt) >= maxAge
     }
 }
+
+/// How `playItem` treats an item's stored URLs.
+enum RefreshMode: Equatable {
+    /// Re-resolve only when the URLs are stale (`StreamFreshness.needsRefresh`).
+    case ifStale
+    /// Re-resolve unconditionally: the stored URL is known to be dead.
+    case force
+    /// Play the stored URLs as they are (they were just resolved).
+    case never
+}
+
+extension StreamFreshness {
+    /// Whether to fetch a fresh URL before playing, for the given mode.
+    static func shouldRefresh(_ mode: RefreshMode, resolvedAt: Date?, now: Date, isLocal: Bool) -> Bool {
+        switch mode {
+        case .never: return false
+        case .force: return !isLocal
+        case .ifStale: return needsRefresh(resolvedAt: resolvedAt, now: now, isLocal: isLocal)
+        }
+    }
+}

@@ -8,9 +8,8 @@ import AVFoundation
 extension PlayerState {
     func startHLS(_ item: QueueItem) {
         guard let master = URL(string: item.hlsUrl) else {
-            error = "Couldn't play \(item.title)"
             log.event("play", "bad hls url", fields: ["videoId": item.videoId, "result": "failed"])
-            releaseTransitionHold("bad url")
+            apply(.unplayable(title: item.title))
             return
         }
         if videoMode {
@@ -20,8 +19,7 @@ extension PlayerState {
         }
         let generation = playGeneration
         let language = item.audioLanguage ?? pipedAudioLanguage
-        isPlaying = true
-        isBuffering = true
+        // The lifecycle is in .loading (spinner + pause glyph) while the master is read.
         log.event("play", "hls audio", fields: ["videoId": item.videoId, "language": language])
         Task { [weak self] in
             let rendition = await HLSMasterLoader.audioPlaylist(master: master, preferred: language)

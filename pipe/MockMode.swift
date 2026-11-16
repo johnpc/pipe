@@ -4,9 +4,22 @@ import Foundation
 enum MockMode {
     static let launchArgument = "--uitest-mock"
 
-    /// True when the process was launched in UI-test mock mode.
+    /// `--uitest-instance <url>`: hermetic launch (state wiped, Cast inert) that
+    /// talks to a real HTTP backend — the bundled fake Piped server
+    /// (`scripts/fake_piped`) — instead of in-process fixtures, so scenarios can
+    /// play actual media end to end.
+    static let instanceArgument = "--uitest-instance"
+
+    /// True when the process was launched for UI testing (fixtures or a fake
+    /// backend): persisted state is reset and the Cast SDK stays inert.
     static func isEnabled(_ args: [String] = ProcessInfo.processInfo.arguments) -> Bool {
-        args.contains(launchArgument)
+        args.contains(launchArgument) || instanceOverride(args) != nil
+    }
+
+    /// The backend URL given after `--uitest-instance`, if any.
+    static func instanceOverride(_ args: [String] = ProcessInfo.processInfo.arguments) -> String? {
+        guard let index = args.firstIndex(of: instanceArgument), index + 1 < args.count else { return nil }
+        return args[index + 1]
     }
 
     /// Point PipedAPI at a fixture-backed session.
@@ -27,6 +40,10 @@ enum MockMode {
     static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
         guard isEnabled(args) else { return }
         resetPersistedState()
+        if let instance = instanceOverride(args) {
+            pointInstance(at: instance, defaults: .standard)
+            return
+        }
         FixtureURLProtocol.failStreams = args.contains(failArgument)
         FixtureURLProtocol.errorStreams = args.contains(errorArgument)
         FixtureURLProtocol.downStreams = args.contains(downArgument)
@@ -40,6 +57,12 @@ enum MockMode {
         reset(defaults: .standard,
               domain: Bundle.main.bundleIdentifier,
               downloads: DownloadStore.defaultDirectory())
+    }
+
+    /// Make `AppSettings` (created later) start on `instance`: the fake server
+    /// in CI, or any backend a developer wants to drive the app against.
+    static func pointInstance(at instance: String, defaults: UserDefaults) {
+        defaults.set(instance, forKey: AppSettings.instanceKey)
     }
 
     /// Injectable core of the reset, so it's unit-testable against a scratch

@@ -2,31 +2,34 @@ import AVFoundation
 import MediaPlayer
 
 /// Core playback engine for PlayerState: decide how an item loads (fresh URL,
-/// cast receiver, composed video + audio, or a single stream) and reset the
-/// item-scoped state. Starting the built player lives in +Start, the composed
-/// path in +Composed; end-of-item, stall, and status handling in +Transport.
+/// cast receiver, native HLS, composed video + audio, or a single stream) and
+/// reset the item-scoped state. Every branch reports where it is to the
+/// lifecycle (`apply`), which owns the phase and the background hold.
+/// Starting the built player lives in +Start, the composed path in +Composed;
+/// end-of-item, stall, and status handling in +Transport.
 extension PlayerState {
-    func playItem(_ item: QueueItem, skipRefresh: Bool = false) {
+    func playItem(_ item: QueueItem, refresh: RefreshMode = .ifStale) {
         error = nil
-        holdForTransition()
-
         let isLocal = downloads?.localURLString(for: item.videoId) != nil
-        // Stream URLs are time-limited; re-resolve a stale one before playing so
-        // an item paused overnight (or a long video whose URL expired) doesn't
-        // load a dead URL. Local files never expire. (Applies to the TV too: the
-        // Shield fetches the URL directly, so a stale one would fail on the TV.)
-        if !skipRefresh, StreamFreshness.needsRefresh(resolvedAt: item.resolvedAt, now: Date(), isLocal: isLocal) {
+
+        // Stream URLs are time-limited; re-resolve a stale (or known-dead) one
+        // before playing so an item paused overnight doesn't load a dead URL.
+        // Local files never expire. (Applies to the TV too: the receiver
+        // fetches the URL directly, so a stale one would fail there as well.)
+        if StreamFreshness.shouldRefresh(refresh, resolvedAt: item.resolvedAt, now: Date(), isLocal: isLocal) {
+            apply(.load(videoId: item.videoId, refresh: true, casting: false))
             refreshAndPlay(item)
             return
         }
 
-        // A connected receiver owns playback: hand it the video and skip building
-        // a local AVPlayer entirely.
+        // A connected receiver owns playback: hand it the video and skip
+        // building a local AVPlayer entirely.
         if isCasting {
-            releaseTransitionHold("casting")
             castItem(item)
             return
         }
+
+        apply(.load(videoId: item.videoId, refresh: false, casting: false))
         setupAudioSession()
 
         // YouTube's own HLS playlist, when offered, is the durable way to play:
@@ -40,9 +43,8 @@ extension PlayerState {
         // Prefer a downloaded local file (offline playback) over streaming.
         let source = downloads?.localURLString(for: item.videoId) ?? item.playbackURL(videoMode: videoMode)
         guard let url = URL(string: source) else {
-            error = "Couldn't play \(item.title)"
             log.event("play", "bad url", fields: ["videoId": item.videoId, "result": "failed"])
-            releaseTransitionHold("bad url")
+            apply(.unplayable(title: item.title))
             return
         }
 
@@ -70,7 +72,7 @@ extension PlayerState {
         currentTime = 0
         // Seed duration from the Piped-reported length so the lock screen shows a
         // total time (and a working progress bar) immediately, instead of a blank
-        // until AVPlayer loads its own duration on the first ~5s progress tick.
+        // until AVPlayer loads its own duration on the first progress tick.
         duration = item.duration > 0 ? Double(item.duration) : 0
         lastHeartbeatBucket = -1
         expectedDuration = item.duration > 0 ? Double(item.duration) : nil

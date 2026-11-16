@@ -83,7 +83,7 @@ struct PlayerStateTests {
         // ghost while the queue no longer contained it.
         let player = isolatedPlayer()
         enqueue(player, ["a", "b", "c"])
-        player.isPlaying = true
+        player.setPhase(.playing)
         player.removeFromQueue(at: 0)
         #expect(player.queue.map(\.videoId) == ["b", "c"])
         #expect(player.currentIndex == 0)
@@ -94,7 +94,7 @@ struct PlayerStateTests {
     @Test func removeCurrentWhilePausedUpdatesMetadataWithoutPlaying() {
         let player = isolatedPlayer()
         enqueue(player, ["a", "b"])
-        player.isPlaying = false
+        player.setPhase(.paused)
         player.removeFromQueue(at: 0)
         #expect(player.currentIndex == 0)
         #expect(player.currentTitle == "b")
@@ -251,11 +251,18 @@ struct PlayerStateTests {
 
     @Test func togglePlayPauseFlipsState() {
         let player = isolatedPlayer()
-        player.isPlaying = false
-        player.togglePlayPause()
-        #expect(player.isPlaying == true)
+        enqueue(player, ["a"])
+        player.handleTimeControlStatus(.playing)
         player.togglePlayPause()
         #expect(player.isPlaying == false)
+        player.togglePlayPause()
+        #expect(player.isPlaying == true)
+    }
+
+    @Test func resumeWithNothingQueuedIsANoop() {
+        let player = isolatedPlayer()
+        player.resume()
+        #expect(player.phase == .idle)
     }
 
     @Test func setSpeedUpdatesPublishedSpeed() {
@@ -577,7 +584,7 @@ struct PlayerStateTests {
     @Test func tickDecrementsUntilPause() {
         let player = isolatedPlayer()
         player.addToQueue(videoId: "a", url: "bad://a", title: "A", artist: "x", thumbnail: "", duration: 10)
-        player.isPlaying = true
+        player.setPhase(.playing)
         player.startSleepTimer(minutes: 2)
         player.tickSleepTimer()
         #expect(player.sleepMinutesRemaining == 1)

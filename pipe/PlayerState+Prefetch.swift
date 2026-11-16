@@ -13,8 +13,9 @@ extension PlayerState {
         guard let next else { return }
         transition.prefetching = next.videoId
         log.event("prefetch", "start", fields: ["videoId": next.videoId])
+        let resolver = self.resolver
         Task { [weak self] in
-            let refreshed = await Self.reresolve(next)
+            let refreshed = await resolver.fresh(next)
             await MainActor.run { self?.finishPrefetch(of: next.videoId, with: refreshed) }
         }
     }

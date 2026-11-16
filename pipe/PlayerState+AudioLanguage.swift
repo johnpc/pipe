@@ -34,6 +34,6 @@ extension PlayerState {
         // pairs the video-only track with this audio track (see +Composed).
         guard !isCasting else { return }
         if currentTime > 1 { pendingSeek = currentTime }
-        playItem(item, skipRefresh: true)
+        playItem(item, refresh: .never)
     }
 }

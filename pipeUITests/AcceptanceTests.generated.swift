@@ -144,6 +144,20 @@ final class ErrorRecoveryFeatureTests: AcceptanceTests {
 }
 
 
+/// Playback against the fake Piped backend
+final class FakeServerPlaybackFeatureTests: AcceptanceTests {
+
+    func test_Audio_plays_and_the_player_reports_each_phase() {
+        runScenario(feature: "fake_server_playback.feature", scenario: "Audio plays and the player reports each phase")
+    }
+
+    func test_Pausing_from_the_mini_player_holds_the_position() {
+        runScenario(feature: "fake_server_playback.feature", scenario: "Pausing from the mini player holds the position")
+    }
+
+}
+
+
 /// Feed Sorting and Filtering
 final class FeedSortingFeatureTests: AcceptanceTests {
 

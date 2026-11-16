@@ -8,8 +8,8 @@ cd "$(git rev-parse --show-toplevel)"
 SCHEME="pipe"
 DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
 
-echo "▶ [1/4] View file line limit"
-bash scripts/check_view_lines.sh
+echo "▶ [1/4] Source file line limit"
+bash scripts/check_file_lines.sh
 
 echo "▶ [2/4] Lint / format (swiftformat --lint if available)"
 if command -v swiftformat >/dev/null 2>&1; then

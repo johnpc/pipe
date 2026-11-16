@@ -77,8 +77,9 @@ extension PlayerState {
         currentArtist = item.artist
         currentThumbnail = item.thumbnail
         currentVideoId = item.videoId
+        apply(.restored)
     }
-    
+
     func playNext() {
         if currentIndex + 1 < queue.count { playIndex(currentIndex + 1) }
     }

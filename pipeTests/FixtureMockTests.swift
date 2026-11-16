@@ -45,6 +45,16 @@ struct FixtureMockTests {
 
     // MARK: - MockMode
 
+    @Test func instanceOverrideEnablesHermeticModeWithoutFixtures() throws {
+        #expect(MockMode.instanceOverride(["--uitest-instance", "http://127.0.0.1:8765"]) == "http://127.0.0.1:8765")
+        #expect(MockMode.instanceOverride(["--uitest-instance"]) == nil)  // no value
+        #expect(MockMode.instanceOverride(["--uitest-mock"]) == nil)
+        #expect(MockMode.isEnabled(["--uitest-instance", "http://127.0.0.1:8765"]))
+        let suite = try #require(UserDefaults(suiteName: "mock-instance-\(UUID().uuidString)"))
+        MockMode.pointInstance(at: "http://127.0.0.1:8765", defaults: suite)
+        #expect(AppSettings(defaults: suite).instanceURL == "http://127.0.0.1:8765")
+    }
+
     @Test func isEnabledDetectsLaunchArgument() {
         #expect(MockMode.isEnabled([MockMode.launchArgument]) == true)
         #expect(MockMode.isEnabled(["other"]) == false)

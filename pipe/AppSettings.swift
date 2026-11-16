@@ -22,7 +22,9 @@ class AppSettings: ObservableObject {
     }
 
     private let defaults: UserDefaults
-    private let instanceKey = "pipedInstanceURL"
+    /// UserDefaults key of the Piped instance base URL (also set by `MockMode`
+    /// when a UI test points the app at the local fake backend).
+    static let instanceKey = "pipedInstanceURL"
     private let historyKey = "searchHistory"
     private let offlineKey = "offlineMode"
     private let diagnosticsKey = "diagnosticsUpload"
@@ -32,7 +34,7 @@ class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.instanceURL = defaults.string(forKey: instanceKey) ?? AppSettings.defaultInstance
+        self.instanceURL = defaults.string(forKey: Self.instanceKey) ?? AppSettings.defaultInstance
         self.offlineMode = defaults.bool(forKey: offlineKey)
         self.diagnosticsUpload = defaults.bool(forKey: diagnosticsKey)
         self.castQuality = CastQuality(rawValue: defaults.string(forKey: castQualityKey) ?? "") ?? .auto
@@ -52,7 +54,7 @@ class AppSettings: ObservableObject {
 
     private func persistInstance() {
         let normalized = SettingsLogic.normalizedInstance(instanceURL)
-        defaults.set(normalized, forKey: instanceKey)
+        defaults.set(normalized, forKey: Self.instanceKey)
         pipedBase = normalized
     }
 

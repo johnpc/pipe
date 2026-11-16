@@ -86,3 +86,20 @@ xcodebuild test -scheme pipe \
   -destination "platform=iOS Simulator,name=iPhone 17 Pro" \
   -only-testing:"pipeUITests" -parallel-testing-enabled YES
 ```
+
+## Backends
+
+Scenarios run against one of two deterministic backends — never the live instance:
+
+| Tag | Launch | Backend | Use it for |
+|---|---|---|---|
+| *(none)* | `--uitest-mock` | in-process `FixtureURLProtocol`; `/streams/<id>` personalized per id | every data/navigation flow; failure recovery (fixture URLs are dead) |
+| `@fail-streams` / `@error-streams` / `@down-instance` | adds a flag | same, with `/streams/` failing in a specific way | error copy |
+| `@fake-server` | `--uitest-instance http://127.0.0.1:8765` | `scripts/fake_piped/server.py` (CI starts it) | real playback: phases, position, pause |
+
+Steps that read the explicit playback phase: `the player should report "Playing"`
+(`Loading`, `Buffering`, `Paused`, `Failed`), `the mini player status should say "…"`,
+`the playback position should pass 0:02`, `the mini player should show "<title>"`.
+
+There is no skip path. A failing scenario is fixed, not retried (see CLAUDE.md,
+"There is no such thing as a flaky test").
