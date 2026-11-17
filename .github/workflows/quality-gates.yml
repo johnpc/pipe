@@ -83,7 +83,7 @@ jobs:
 
   crap-analysis:
     name: CRAP Score Analysis
-    runs-on: [self-hosted, mac-mini]
+    runs-on: [self-hosted, mac-mini-light]
     timeout-minutes: 10
     needs: unit-tests
     steps:
