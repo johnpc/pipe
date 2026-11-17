@@ -25,7 +25,7 @@ struct MainTabContent: View {
 
     @ViewBuilder
     private var screen: some View {
-        switch OfflineLogic.screen(forTab: selectedTab, offline: settings.offlineMode) {
+        switch OfflineLogic.screen(forTab: selectedTab, offline: settings.offlineMode, configured: settings.isConfigured) {
         case .feed:
             FeedView(player: player, following: following, recents: recents, saved: saved, downloads: downloads)
         case .search:
@@ -38,6 +38,10 @@ struct MainTabContent: View {
             DownloadsView(player: player, downloads: downloads)
         case .offlinePlaceholder:
             OfflinePlaceholderView()
+        case .instanceSetup:
+            // Keeps the tab's title so the screen still reads as Feed / Search.
+            InstanceSetupView(settings: settings)
+                .navigationTitle(selectedTab == 1 ? "Search" : "Feed")
         }
     }
 }

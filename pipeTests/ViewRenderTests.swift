@@ -97,6 +97,16 @@ final class ViewRenderTests: XCTestCase {
 
     func testRenderOfflinePlaceholder() { render(OfflinePlaceholderView()) }
 
+    func testRenderInstanceSetupAndUnconfiguredTabs() {
+        let (p, f, r) = makeStores()
+        let s = makeSettings(); s.clearInstance()
+        render(InstanceSetupView(settings: s))
+        for tab in 0...3 {
+            render(MainTabContent(selectedTab: tab, player: p, following: f, recents: r, settings: s, saved: makeSaved(), downloads: makeDownloads()))
+        }
+        pipedBase = AppSettings.legacyInstance
+    }
+
     func testRenderMainTabContentOnlineAndOffline() {
         let (p, f, r) = makeStores()
         func content(tab: Int, offline: Bool) -> some View {

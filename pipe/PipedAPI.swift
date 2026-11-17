@@ -17,6 +17,9 @@ enum PipedAPI {
 
     /// Fetch + decode with bounded retry on transient network errors.
     static func fetch<T: Decodable>(_ type: T.Type, from url: URL) async throws -> T {
+        // No server configured: say so instead of letting a relative URL fail
+        // with an opaque network error (the Feed/Search tabs show setup instead).
+        guard !pipedBase.isEmpty else { throw PipedError.noInstance }
         var attempt = 0
         while true {
             attempt += 1

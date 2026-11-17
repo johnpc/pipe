@@ -72,6 +72,7 @@ struct StreamReresolveTests {
         """
         PipedAPI.session = MockURLProtocol.makeSession()
         MockURLProtocol.stub(json: json)
+        pipedBase = "https://instance.test"  // independent of whatever another suite left in the global
         defer { PipedAPI.session = .shared }
 
         let stale = QueueItem(videoId: "abc", title: "Old", artist: "A", thumbnail: "", url: "https://expired/old.mp4", audioUrl: "https://expired/old.m4a", duration: 100, uploadedDate: nil)

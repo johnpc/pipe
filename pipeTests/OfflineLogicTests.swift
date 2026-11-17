@@ -12,6 +12,21 @@ struct OfflineLogicTests {
         #expect(OfflineLogic.screen(forTab: 3, offline: false) == .following)
     }
 
+    // MARK: - No instance configured: network tabs ask for one
+
+    @Test func unconfiguredShowsSetupOnNetworkTabsOnly() {
+        #expect(OfflineLogic.screen(forTab: 0, offline: false, configured: false) == .instanceSetup)
+        #expect(OfflineLogic.screen(forTab: 1, offline: false, configured: false) == .instanceSetup)
+        #expect(OfflineLogic.screen(forTab: 2, offline: false, configured: false) == .recents)
+        #expect(OfflineLogic.screen(forTab: 3, offline: false, configured: false) == .following)
+    }
+
+    @Test func offlineWinsOverUnconfigured() {
+        // Downloads still play without a server, so offline routing comes first.
+        #expect(OfflineLogic.screen(forTab: 0, offline: true, configured: false) == .downloads)
+        #expect(OfflineLogic.screen(forTab: 1, offline: true, configured: false) == .offlinePlaceholder)
+    }
+
     // MARK: - Offline substitutes network tabs, keeps local ones
 
     @Test func offlineSwapsFeedForDownloads() {

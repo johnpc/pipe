@@ -204,6 +204,24 @@ final class FullPlayerFeatureTests: AcceptanceTests {
 }
 
 
+/// Choosing a Piped instance
+final class InstanceSetupFeatureTests: AcceptanceTests {
+
+    func test_A_fresh_install_asks_for_an_instance_on_the_network_tabs() {
+        runScenario(feature: "instance_setup.feature", scenario: "A fresh install asks for an instance on the network tabs")
+    }
+
+    func test_Entering_an_instance_unlocks_the_Feed() {
+        runScenario(feature: "instance_setup.feature", scenario: "Entering an instance unlocks the Feed")
+    }
+
+    func test_The_demo_library_is_one_tap_away() {
+        runScenario(feature: "instance_setup.feature", scenario: "The demo library is one tap away")
+    }
+
+}
+
+
 /// Offline Mode
 final class OfflineModeFeatureTests: AcceptanceTests {
 

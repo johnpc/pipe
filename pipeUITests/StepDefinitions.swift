@@ -358,6 +358,26 @@ enum StepDefinitions {
                           "Performed search should be remembered in history")
         }
 
+        // MARK: Instance setup (scenario launches with --uitest-no-instance)
+        r.define("I should see the instance setup screen") { w in
+            XCTAssertTrue(w.app.staticTexts["Choose a Piped instance"].waitForExistence(timeout: long),
+                          "The setup screen should ask for a Piped instance")
+        }
+        r.define("I enter \"(.+)\" as the instance") { w in
+            let field = w.app.textFields["instanceSetupField"]
+            XCTAssertTrue(field.waitForExistence(timeout: long))
+            field.tap()
+            field.typeText(w.capture())
+            let save = w.app.buttons["instanceSetupSave"]
+            XCTAssertTrue(save.waitForExistence(timeout: short) && save.isEnabled, "Save should enable for a valid URL")
+            save.tap()
+        }
+        r.define("I choose the demo library") { w in
+            let button = w.app.buttons["useDemoLibrary"]
+            XCTAssertTrue(button.waitForExistence(timeout: long))
+            button.tap()
+        }
+
         // MARK: Offline mode
         r.define("I open Settings") { w in
             selectTab(w, "Settings")

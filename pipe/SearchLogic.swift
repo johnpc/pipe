@@ -70,19 +70,19 @@ enum SettingsLogic {
         }
     }
 
-    /// The instance to start on: the stored choice; else the instance earlier
-    /// installs were using (so an upgrade changes nothing for them); else the
-    /// demo library for a genuinely fresh install.
+    /// The instance to start on: the stored choice (an explicitly cleared one
+    /// included); else the instance earlier installs were using (so an upgrade
+    /// changes nothing for them); else nothing — a fresh install has no server.
     static func initialInstance(stored: String?, hasPriorData: Bool) -> String {
-        if let stored, !stored.isEmpty { return stored }
-        return hasPriorData ? AppSettings.legacyInstance : AppSettings.defaultInstance
+        if let stored { return stored }
+        return hasPriorData ? AppSettings.legacyInstance : AppSettings.noInstance
     }
 
     /// Normalize a user-entered instance URL: trim, default scheme to https,
-    /// drop a trailing slash. Falls back to the default when blank.
+    /// drop a trailing slash. Blank stays blank (no instance configured).
     static func normalizedInstance(_ raw: String) -> String {
         var s = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !s.isEmpty else { return AppSettings.defaultInstance }
+        guard !s.isEmpty else { return AppSettings.noInstance }
         if !s.hasPrefix("http://") && !s.hasPrefix("https://") {
             s = "https://" + s
         }

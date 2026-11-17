@@ -19,9 +19,9 @@ struct SettingsLogicTests {
         #expect(SettingsLogic.normalizedInstance("https://x.test///") == "https://x.test")
     }
 
-    @Test func blankFallsBackToDefault() {
-        #expect(SettingsLogic.normalizedInstance("   ") == AppSettings.defaultInstance)
-        #expect(SettingsLogic.normalizedInstance("") == AppSettings.defaultInstance)
+    @Test func blankStaysBlankMeaningNoInstance() {
+        #expect(SettingsLogic.normalizedInstance("   ") == AppSettings.noInstance)
+        #expect(SettingsLogic.normalizedInstance("") == AppSettings.noInstance)
     }
 
     // MARK: - isValidInstanceDraft

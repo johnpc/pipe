@@ -8,8 +8,12 @@ import Combine
 final class NowPlayingDetail: ObservableObject {
     @Published private(set) var state: LoadState<StreamResponse> = .loading
     private(set) var loadedVideoId: String?
+    private let fetch: @Sendable (String) async throws -> StreamResponse
 
-    nonisolated init() {}
+    /// `fetch` is injectable so cancellation and failure are unit-testable.
+    nonisolated init(fetch: @escaping @Sendable (String) async throws -> StreamResponse = { try await PipedAPI.streams($0) }) {
+        self.fetch = fetch
+    }
     nonisolated deinit {}
 
     /// Fetch the stream for `videoId` unless it's already loaded. A nil id (no
@@ -19,7 +23,12 @@ final class NowPlayingDetail: ObservableObject {
         guard videoId != loadedVideoId else { return }
         loadedVideoId = videoId
         state = .loading
-        state = LoadState.from(try? await PipedAPI.streams(videoId))
+        let result = try? await fetch(videoId)
+        // Cancelled (the view's `.task` was torn down mid-fetch): this is not a
+        // failure — stay "loading" and forget the id so the next appearance
+        // fetches again instead of showing "Nothing here" with no way back.
+        if Task.isCancelled { loadedVideoId = nil; return }
+        state = LoadState.from(result)
         // A failed fetch must not "claim" the id, or reopening the tab would
         // show the failure forever with no retry.
         if state.didFail { loadedVideoId = nil }
