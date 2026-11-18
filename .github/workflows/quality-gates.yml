@@ -170,8 +170,10 @@ jobs:
 
       - name: Write App Store Connect API key
         run: |
-          mkdir -p ~/private_keys
-          echo "${{ secrets.ASC_KEY_CONTENT }}" > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+          # Per-job paths under $RUNNER_TEMP: every app's deploy on the mini uses the
+          # same key id, and a shared ~/private_keys file can be removed by another
+          # app's cleanup mid-export.
+          echo "${{ secrets.ASC_KEY_CONTENT }}" > "$RUNNER_TEMP/AuthKey_${{ secrets.ASC_KEY_ID }}.p8"
 
       - name: Increment build number
         run: |
@@ -180,7 +182,10 @@ jobs:
 
       - name: Archive and upload (auto-bump version on conflict)
         run: |
-          cat > /tmp/ExportOptions.plist << 'PLIST'
+          # Export options, archive and export dir live under $RUNNER_TEMP (unique per
+          # job): fixed /tmp and ~/Desktop paths were overwritten by other apps'
+          # concurrent deploys on the shared mini (cadence lost an upload to it).
+          cat > "$RUNNER_TEMP/ExportOptions.plist" << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -205,16 +210,16 @@ jobs:
             xcodebuild archive \
               -scheme "$SCHEME" \
               -destination "generic/platform=iOS" \
-              -archivePath ~/Desktop/pipe.xcarchive \
+              -archivePath "$RUNNER_TEMP/pipe.xcarchive" \
               CODE_SIGNING_ALLOWED=NO \
               -quiet
 
             xcodebuild -exportArchive \
-              -archivePath ~/Desktop/pipe.xcarchive \
-              -exportOptionsPlist /tmp/ExportOptions.plist \
-              -exportPath ~/Desktop/export \
+              -archivePath "$RUNNER_TEMP/pipe.xcarchive" \
+              -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+              -exportPath "$RUNNER_TEMP/export" \
               -allowProvisioningUpdates \
-              -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+              -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" \
               -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
               -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} 2>&1
           }
@@ -236,7 +241,7 @@ jobs:
             git commit -m "Bump version to $NEW_VERSION [skip ci]"
             git push
 
-            rm -rf ~/Desktop/pipe.xcarchive ~/Desktop/export
+            rm -rf "$RUNNER_TEMP/pipe.xcarchive" "$RUNNER_TEMP/export"
             archive_and_upload
           else
             echo "$OUTPUT"
@@ -248,5 +253,5 @@ jobs:
         run: |
           # Self-hosted: nothing is wiped between jobs, so don't leave the ASC
           # key, the diagnostics key, or the archive on the Mac Mini.
-          rm -f ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 pipe/Secrets.xcconfig
-          rm -rf ~/Desktop/pipe.xcarchive ~/Desktop/export
+          rm -f "$RUNNER_TEMP/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" pipe/Secrets.xcconfig
+          rm -rf "$RUNNER_TEMP/pipe.xcarchive" "$RUNNER_TEMP/export"
