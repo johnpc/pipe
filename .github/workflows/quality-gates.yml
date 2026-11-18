@@ -153,105 +153,22 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy to App Store Connect
-    runs-on: [self-hosted, mac-mini]
-    timeout-minutes: 60
+    # Shared native iOS deploy (johnpc/ci-workflows): signs in the archive from the
+    # Mac mini's CI keychain, uploads to TestFlight, and on a version conflict bumps
+    # the minor version and lands it as a PR (opened with DEPLOY_PAT, so its CI runs).
     needs: [unit-tests, crap-analysis, acceptance-tests]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Write diagnostics API key
-        run: |
-          # Injected into the app via pipe/Config.xcconfig's optional #include of
-          # Secrets.xcconfig (gitignored). Without this, the release build ships
-          # an empty key and diagnostics upload silently no-ops.
-          printf 'PIPE_LOGS_API_KEY = %s\n' "${{ secrets.PIPE_LOGS_API_KEY }}" > pipe/Secrets.xcconfig
-
-      - name: Write App Store Connect API key
-        run: |
-          # Per-job paths under $RUNNER_TEMP: every app's deploy on the mini uses the
-          # same key id, and a shared ~/private_keys file can be removed by another
-          # app's cleanup mid-export.
-          echo "${{ secrets.ASC_KEY_CONTENT }}" > "$RUNNER_TEMP/AuthKey_${{ secrets.ASC_KEY_ID }}.p8"
-
-      - name: Increment build number
-        run: |
-          BUILD_NUM=$(date +%Y%m%d%H%M)
-          agvtool new-version -all $BUILD_NUM
-
-      - name: Archive and upload (auto-bump version on conflict)
-        run: |
-          # Export options, archive and export dir live under $RUNNER_TEMP (unique per
-          # job): fixed /tmp and ~/Desktop paths were overwritten by other apps'
-          # concurrent deploys on the shared mini (cadence lost an upload to it).
-          cat > "$RUNNER_TEMP/ExportOptions.plist" << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store-connect</string>
-              <key>destination</key>
-              <string>upload</string>
-              <key>signingStyle</key>
-              <string>automatic</string>
-              <key>teamID</key>
-              <string>${{ secrets.TEAM_ID }}</string>
-          </dict>
-          </plist>
-          PLIST
-
-          archive_and_upload() {
-            # Archive unsigned: the runner is a LaunchDaemon (no user security
-            # session), where Xcode can't install a signing certificate into
-            # any keychain. The export below signs with Apple's cloud-managed
-            # distribution certificate instead, which needs no local key.
-            xcodebuild archive \
-              -scheme "$SCHEME" \
-              -destination "generic/platform=iOS" \
-              -archivePath "$RUNNER_TEMP/pipe.xcarchive" \
-              CODE_SIGNING_ALLOWED=NO \
-              -quiet
-
-            xcodebuild -exportArchive \
-              -archivePath "$RUNNER_TEMP/pipe.xcarchive" \
-              -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
-              -exportPath "$RUNNER_TEMP/export" \
-              -allowProvisioningUpdates \
-              -authenticationKeyPath "$RUNNER_TEMP/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" \
-              -authenticationKeyID ${{ secrets.ASC_KEY_ID }} \
-              -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} 2>&1
-          }
-
-          OUTPUT=$(archive_and_upload) && echo "$OUTPUT" && exit 0
-
-          if echo "$OUTPUT" | grep -qi "version.*already exists\|already been uploaded\|redundant binary\|train.*closed\|higher version"; then
-            echo "⚠️ Version conflict detected, bumping minor version..."
-            CURRENT=$(grep 'MARKETING_VERSION' pipe.xcodeproj/project.pbxproj | head -1 | sed 's/.*= *\(.*\);/\1/')
-            MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-            MINOR=$(echo "$CURRENT" | cut -d. -f2)
-            NEW_VERSION="${MAJOR}.$((MINOR + 1))"
-            sed -i '' "s/MARKETING_VERSION = ${CURRENT}/MARKETING_VERSION = ${NEW_VERSION}/g" pipe.xcodeproj/project.pbxproj
-            echo "Bumped $CURRENT → $NEW_VERSION"
-
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "Bump version to $NEW_VERSION [skip ci]"
-            git push
-
-            rm -rf "$RUNNER_TEMP/pipe.xcarchive" "$RUNNER_TEMP/export"
-            archive_and_upload
-          else
-            echo "$OUTPUT"
-            exit 1
-          fi
-
-      - name: Remove signing material
-        if: always()
-        run: |
-          # Self-hosted: nothing is wiped between jobs, so don't leave the ASC
-          # key, the diagnostics key, or the archive on the Mac Mini.
-          rm -f "$RUNNER_TEMP/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" pipe/Secrets.xcconfig
-          rm -rf "$RUNNER_TEMP/pipe.xcarchive" "$RUNNER_TEMP/export"
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    uses: johnpc/ci-workflows/.github/workflows/ios-deploy-native.yml@v1
+    secrets: inherit
+    with:
+      project: pipe.xcodeproj
+      scheme: pipe
+      bump: minor
+      secret-env: PIPE_LOGS_API_KEY
+      # Injected via pipe/Config.xcconfig's optional #include; without it the
+      # release build ships an empty key and diagnostics upload silently no-ops.
+      setup-command: printf 'PIPE_LOGS_API_KEY = %s\n' "$PIPE_LOGS_API_KEY" > pipe/Secrets.xcconfig
