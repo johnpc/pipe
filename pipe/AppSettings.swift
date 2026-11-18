@@ -5,6 +5,9 @@ import Combine
 /// Holds the Piped instance base URL and recent search history.
 class AppSettings: ObservableObject {
     @Published var instanceURL: String { didSet { persistInstance() } }
+    /// Optional second instance, tried when `instanceURL` can't be reached
+    /// ("" = none). See `InstanceFailover`.
+    @Published var fallbackInstanceURL: String { didSet { persistFallback() } }
     @Published private(set) var searchHistory: [String] = []
     @Published var offlineMode: Bool { didSet { defaults.set(offlineMode, forKey: offlineKey) } }
     /// Upload diagnostic playback logs to the remote collector. Off by default;
@@ -25,6 +28,8 @@ class AppSettings: ObservableObject {
     /// UserDefaults key of the Piped instance base URL (also set by `MockMode`
     /// when a UI test points the app at the local fake backend).
     static let instanceKey = "pipedInstanceURL"
+    /// UserDefaults key of the optional fallback instance.
+    static let fallbackKey = "pipedFallbackInstanceURL"
     private let historyKey = "searchHistory"
     private let offlineKey = "offlineMode"
     private let diagnosticsKey = "diagnosticsUpload"
@@ -41,6 +46,7 @@ class AppSettings: ObservableObject {
         let initial = SettingsLogic.initialInstance(stored: stored, hasPriorData: SettingsLogic.hasPriorData(in: defaults))
         self.instanceURL = initial
         if stored == nil { defaults.set(initial, forKey: Self.instanceKey) }
+        self.fallbackInstanceURL = defaults.string(forKey: Self.fallbackKey) ?? AppSettings.noInstance
         self.offlineMode = defaults.bool(forKey: offlineKey)
         self.diagnosticsUpload = defaults.bool(forKey: diagnosticsKey)
         self.castQuality = CastQuality(rawValue: defaults.string(forKey: castQualityKey) ?? "") ?? .auto
@@ -50,6 +56,7 @@ class AppSettings: ObservableObject {
         }
         // Keep the live network base in sync with the configured instance.
         pipedBase = SettingsLogic.normalizedInstance(instanceURL)
+        pipedFallbackBase = SettingsLogic.normalizedInstance(fallbackInstanceURL)
         pipedCastQuality = castQuality
         pipedAudioLanguage = audioLanguage
     }
@@ -74,6 +81,12 @@ class AppSettings: ObservableObject {
         let normalized = SettingsLogic.normalizedInstance(instanceURL)
         defaults.set(normalized, forKey: Self.instanceKey)
         pipedBase = normalized
+    }
+
+    private func persistFallback() {
+        let normalized = SettingsLogic.normalizedInstance(fallbackInstanceURL)
+        defaults.set(normalized, forKey: Self.fallbackKey)
+        pipedFallbackBase = normalized
     }
 
     /// Record a search term at the front of history (deduped, capped).

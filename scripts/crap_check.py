@@ -101,6 +101,12 @@ def main(path: str) -> int:
     over = [r for r in results if r[5] > CRAP_THRESHOLD]
 
     print(f"Analyzed {total} functions. Average CRAP: {avg:.1f}")
+    if total == 0:
+        # Nothing matched: the report and the sources disagree on paths. A gate
+        # that checked nothing must not pass.
+        # (The filter expects the checkout to be a directory named "pipe".)
+        print(f"\n❌ FAIL: no app functions under a /pipe/pipe/ path in {path}")
+        return 1
     print("\nTop 10 highest CRAP:")
     for name, fname, cov, cx, lines, score in results[:10]:
         print(f"  {fname}: {name[:42]:<42} CRAP={score:6.1f}  cx={cx:<3} cov={cov:5.1f}%")

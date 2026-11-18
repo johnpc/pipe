@@ -146,3 +146,23 @@ present → `legacyInstance` (upgrade keeps what the user had); else `noInstance
 (a fresh install ships with no server). Persisted on first launch so the decision
 is never re-evaluated. `isConfigured` drives `OfflineLogic.screen`: Feed/Search
 show `InstanceSetupView` (enter a URL, or "Try the demo library") until set.
+
+## Instance failover — `InstanceRoute` (explicit)
+
+`InstanceRouter.shared` holds the route; `PipedAPI.fetch` reads it once per request
+and writes it after a success (pure decisions in `InstanceFailover`).
+
+```
+primary ─request succeeds on the fallback (primary unreachable)─▶ fallback(until: now+5m)
+fallback(until) ─request succeeds on the primary─▶ primary
+fallback(until) ─now ≥ until─▶ (order is primary-first again; route unchanged until the next success)
+```
+
+| Route at request time | Order tried | Moves to the next when |
+|---|---|---|
+| `primary`, or `fallback(until)` with `now ≥ until` | primary, fallback | `RetryPolicy.isTransient(error)` after the retry budget |
+| `fallback(until)` with `now < until` | fallback, primary | same |
+
+No fallback configured (or equal to the primary), or a URL not built on the
+primary base (absolute media/caption URLs): only the URL as given.
+

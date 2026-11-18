@@ -10,6 +10,11 @@ enum MockMode {
     /// play actual media end to end.
     static let instanceArgument = "--uitest-instance"
 
+    /// `--uitest-fallback-instance <url>`: also configure a fallback instance,
+    /// so a scenario can point the primary at a dead address and prove the app
+    /// carries on through the fallback.
+    static let fallbackArgument = "--uitest-fallback-instance"
+
     /// True when the process was launched for UI testing (fixtures or a fake
     /// backend): persisted state is reset and the Cast SDK stays inert.
     static func isEnabled(_ args: [String] = ProcessInfo.processInfo.arguments) -> Bool {
@@ -18,7 +23,16 @@ enum MockMode {
 
     /// The backend URL given after `--uitest-instance`, if any.
     static func instanceOverride(_ args: [String] = ProcessInfo.processInfo.arguments) -> String? {
-        guard let index = args.firstIndex(of: instanceArgument), index + 1 < args.count else { return nil }
+        value(after: instanceArgument, in: args)
+    }
+
+    /// The fallback instance given after `--uitest-fallback-instance`, if any.
+    static func fallbackOverride(_ args: [String] = ProcessInfo.processInfo.arguments) -> String? {
+        value(after: fallbackArgument, in: args)
+    }
+
+    private static func value(after flag: String, in args: [String]) -> String? {
+        guard let index = args.firstIndex(of: flag), index + 1 < args.count else { return nil }
         return args[index + 1]
     }
 
@@ -42,10 +56,7 @@ enum MockMode {
     static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
         guard isEnabled(args) else { return }
         resetPersistedState()
-        if let instance = instanceOverride(args) {
-            pointInstance(at: instance, defaults: .standard)
-            return
-        }
+        if pointInstances(from: args, defaults: .standard) { return }
         // Fixtures answer by path, so any host works; without one the app would
         // sit on the setup screen (which only `--uitest-no-instance` wants).
         if !args.contains(noInstanceArgument) { pointInstance(at: "https://fixtures.uitest", defaults: .standard) }
@@ -60,6 +71,16 @@ enum MockMode {
         reset(defaults: .standard,
               domain: Bundle.main.bundleIdentifier,
               downloads: DownloadStore.defaultDirectory())
+    }
+
+    /// Apply `--uitest-instance` (and `--uitest-fallback-instance`) to
+    /// `defaults`. Returns whether a real backend was given, i.e. whether the
+    /// in-process fixtures must stay off.
+    static func pointInstances(from args: [String], defaults: UserDefaults) -> Bool {
+        guard let instance = instanceOverride(args) else { return false }
+        pointInstance(at: instance, defaults: defaults)
+        if let fallback = fallbackOverride(args) { defaults.set(fallback, forKey: AppSettings.fallbackKey) }
+        return true
     }
 
     /// Make `AppSettings` (created later) start on `instance`: the fake server

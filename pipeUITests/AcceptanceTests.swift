@@ -23,6 +23,8 @@ import XCTest
 ///   `@fake-server`    talk to the fake Piped backend over HTTP instead of
 ///                     in-process fixtures (`--uitest-instance <url>`), so the
 ///                     scenario plays real media (scripts/fake_piped)
+///   `@dead-primary`   (with `@fake-server`) the primary instance refuses every
+///                     connection; the fake backend is the fallback instance
 /// There is no skip path: every scenario must pass, every time.
 ///
 /// Base class only: the generator emits one subclass per feature file so CI's
@@ -49,6 +51,11 @@ class AcceptanceTests: XCTestCase {
         if scenario.tags.contains("@down-instance") { args.append("--uitest-down-instance") }
         if scenario.tags.contains("@no-instance") { args.append("--uitest-no-instance") }
         if scenario.tags.contains("@fake-server") { args = ["--uitest-instance", StepDefinitions.fakeServerURL] }
+        if scenario.tags.contains("@dead-primary") {
+            // A refused loopback port as the primary, the fake backend as the fallback.
+            args = ["--uitest-instance", StepDefinitions.deadInstanceURL,
+                    "--uitest-fallback-instance", StepDefinitions.fakeServerURL]
+        }
         app.launchArguments = args
         app.launch()
 

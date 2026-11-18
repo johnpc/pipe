@@ -155,6 +155,14 @@ final class ViewRenderTests: XCTestCase {
         render(NavigationStack { SettingsView(settings: makeSettings(), player: p, recents: r) })
     }
 
+    func testRenderFallbackInstanceSection() {
+        let s = makeSettings()
+        render(NavigationStack { Form { FallbackInstanceSection(settings: s) } })
+        s.fallbackInstanceURL = "https://backup.example"
+        render(NavigationStack { Form { FallbackInstanceSection(settings: s) } })
+        s.fallbackInstanceURL = AppSettings.noInstance
+    }
+
     func testRenderCastQualitySection() {
         let s = makeSettings()
         // Render each selection so the picker's rows are all exercised.

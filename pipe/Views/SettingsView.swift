@@ -44,6 +44,7 @@ struct SettingsView: View {
                 Text("pipe has no server of its own. Enter the URL of the Piped instance you use. The demo library is a safe set of labelled sample clips for trying the app. Clear removes the instance and shows the setup screen again.")
             }
 
+            FallbackInstanceSection(settings: settings)
             AudioLanguageSection(settings: settings)
             CastQualitySection(settings: settings)
 

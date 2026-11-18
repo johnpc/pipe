@@ -202,6 +202,18 @@ scripts/fake_piped/deploy.sh                                  # publish the demo
   (`AppSettings.demoInstance`, `https://d2554qyjuoitlv.cloudfront.net`) is an explicit
   choice on the setup screen and in Settings — never a silent default. UI tests
   run with an instance set by `MockMode` unless tagged `@no-instance`.
+- **Fallback instance:** optional second instance (`AppSettings.fallbackInstanceURL`,
+  Settings → Fallback Instance; mirrored to `pipedFallbackBase`). `PipedAPI.fetch`
+  tries the primary (with its retry budget); if it is *unreachable*
+  (`RetryPolicy.isTransient`: connectivity errors, 502/503/504) the same request goes
+  to the fallback, which then stays first for 5 minutes (`InstanceRoute`,
+  `InstanceFailover`). An instance's own verdict (4xx, 500, an error envelope) is
+  never re-asked elsewhere. No instance is hardcoded as a fallback.
+- **App Transport Security:** `NSAllowsLocalNetworking` only — https everywhere,
+  plain http only on the LAN (.local names, unqualified hosts, IP addresses), for a
+  self-hosted instance. A remote `http://` instance is refused by iOS and surfaces as
+  `PipedError.insecureInstance` ("use its https address"). Never re-add
+  `NSAllowsArbitraryLoads`.
 - **App Store review never depends on YouTube.** Apple rejects apps that stream
   YouTube through unofficial means, so nothing a reviewer can reach may be YouTube:
   no instance is configured until the user chooses one, the search chips come from

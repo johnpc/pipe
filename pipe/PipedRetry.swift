@@ -24,7 +24,13 @@ enum RetryPolicy {
     /// Whether an error is worth retrying (transient connectivity or gateway
     /// error, not a 4xx/decode).
     static func shouldRetry(_ error: Error, attempt: Int) -> Bool {
-        guard attempt < maxAttempts else { return false }
+        attempt < maxAttempts && isTransient(error)
+    }
+
+    /// Whether an error says "couldn't reach the instance right now" (a
+    /// connectivity failure or a gateway status) rather than the instance's
+    /// own answer. Shared by retry and instance failover.
+    static func isTransient(_ error: Error) -> Bool {
         if let status = (error as? PipedError)?.statusCode { return transientStatuses.contains(status) }
         guard let urlError = error as? URLError else { return false }
         switch urlError.code {

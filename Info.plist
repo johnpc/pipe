@@ -6,9 +6,15 @@
     <false/>
     <key>PipeLogsAPIKey</key>
     <string>$(PIPE_LOGS_API_KEY)</string>
+    <!-- App Transport Security: https everywhere, plain http only on the local
+         network. A Piped instance is whatever the user types, so there is no
+         fixed domain list to except; the one http case worth keeping is a
+         self-hosted instance (or its media proxy) on the LAN: a .local name,
+         an unqualified host name, or an IP address. A remote http:// instance
+         is refused by iOS; PipedAPI turns that into "use its https address". -->
     <key>NSAppTransportSecurity</key>
     <dict>
-        <key>NSAllowsArbitraryLoads</key>
+        <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
     <key>UIBackgroundModes</key>
