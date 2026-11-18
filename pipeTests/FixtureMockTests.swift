@@ -55,6 +55,16 @@ struct FixtureMockTests {
         #expect(AppSettings(defaults: suite).instanceURL == "http://127.0.0.1:8765")
     }
 
+    @Test func mockModeConfiguresAnInstanceUnlessAskedNotTo() throws {
+        // Fixtures answer by path, so the host is arbitrary — but without one the
+        // app would sit on the setup screen in every scenario.
+        let suite = try #require(UserDefaults(suiteName: "mock-inst-\(UUID().uuidString)"))
+        MockMode.pointInstance(at: "https://fixtures.uitest", defaults: suite)
+        #expect(AppSettings(defaults: suite).isConfigured)
+        #expect(MockMode.noInstanceArgument == "--uitest-no-instance")
+        pipedBase = AppSettings.legacyInstance
+    }
+
     @Test func isEnabledDetectsLaunchArgument() {
         #expect(MockMode.isEnabled([MockMode.launchArgument]) == true)
         #expect(MockMode.isEnabled(["other"]) == false)

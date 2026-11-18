@@ -18,6 +18,9 @@ struct PipedError: LocalizedError, Equatable {
     static func http(_ status: Int) -> PipedError {
         PipedError(message: "the Piped instance returned an error (\(status))", statusCode: status)
     }
+
+    /// The app has no instance configured yet (pipe ships without a server).
+    static let noInstance = PipedError(message: "no Piped instance is configured — choose one in Settings")
 }
 
 /// The `{error, message}` envelope Piped returns on failure. All-optional so it

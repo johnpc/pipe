@@ -141,6 +141,8 @@ by `FixtureCatalog`) or `--uitest-instance <url>` (the fake Piped backend,
 
 ## Instance choice — `SettingsLogic.initialInstance` (explicit, decided once)
 
-stored URL → that; else prior app data present → `legacyInstance` (upgrade keeps
-what the user had); else `defaultInstance` (the hosted demo library). Persisted on
-first launch so the decision is never re-evaluated.
+stored value (including an explicit clear, "") → that; else prior app *content*
+present → `legacyInstance` (upgrade keeps what the user had); else `noInstance`
+(a fresh install ships with no server). Persisted on first launch so the decision
+is never re-evaluated. `isConfigured` drives `OfflineLogic.screen`: Feed/Search
+show `InstanceSetupView` (enter a URL, or "Try the demo library") until set.

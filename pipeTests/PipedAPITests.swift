@@ -18,6 +18,23 @@ struct PipedAPITests {
         try await body()
     }
 
+    // MARK: - No instance configured
+
+    @Test func fetchWithoutAnInstanceFailsWithAClearReason() async {
+        let saved = pipedBase
+        pipedBase = AppSettings.noInstance
+        defer { pipedBase = saved }
+        do {
+            _ = try await PipedAPI.trending()
+            Issue.record("expected PipedError.noInstance")
+        } catch let error as PipedError {
+            #expect(error == PipedError.noInstance)
+            #expect(Playback.errorReason(error).contains("no Piped instance"))
+        } catch {
+            Issue.record("unexpected \(error)")
+        }
+    }
+
     // MARK: - URL construction (pure)
 
     @Test func searchURLEncodesQuery() {
@@ -482,6 +499,32 @@ struct PipedAPITests {
         await detail.load(videoId: "v")
         #expect(detail.state.value?.title == "Song")
         #expect(detail.loadedVideoId == "v")
+    }
+
+    @Test func nowPlayingDetailCancelledLoadStaysLoadingAndRetries() async throws {
+        // A fetch interrupted by the view's `.task` being cancelled must not end
+        // in `.failed` (which hid the Up Next / Chapters tabs with no retry).
+        let slow = NowPlayingDetail(fetch: { _ in
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            throw URLError(.cancelled)
+        })
+        let task = Task { await slow.load(videoId: "v") }
+        try await Task.sleep(nanoseconds: 50_000_000)
+        task.cancel()
+        await task.value
+        #expect(slow.state.isLoading)
+        #expect(slow.loadedVideoId == nil)       // a later load will fetch again
+
+        var calls = 0
+        let detail = NowPlayingDetail(fetch: { _ in
+            calls += 1
+            if calls == 1 { throw URLError(.notConnectedToInternet) }
+            return try JSONDecoder().decode(StreamResponse.self, from: Data(Self.streamJSON.utf8))
+        })
+        await detail.load(videoId: "v")
+        #expect(detail.state.didFail && detail.loadedVideoId == nil)
+        await detail.load(videoId: "v")          // same id, but the failure didn't claim it
+        #expect(detail.state.value?.title == "Song")
     }
 
     @Test func nowPlayingDetailNilIdClearsState() async {

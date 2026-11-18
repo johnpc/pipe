@@ -34,9 +34,9 @@ class AppSettings: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        // A fresh install starts on the demo library; an install from before the
-        // demo default existed keeps the instance it has been using. The choice
-        // is persisted so it is made exactly once.
+        // A fresh install has no instance; an install from before that rule
+        // existed keeps the instance it has been using. The choice is persisted
+        // so it is made exactly once.
         let stored = defaults.string(forKey: Self.instanceKey)
         let initial = SettingsLogic.initialInstance(stored: stored, hasPriorData: SettingsLogic.hasPriorData(in: defaults))
         self.instanceURL = initial
@@ -56,14 +56,19 @@ class AppSettings: ObservableObject {
 
     nonisolated deinit {}
 
-    /// Where a fresh install points: pipe's hosted demo library (the fake Piped
-    /// backend's static export — labelled sample clips, no streaming service
-    /// involved). Users enter their own Piped instance in Settings. This is also
-    /// what App Store review sees.
-    static let defaultInstance = "https://d2554qyjuoitlv.cloudfront.net"
-    /// The instance installs from before the demo default were using; kept for
-    /// them on upgrade (see `SettingsLogic.initialInstance`).
+    /// pipe ships with no server. A fresh install has an empty instance until
+    /// the user enters one (Settings, or the setup screen on Feed/Search).
+    static let noInstance = ""
+    /// pipe's hosted demo library: the fake Piped backend's static export —
+    /// labelled sample clips, no streaming service involved. Offered as an
+    /// explicit choice on the setup screen; it is what App Store review uses.
+    static let demoInstance = "https://d2554qyjuoitlv.cloudfront.net"
+    /// The instance installs from before "no server by default" were using;
+    /// kept for them on upgrade (see `SettingsLogic.initialInstance`).
     static let legacyInstance = "https://pipedapi.jpc.io"
+
+    /// Whether the app has somewhere to fetch from.
+    var isConfigured: Bool { !instanceURL.isEmpty }
 
     private func persistInstance() {
         let normalized = SettingsLogic.normalizedInstance(instanceURL)
@@ -84,8 +89,13 @@ class AppSettings: ObservableObject {
         defaults.removeObject(forKey: historyKey)
     }
 
-    /// Reset the instance URL to the default.
-    func resetInstance() {
-        instanceURL = AppSettings.defaultInstance
+    /// Forget the instance: the app goes back to its setup state.
+    func clearInstance() {
+        instanceURL = AppSettings.noInstance
+    }
+
+    /// Point the app at the hosted demo library.
+    func useDemoInstance() {
+        instanceURL = AppSettings.demoInstance
     }
 }

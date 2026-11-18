@@ -29,6 +29,8 @@ enum MockMode {
         PipedAPI.session = URLSession(configuration: config)
     }
 
+    /// Leave the instance unconfigured, so the setup screen can be tested.
+    static let noInstanceArgument = "--uitest-no-instance"
     static let failArgument = "--uitest-fail-streams"
     static let errorArgument = "--uitest-error-streams"
     static let downArgument = "--uitest-down-instance"
@@ -44,6 +46,9 @@ enum MockMode {
             pointInstance(at: instance, defaults: .standard)
             return
         }
+        // Fixtures answer by path, so any host works; without one the app would
+        // sit on the setup screen (which only `--uitest-no-instance` wants).
+        if !args.contains(noInstanceArgument) { pointInstance(at: "https://fixtures.uitest", defaults: .standard) }
         FixtureURLProtocol.streamMode = .from(arguments: args)
         activate()
     }

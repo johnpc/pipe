@@ -11,6 +11,9 @@ final class MockURLProtocol: URLProtocol {
     /// stub to be hit, not a previous test's cached response for the same id.
     static func makeSession() -> URLSession {
         StreamCache.removeAll()
+        // A stubbed network implies a configured instance; other suites (view
+        // renders of the setup state) may have left the global blank.
+        if pipedBase.isEmpty { pipedBase = "https://instance.test" }
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]
         return URLSession(configuration: config)

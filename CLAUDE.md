@@ -193,14 +193,19 @@ scripts/fake_piped/deploy.sh                                  # publish the demo
 - **Repo:** `johnpc/pipe`.
 - **iOS bundle id:** `com.johncorser.pipe`. Apple **team id `JW5SC3NYUV`**.
   `ITSAppUsesNonExemptEncryption=NO` (no encryption prompt on upload).
-- **Piped instance:** a fresh install defaults to the **demo library**
-  (`AppSettings.defaultInstance`, `https://d2554qyjuoitlv.cloudfront.net`); installs that
-  predate it keep `https://pipedapi.jpc.io` (`AppSettings.legacyInstance`, chosen by
-  `SettingsLogic.initialInstance`). Users set their instance in Settings.
+- **Piped instance:** the app **ships with no server**. A fresh install has
+  `AppSettings.noInstance` (empty) and Feed/Search show `InstanceSetupView` until the
+  user enters one (`OfflineLogic.screen(..., configured:)`); `PipedAPI.fetch` throws
+  `PipedError.noInstance` meanwhile. Installs that predate this rule keep
+  `https://pipedapi.jpc.io` (`AppSettings.legacyInstance`, chosen once by
+  `SettingsLogic.initialInstance`). The hosted **demo library**
+  (`AppSettings.demoInstance`, `https://d2554qyjuoitlv.cloudfront.net`) is an explicit
+  choice on the setup screen and in Settings — never a silent default. UI tests
+  run with an instance set by `MockMode` unless tagged `@no-instance`.
 - **App Store review never depends on YouTube.** Apple rejects apps that stream
   YouTube through unofficial means, so nothing a reviewer can reach may be YouTube:
-  the default instance is the demo library, the search chips come from the
-  instance's trending uploaders (never a hardcoded list of creators), and the demo
+  no instance is configured until the user chooses one, the search chips come from
+  the instance's trending uploaders (never a hardcoded list of creators), and the demo
   catalogue is labelled placeholders ("Demo Clip 12", "Demo Channel F", comments
   disabled) with synthetic media. Keep it that way: no hardcoded channel or video
   names in the app, and run the export leak check before a release

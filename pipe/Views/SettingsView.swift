@@ -29,15 +29,19 @@ struct SettingsView: View {
                     Button("Save") { settings.instanceURL = instanceDraft }
                         .disabled(!SettingsLogic.isValidInstanceDraft(instanceDraft))
                     Spacer()
-                    Button("Reset") {
-                        settings.resetInstance()
+                    Button("Demo library") {
+                        settings.useDemoInstance()
+                        instanceDraft = settings.instanceURL
+                    }.foregroundColor(.secondary)
+                    Button("Clear") {
+                        settings.clearInstance()
                         instanceDraft = settings.instanceURL
                     }.foregroundColor(.secondary)
                 }
             } header: {
                 Text("Piped Instance")
             } footer: {
-                Text("The default is pipe's demo library: labelled sample clips, no real videos. Enter the URL of your Piped instance to browse real content. Reset returns to the demo library.")
+                Text("pipe has no server of its own. Enter the URL of the Piped instance you use. The demo library is a safe set of labelled sample clips for trying the app. Clear removes the instance and shows the setup screen again.")
             }
 
             AudioLanguageSection(settings: settings)

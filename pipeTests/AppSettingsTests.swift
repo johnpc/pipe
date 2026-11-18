@@ -9,28 +9,29 @@ struct AppSettingsTests {
         AppSettings(defaults: UserDefaults(suiteName: "settings-\(UUID().uuidString)")!)
     }
 
-    @Test func freshInstallStartsOnTheDemoLibrary() {
+    @Test func freshInstallHasNoInstance() {
         let s = makeSettings()
-        #expect(s.instanceURL == AppSettings.defaultInstance)
-        pipedBase = AppSettings.defaultInstance
+        #expect(s.instanceURL == AppSettings.noInstance)
+        #expect(!s.isConfigured)
+        pipedBase = AppSettings.legacyInstance
     }
 
     @Test func anUpgradedInstallKeepsTheInstanceItWasUsing() {
-        // Before the demo default existed the instance key was never written;
-        // the presence of any app data proves the install predates it.
+        // Before "no server by default" the instance key was never written; the
+        // presence of real app data proves the install predates it.
         let suite = UserDefaults(suiteName: "settings-\(UUID().uuidString)")!
         suite.set(Data(#"[{"videoId":"abc"}]"#.utf8), forKey: "savedQueue")  // a real queue, not the empty "[]" stores write at launch
         let s = AppSettings(defaults: suite)
         #expect(s.instanceURL == AppSettings.legacyInstance)
         #expect(suite.string(forKey: AppSettings.instanceKey) == AppSettings.legacyInstance)  // decided once
-        pipedBase = AppSettings.defaultInstance
+        pipedBase = AppSettings.legacyInstance
     }
 
-    @Test func aStoredInstanceAlwaysWins() {
+    @Test func aStoredChoiceAlwaysWinsIncludingAnExplicitClear() {
         #expect(SettingsLogic.initialInstance(stored: "https://mine.test", hasPriorData: true) == "https://mine.test")
-        #expect(SettingsLogic.initialInstance(stored: "", hasPriorData: false) == AppSettings.defaultInstance)
+        #expect(SettingsLogic.initialInstance(stored: "", hasPriorData: true) == AppSettings.noInstance)  // user cleared it
         #expect(SettingsLogic.initialInstance(stored: nil, hasPriorData: true) == AppSettings.legacyInstance)
-        #expect(SettingsLogic.initialInstance(stored: nil, hasPriorData: false) == AppSettings.defaultInstance)
+        #expect(SettingsLogic.initialInstance(stored: nil, hasPriorData: false) == AppSettings.noInstance)
     }
 
     @Test func priorDataMeansContentNotMerePresence() {
@@ -45,12 +46,12 @@ struct AppSettingsTests {
         #expect(SettingsLogic.hasPriorData(in: suite))
     }
 
-    @Test func aBrandNewLaunchWithEmptyStoresStartsOnTheDemoLibrary() {
+    @Test func aBrandNewLaunchWithEmptyStoresHasNoInstance() {
         let suite = UserDefaults(suiteName: "settings-\(UUID().uuidString)")!
         suite.set(Data("[]".utf8), forKey: "savedQueue")
         suite.set(Data("[]".utf8), forKey: "recentItems")
-        #expect(AppSettings(defaults: suite).instanceURL == AppSettings.defaultInstance)
-        pipedBase = AppSettings.defaultInstance
+        #expect(AppSettings(defaults: suite).instanceURL == AppSettings.noInstance)
+        pipedBase = AppSettings.legacyInstance  // creating it cleared the global; restore for other suites
     }
 
     @Test func hasContentByType() {
@@ -65,16 +66,19 @@ struct AppSettingsTests {
         let s = makeSettings()
         s.instanceURL = "custom.piped.test"
         #expect(pipedBase == "https://custom.piped.test")
+        #expect(s.isConfigured)
         // Restore so other tests aren't affected by the global.
-        pipedBase = AppSettings.defaultInstance
+        pipedBase = AppSettings.legacyInstance
     }
 
-    @Test func resetInstanceRestoresDefault() {
+    @Test func demoAndClearAreTheTwoShortcuts() {
         let s = makeSettings()
-        s.instanceURL = "https://other.test"
-        s.resetInstance()
-        #expect(s.instanceURL == AppSettings.defaultInstance)
-        pipedBase = AppSettings.defaultInstance
+        s.useDemoInstance()
+        #expect(s.instanceURL == AppSettings.demoInstance && s.isConfigured)
+        s.clearInstance()
+        #expect(s.instanceURL == AppSettings.noInstance && !s.isConfigured)
+        #expect(pipedBase.isEmpty)
+        pipedBase = AppSettings.legacyInstance
     }
 
     @Test func recordSearchAddsToHistory() {
@@ -111,7 +115,7 @@ struct AppSettingsTests {
         s1.instanceURL = "https://saved.test"
         let s2 = AppSettings(defaults: suite)
         #expect(s2.instanceURL == "https://saved.test")
-        pipedBase = AppSettings.defaultInstance
+        pipedBase = AppSettings.legacyInstance
     }
 
     @Test func offlineModeDefaultsOff() {

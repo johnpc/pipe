@@ -58,14 +58,14 @@ thin, native client over Piped.
 
 ### Choosing a Piped instance
 
-pipe is an instance-agnostic client. A fresh install starts on **pipe's demo
-library** (`https://d2554qyjuoitlv.cloudfront.net`): a handful of labelled sample clips
-served from a static host, with no streaming service behind them. That is what
-App Store review sees, and it is what the app does until you tell it where your
-content lives. Point it at your Piped API instance in **Settings → Piped
-Instance** (for example your own self-hosted one). "Reset" returns to the demo
-library. Installs from before the demo default existed keep the instance they
-were already using.
+pipe is an instance-agnostic client and **ships with no server**. On first launch
+the Feed and Search tabs ask you for the address of the Piped API instance you use
+(for example your own self-hosted one); nothing is fetched until you enter one. You
+can change it any time in **Settings → Piped Instance**, or clear it to return to
+the setup screen. The setup screen also offers **pipe's demo library**
+(`https://d2554qyjuoitlv.cloudfront.net`), a handful of labelled sample clips served
+from a static host with no streaming service behind them, for trying the app.
+Installs from before this rule existed keep the instance they were already using.
 
 ### Diagnostics & telemetry (opt-in)
 
@@ -140,8 +140,8 @@ It is how:
 - **App Store review** gets a working app with no YouTube content anywhere:
   `--export-static` writes the whole API as static files with a labelled demo
   catalogue (`--catalog demo`: "Demo Clip N", "Demo Channel X", comments off), and
-  `scripts/fake_piped/deploy.sh` hosts it (private S3 behind CloudFront). A fresh
-  install points there by default, so a reviewer never has to configure anything.
+  `scripts/fake_piped/deploy.sh` hosts it (private S3 behind CloudFront). The review
+  notes tell the reviewer to tap "Try the demo library" on the setup screen.
 - **Local development** gets a backend that never changes.
 
 ```bash

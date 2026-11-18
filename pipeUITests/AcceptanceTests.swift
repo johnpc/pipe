@@ -19,6 +19,7 @@ import XCTest
 ///   `@fail-streams`   `/streams/` requests fail (network error) → Retry UI
 ///   `@error-streams`  `/streams/` returns a Piped error envelope
 ///   `@down-instance`  `/streams/` answers 502 like a dead instance
+///   `@no-instance`    no Piped instance configured (the first-launch setup state)
 ///   `@fake-server`    talk to the fake Piped backend over HTTP instead of
 ///                     in-process fixtures (`--uitest-instance <url>`), so the
 ///                     scenario plays real media (scripts/fake_piped)
@@ -46,6 +47,7 @@ class AcceptanceTests: XCTestCase {
         if scenario.tags.contains("@fail-streams") { args.append("--uitest-fail-streams") }
         if scenario.tags.contains("@error-streams") { args.append("--uitest-error-streams") }
         if scenario.tags.contains("@down-instance") { args.append("--uitest-down-instance") }
+        if scenario.tags.contains("@no-instance") { args.append("--uitest-no-instance") }
         if scenario.tags.contains("@fake-server") { args = ["--uitest-instance", StepDefinitions.fakeServerURL] }
         app.launchArguments = args
         app.launch()

@@ -32,7 +32,7 @@ mkdir -p "$SHOTS"
 sync_tree() {
   rsync -az --delete --exclude .git --exclude DerivedData --exclude build \
     --exclude TestResults.xcresult --exclude AcceptanceResults.xcresult --exclude coverage.json \
-    --exclude 'pipe/Secrets.xcconfig' ./ "$MINI:$REMOTE_DIR/"
+    --exclude 'pipe/Secrets.xcconfig' --exclude 'pipeUITests/ScreenshotCaptureTests.swift' ./ "$MINI:$REMOTE_DIR/"
   echo "✓ synced to $MINI:$REMOTE_DIR"
 }
 
