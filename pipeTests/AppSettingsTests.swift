@@ -27,6 +27,23 @@ struct AppSettingsTests {
         pipedBase = AppSettings.legacyInstance
     }
 
+    @Test func theFallbackInstanceIsOptionalAndPersistedNormalized() {
+        let suite = UserDefaults(suiteName: "settings-\(UUID().uuidString)")!
+        let s = AppSettings(defaults: suite)
+        #expect(s.fallbackInstanceURL == AppSettings.noInstance)
+        #expect(pipedFallbackBase == AppSettings.noInstance)
+        s.fallbackInstanceURL = "backup.example/ "
+        #expect(suite.string(forKey: AppSettings.fallbackKey) == "https://backup.example")
+        #expect(pipedFallbackBase == "https://backup.example")
+        // A relaunch reads it back.
+        let relaunched = AppSettings(defaults: suite)
+        #expect(SettingsLogic.normalizedInstance(relaunched.fallbackInstanceURL) == "https://backup.example")
+        #expect(pipedFallbackBase == "https://backup.example")
+        relaunched.fallbackInstanceURL = AppSettings.noInstance
+        #expect(pipedFallbackBase == AppSettings.noInstance)
+        pipedBase = AppSettings.legacyInstance
+    }
+
     @Test func aStoredChoiceAlwaysWinsIncludingAnExplicitClear() {
         #expect(SettingsLogic.initialInstance(stored: "https://mine.test", hasPriorData: true) == "https://mine.test")
         #expect(SettingsLogic.initialInstance(stored: "", hasPriorData: true) == AppSettings.noInstance)  // user cleared it

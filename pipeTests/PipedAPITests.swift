@@ -280,6 +280,100 @@ struct PipedAPITests {
         try await body()
     }
 
+    // MARK: - Fallback instance (explicit instances + own router: no shared state)
+
+    private let primary = "https://primary.test"
+    private let fallback = "https://fallback.test"
+
+    /// Answer per host: the primary with `primaryError` (or 200 when nil), the
+    /// fallback with a 200. Records the hosts asked, in order.
+    private func stubHosts(primaryError: Error?, primaryStatus: Int = 200) -> () -> [String] {
+        var hosts: [String] = []
+        MockURLProtocol.requestHandler = { request in
+            let host = request.url?.host ?? ""
+            hosts.append(host)
+            if host == "primary.test", let primaryError { throw primaryError }
+            let status = host == "primary.test" ? primaryStatus : 200
+            let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!
+            return (response, Data(#"{"items":[]}"#.utf8))
+        }
+        return { hosts }
+    }
+
+    private func search(router: InstanceRouter, fallback: String? = nil,
+                        now: Date = Date(timeIntervalSince1970: 1_000)) async throws -> [SearchItem] {
+        let url = URL(string: "\(primary)/search?q=x&filter=all")!
+        return try await PipedAPI.fetch(SearchResponse.self, from: url, primary: primary,
+                                        fallback: fallback ?? self.fallback, router: router, now: { now }).items
+    }
+
+    @Test func anUnreachablePrimaryFallsBackAndHoldsTheFallback() async throws {
+        try await withFastRetry {
+            let hosts = stubHosts(primaryError: URLError(.cannotConnectToHost))
+            let router = InstanceRouter()
+            let now = Date(timeIntervalSince1970: 1_000)
+            _ = try await search(router: router, now: now)
+            #expect(hosts() == Array(repeating: "primary.test", count: RetryPolicy.maxAttempts) + ["fallback.test"])
+            #expect(router.route == .fallback(until: now.addingTimeInterval(InstanceFailover.holdSeconds)))
+            // Within the hold, the dead primary is not asked again.
+            _ = try await search(router: router, now: now.addingTimeInterval(60))
+            #expect(hosts().last == "fallback.test")
+            #expect(hosts().count == RetryPolicy.maxAttempts + 2)
+        }
+    }
+
+    @Test func afterTheHoldThePrimaryIsTriedFirstAgain() async throws {
+        try await withFastRetry {
+            let hosts = stubHosts(primaryError: nil)
+            let router = InstanceRouter(.fallback(until: Date(timeIntervalSince1970: 500)))
+            _ = try await search(router: router, now: Date(timeIntervalSince1970: 1_000))
+            #expect(hosts() == ["primary.test"])
+            #expect(router.route == .primary)
+        }
+    }
+
+    @Test func aGatewayErrorFromThePrimaryFallsBack() async throws {
+        try await withFastRetry {
+            let hosts = stubHosts(primaryError: nil, primaryStatus: 503)
+            _ = try await search(router: InstanceRouter())
+            #expect(hosts().last == "fallback.test")
+        }
+    }
+
+    @Test func thePrimarysOwnVerdictIsNotReaskedElsewhere() async {
+        await withFastRetry {
+            let hosts = stubHosts(primaryError: nil, primaryStatus: 404)
+            await #expect(throws: PipedError.http(404)) { _ = try await search(router: InstanceRouter()) }
+            #expect(hosts() == ["primary.test"])
+        }
+    }
+
+    @Test func withoutAFallbackTheLastErrorSurfaces() async {
+        await withFastRetry {
+            let hosts = stubHosts(primaryError: URLError(.timedOut))
+            await #expect(throws: URLError.self) { _ = try await search(router: InstanceRouter(), fallback: "") }
+            #expect(hosts().count == RetryPolicy.maxAttempts)
+        }
+    }
+
+    @Test func bothInstancesDownSurfacesTheFallbacksError() async {
+        await withFastRetry {
+            MockURLProtocol.requestHandler = { _ in throw URLError(.cannotConnectToHost) }
+            let router = InstanceRouter()
+            await #expect(throws: URLError.self) { _ = try await search(router: router) }
+            #expect(router.route == .primary)
+        }
+    }
+
+    @Test func anATSRefusalSurfacesAsUseHTTPS() async {
+        await withFastRetry {
+            _ = stubHosts(primaryError: URLError(.appTransportSecurityRequiresSecureConnection))
+            await #expect(throws: PipedError.insecureInstance) {
+                _ = try await search(router: InstanceRouter(), fallback: "")
+            }
+        }
+    }
+
     @Test func retryRecoversAfterTransientFailures() async throws {
         try await withFastRetry {
             MockURLProtocol.failThenSucceed(times: 2, error: URLError(.networkConnectionLost), json: #"{"items":[]}"#)

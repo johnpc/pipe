@@ -158,6 +158,16 @@ final class FakeServerPlaybackFeatureTests: AcceptanceTests {
 }
 
 
+/// Falling back to a second Piped instance
+final class FallbackInstanceFeatureTests: AcceptanceTests {
+
+    func test_Search_and_playback_work_through_the_fallback_when_the_primary_is_down() {
+        runScenario(feature: "fallback_instance.feature", scenario: "Search and playback work through the fallback when the primary is down")
+    }
+
+}
+
+
 /// Feed Sorting and Filtering
 final class FeedSortingFeatureTests: AcceptanceTests {
 

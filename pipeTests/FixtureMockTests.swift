@@ -45,6 +45,13 @@ struct FixtureMockTests {
 
     // MARK: - MockMode
 
+    @Test func fallbackOverrideReadsItsValue() {
+        let args = ["--uitest-instance", "http://127.0.0.1:1", "--uitest-fallback-instance", "http://127.0.0.1:8765"]
+        #expect(MockMode.fallbackOverride(args) == "http://127.0.0.1:8765")
+        #expect(MockMode.fallbackOverride(["--uitest-fallback-instance"]) == nil)
+        #expect(MockMode.fallbackOverride(["--uitest-mock"]) == nil)
+    }
+
     @Test func instanceOverrideEnablesHermeticModeWithoutFixtures() throws {
         #expect(MockMode.instanceOverride(["--uitest-instance", "http://127.0.0.1:8765"]) == "http://127.0.0.1:8765")
         #expect(MockMode.instanceOverride(["--uitest-instance"]) == nil)  // no value

@@ -15,11 +15,36 @@ enum PipedAPI {
     /// Test seam for the inter-attempt delay so retry tests don't actually sleep.
     nonisolated(unsafe) static var sleep: (UInt64) async -> Void = { try? await Task.sleep(nanoseconds: $0) }
 
-    /// Fetch + decode with bounded retry on transient network errors.
-    static func fetch<T: Decodable>(_ type: T.Type, from url: URL) async throws -> T {
+    /// Fetch + decode from the configured instance, moving on to the fallback
+    /// instance (when one is set) if the first one is unreachable. The instances
+    /// and route holder are read once, up front (defaults: the live settings and
+    /// the app-wide router), so a request never mixes two configurations and
+    /// tests can drive it without touching process-wide state.
+    static func fetch<T: Decodable>(_ type: T.Type, from url: URL,
+                                    primary: String = pipedBase, fallback: String = pipedFallbackBase,
+                                    router: InstanceRouter = .shared,
+                                    now: () -> Date = { Date() }) async throws -> T {
         // No server configured: say so instead of letting a relative URL fail
         // with an opaque network error (the Feed/Search tabs show setup instead).
-        guard !pipedBase.isEmpty else { throw PipedError.noInstance }
+        guard !primary.isEmpty else { throw PipedError.noInstance }
+        let candidates = InstanceFailover.candidates(for: url, primary: primary, fallback: fallback,
+                                                     route: router.route, now: now())
+        var lastError: Error = URLError(.unknown)
+        for candidate in candidates {
+            do {
+                let value = try await fetchRetrying(type, from: candidate.url)
+                router.route = InstanceFailover.route(afterSuccessOn: candidate.base, primary: primary, now: now())
+                return value
+            } catch {
+                lastError = PipedError.translated(error)
+                guard InstanceFailover.shouldTryNext(after: error) else { throw lastError }
+            }
+        }
+        throw lastError
+    }
+
+    /// Fetch + decode one URL with bounded retry on transient network errors.
+    private static func fetchRetrying<T: Decodable>(_ type: T.Type, from url: URL) async throws -> T {
         var attempt = 0
         while true {
             attempt += 1

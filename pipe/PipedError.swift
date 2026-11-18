@@ -21,6 +21,20 @@ struct PipedError: LocalizedError, Equatable {
 
     /// The app has no instance configured yet (pipe ships without a server).
     static let noInstance = PipedError(message: "no Piped instance is configured — choose one in Settings")
+
+    /// iOS refused a plain-http request (App Transport Security). pipe allows
+    /// http only on the local network, so a remote instance must use https.
+    static let insecureInstance = PipedError(
+        message: "this instance uses plain http — iOS only allows that on your local network, so use its https address")
+
+    /// `error` with iOS's opaque ATS refusal replaced by `insecureInstance`;
+    /// everything else unchanged.
+    static func translated(_ error: Error) -> Error {
+        if let urlError = error as? URLError, urlError.code == .appTransportSecurityRequiresSecureConnection {
+            return insecureInstance
+        }
+        return error
+    }
 }
 
 /// The `{error, message}` envelope Piped returns on failure. All-optional so it

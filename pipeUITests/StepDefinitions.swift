@@ -21,6 +21,8 @@ enum StepDefinitions {
     /// Where UI tests find the fake Piped backend (scripts/fake_piped). CI
     /// starts it before the suite; `remote.sh fake start` does locally.
     static let fakeServerURL = ProcessInfo.processInfo.environment["PIPE_FAKE_SERVER"] ?? "http://127.0.0.1:8765"
+    /// A loopback port nothing listens on: every connection is refused at once.
+    static let deadInstanceURL = "http://127.0.0.1:1"
 
     private static let short: TimeInterval = 5
     private static let medium: TimeInterval = 10
@@ -331,7 +333,15 @@ enum StepDefinitions {
         r.define("I open Settings and tap \"(.+)\"") { w in
             selectTab(w, "Settings")
             let button = w.app.buttons[w.capture()]
-            if !button.waitForExistence(timeout: 3) || !button.isHittable { w.app.swipeUp() }
+            // Settings is a lazy List: rows below the fold don't exist until
+            // scrolled to, and how far down a row sits depends on the sections
+            // above it. Scroll until it is on screen (bounded), then assert.
+            _ = button.waitForExistence(timeout: 3)  // the tab's first render
+            var swipes = 0
+            while !(button.exists && button.isHittable) && swipes < 6 {
+                w.app.swipeUp()
+                swipes += 1
+            }
             XCTAssertTrue(button.waitForExistence(timeout: short), "“\(w.capture())” should be present")
             button.tap()
         }

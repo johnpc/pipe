@@ -10,6 +10,11 @@ enum MockMode {
     /// play actual media end to end.
     static let instanceArgument = "--uitest-instance"
 
+    /// `--uitest-fallback-instance <url>`: also configure a fallback instance,
+    /// so a scenario can point the primary at a dead address and prove the app
+    /// carries on through the fallback.
+    static let fallbackArgument = "--uitest-fallback-instance"
+
     /// True when the process was launched for UI testing (fixtures or a fake
     /// backend): persisted state is reset and the Cast SDK stays inert.
     static func isEnabled(_ args: [String] = ProcessInfo.processInfo.arguments) -> Bool {
@@ -18,7 +23,16 @@ enum MockMode {
 
     /// The backend URL given after `--uitest-instance`, if any.
     static func instanceOverride(_ args: [String] = ProcessInfo.processInfo.arguments) -> String? {
-        guard let index = args.firstIndex(of: instanceArgument), index + 1 < args.count else { return nil }
+        value(after: instanceArgument, in: args)
+    }
+
+    /// The fallback instance given after `--uitest-fallback-instance`, if any.
+    static func fallbackOverride(_ args: [String] = ProcessInfo.processInfo.arguments) -> String? {
+        value(after: fallbackArgument, in: args)
+    }
+
+    private static func value(after flag: String, in args: [String]) -> String? {
+        guard let index = args.firstIndex(of: flag), index + 1 < args.count else { return nil }
         return args[index + 1]
     }
 
@@ -44,6 +58,7 @@ enum MockMode {
         resetPersistedState()
         if let instance = instanceOverride(args) {
             pointInstance(at: instance, defaults: .standard)
+            if let fallback = fallbackOverride(args) { UserDefaults.standard.set(fallback, forKey: AppSettings.fallbackKey) }
             return
         }
         // Fixtures answer by path, so any host works; without one the app would
