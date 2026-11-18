@@ -52,6 +52,19 @@ struct FixtureMockTests {
         #expect(MockMode.fallbackOverride(["--uitest-mock"]) == nil)
     }
 
+    @Test func pointInstancesWritesBothInstancesOnlyForARealBackend() throws {
+        let suite = try #require(UserDefaults(suiteName: "mock-fallback-\(UUID().uuidString)"))
+        #expect(!MockMode.pointInstances(from: ["--uitest-mock"], defaults: suite))
+        #expect(suite.string(forKey: AppSettings.instanceKey) == nil)
+        #expect(MockMode.pointInstances(from: ["--uitest-instance", "http://127.0.0.1:8765"], defaults: suite))
+        #expect(suite.string(forKey: AppSettings.instanceKey) == "http://127.0.0.1:8765")
+        #expect(suite.string(forKey: AppSettings.fallbackKey) == nil)
+        let both = ["--uitest-instance", "http://127.0.0.1:1", "--uitest-fallback-instance", "http://127.0.0.1:8765"]
+        #expect(MockMode.pointInstances(from: both, defaults: suite))
+        #expect(suite.string(forKey: AppSettings.instanceKey) == "http://127.0.0.1:1")
+        #expect(suite.string(forKey: AppSettings.fallbackKey) == "http://127.0.0.1:8765")
+    }
+
     @Test func instanceOverrideEnablesHermeticModeWithoutFixtures() throws {
         #expect(MockMode.instanceOverride(["--uitest-instance", "http://127.0.0.1:8765"]) == "http://127.0.0.1:8765")
         #expect(MockMode.instanceOverride(["--uitest-instance"]) == nil)  // no value

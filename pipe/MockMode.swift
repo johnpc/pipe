@@ -56,11 +56,7 @@ enum MockMode {
     static func activateIfNeeded(_ args: [String] = ProcessInfo.processInfo.arguments) {
         guard isEnabled(args) else { return }
         resetPersistedState()
-        if let instance = instanceOverride(args) {
-            pointInstance(at: instance, defaults: .standard)
-            if let fallback = fallbackOverride(args) { UserDefaults.standard.set(fallback, forKey: AppSettings.fallbackKey) }
-            return
-        }
+        if pointInstances(from: args, defaults: .standard) { return }
         // Fixtures answer by path, so any host works; without one the app would
         // sit on the setup screen (which only `--uitest-no-instance` wants).
         if !args.contains(noInstanceArgument) { pointInstance(at: "https://fixtures.uitest", defaults: .standard) }
@@ -75,6 +71,16 @@ enum MockMode {
         reset(defaults: .standard,
               domain: Bundle.main.bundleIdentifier,
               downloads: DownloadStore.defaultDirectory())
+    }
+
+    /// Apply `--uitest-instance` (and `--uitest-fallback-instance`) to
+    /// `defaults`. Returns whether a real backend was given, i.e. whether the
+    /// in-process fixtures must stay off.
+    static func pointInstances(from args: [String], defaults: UserDefaults) -> Bool {
+        guard let instance = instanceOverride(args) else { return false }
+        pointInstance(at: instance, defaults: defaults)
+        if let fallback = fallbackOverride(args) { defaults.set(fallback, forKey: AppSettings.fallbackKey) }
+        return true
     }
 
     /// Make `AppSettings` (created later) start on `instance`: the fake server
