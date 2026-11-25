@@ -36,7 +36,7 @@ struct FeedView: View {
         .navigationDestination(for: String.self) { dest in
             FeedDestination(dest: dest, player: player, saved: saved, downloads: downloads)
         }
-        .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player) }
+        .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player, preview: DetailPreview($0)) }
         .toolbar { FeedToolbar(sort: $sort, hideWatched: $hideWatched) }
         .task { await loadFeed() }
         .onChange(of: following.channels) { _, _ in

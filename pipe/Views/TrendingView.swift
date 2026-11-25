@@ -27,7 +27,7 @@ struct TrendingView: View {
             }
         }
         .navigationTitle("Trending")
-        .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player) }
+        .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player, preview: DetailPreview($0)) }
         .task { await load() }
     }
 

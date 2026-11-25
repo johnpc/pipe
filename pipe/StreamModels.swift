@@ -19,6 +19,8 @@ struct StreamResponse: Codable, Equatable {
     /// Caption tracks (TTML) offered for the video. Decodes to nil when absent;
     /// the inline default keeps existing memberwise initializers source-stable.
     var subtitles: [Subtitle]? = nil
+    /// True while the video is a stream in progress (Piped's `livestream`).
+    var livestream: Bool? = nil
 }
 
 /// A caption/subtitle track as returned by Piped. `url` points at a TTML

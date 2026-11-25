@@ -442,6 +442,35 @@ final class ViewRenderTests: XCTestCase {
         renderLive(NavigationStack { DetailView(videoId: "v1", player: p) })
     }
 
+    /// A live stream's detail shows the LIVE line in its header.
+    func testRenderDetailViewLive() {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: """
+        {"title":"T","description":null,"uploader":"U","uploaderUrl":null,"duration":0,"hls":"https://x/m.m3u8","audioStreams":[],"videoStreams":[],"thumbnailUrl":"th","uploadDate":null,"livestream":true}
+        """)
+        let (p, _, _) = makeStores()
+        renderLive(NavigationStack { DetailView(videoId: "live1", player: p, preview: DetailPreview(title: "T", uploader: "U", thumbnail: "th", duration: -1, uploadedDate: nil)) })
+    }
+
+    /// An unaired premiere: Piped answers with its error envelope, the page
+    /// shows the row's preview and when it starts. Also the unavailable page.
+    func testRenderDetailViewUpcomingAndUnavailable() {
+        PipedAPI.session = MockURLProtocol.makeSession()
+        defer { PipedAPI.session = .shared }
+        MockURLProtocol.stub(json: #"{"error":"ContentNotAvailableException","message":"This live event will begin in 6 hours."}"#, status: 500)
+        let (p, _, _) = makeStores()
+        let soon = DetailPreview(title: "Soon", uploader: "U", thumbnail: "t", duration: -1, uploadedDate: "2099-01-01 20:00")
+        renderLive(NavigationStack { DetailView(videoId: "soon", player: p, preview: soon) })
+        MockURLProtocol.stub(json: #"{"error":"x","message":"This video is unavailable"}"#, status: 500)
+        renderLive(NavigationStack { DetailView(videoId: "gone", player: p, preview: nil) })
+        render(UpcomingDetailView(preview: soon, start: Date().addingTimeInterval(3600), message: nil) {})
+        render(UpcomingDetailView(preview: nil, start: nil, message: "Soon.") {})
+        render(UnavailableDetailView(preview: soon, message: "Private video", videoId: "v1"))
+        render(UnavailableDetailView(preview: nil, message: "Gone", videoId: ""))
+        render(DetailPreviewHeader(preview: DetailPreview(title: "T", uploader: "", thumbnail: "", duration: 0, uploadedDate: nil)))
+    }
+
     /// Drives PlaylistView's loader with a stubbed playlist so the loaded body
     /// (header + Play All + video rows) renders, not just the spinner.
     func testRenderPlaylistViewLoaded() {

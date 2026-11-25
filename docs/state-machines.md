@@ -102,6 +102,18 @@ transition into `connected`, `PlayerState+Cast` runs the current item through
 and the list views, so "still loading", "empty", and "failed, offer Retry" are
 distinct.
 
+### 4a. Video detail page — `DetailState` (explicit)
+
+`loading / loaded(stream) / upcoming(start?, message?) / unavailable(message) /
+failed`. `DetailLoadLogic.state(result, preview:)` decides: a success is
+`loaded`; a failure on a row the list already knew was an unaired premiere
+(`DetailPreview.status == .upcoming`) is `upcoming` with its start; otherwise
+the instance's message is read (`DetailLoadLogic.reason`): "live event will
+begin…" → `upcoming` (Check again), "unavailable / private / country / age /
+members-only" → `unavailable` (no Retry, YouTube link), anything else →
+`failed` (Retry). `DetailPreview` carries the row's title/uploader/thumbnail so
+those two pages are not blank.
+
 ## 5. Transcript summary — `SummaryState` (explicit)
 
 `idle / summarizing(partial) / done(text) / failed(message)` on

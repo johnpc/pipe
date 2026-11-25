@@ -34,13 +34,18 @@ struct DetailContent: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(stream.title).font(.headline)
                 Text(stream.uploader).foregroundStyle(.secondary)
+                if stream.livestream == true {
+                    Label("Live now", systemImage: "dot.radiowaves.left.and.right")
+                        .font(.caption).bold().foregroundStyle(.red)
+                        .accessibilityIdentifier("detailLive")
+                }
                 HStack(spacing: 12) {
                     Button { run(.play) } label: {
                         Label("Play", systemImage: "play.fill")
                             .font(.subheadline)
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(Color.accentColor).foregroundColor(.white).cornerRadius(16)
-                    }
+                    }.accessibilityIdentifier("detailPlayButton")
                     Button { run(.queue) } label: {
                         Label("Queue", systemImage: "plus")
                             .font(.subheadline)

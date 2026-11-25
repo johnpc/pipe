@@ -85,6 +85,35 @@ struct FixtureMockTests {
         pipedBase = AppSettings.legacyInstance
     }
 
+    @Test func unairedPremiereInTheCatalogAnswersLikePiped() {
+        let search = Data("""
+        {"items":[{"url":"/watch?v=soon","type":"stream","title":"Soon","uploaderName":"U","duration":-1,"uploadedDate":"2099-01-01 20:00"},
+                  {"url":"/watch?v=now","type":"stream","title":"Now","uploaderName":"U","duration":30,"uploadedDate":"1 day ago"}]}
+        """.utf8)
+        let real = FixtureURLProtocol.loader
+        defer { FixtureURLProtocol.loader = real }
+        FixtureURLProtocol.loader = { name in name == "search" ? search : nil }
+        let soon = FixtureURLProtocol.premiereEnvelope(for: URL(string: "https://x/streams/soon")!)
+        #expect(soon != nil)
+        #expect(PipedErrorEnvelope.error(from: soon!)?.message == "This live event will begin in 6 hours.")
+        #expect(FixtureURLProtocol.premiereEnvelope(for: URL(string: "https://x/streams/now")!) == nil)
+        #expect(FixtureURLProtocol.premiereEnvelope(for: URL(string: "https://x/search?q=a")!) == nil)
+        // The canned answer per mode: error modes win; normal mode serves the
+        // premiere envelope for the unaired video and the fixture otherwise.
+        let mode = FixtureURLProtocol.streamMode
+        defer { FixtureURLProtocol.streamMode = mode }
+        let soonURL = URL(string: "https://x/streams/soon")!, nowURL = URL(string: "https://x/streams/now")!
+        FixtureURLProtocol.streamMode = .normal
+        #expect(FixtureURLProtocol.cannedStreams(for: soonURL)?.status == 500)
+        #expect(FixtureURLProtocol.cannedStreams(for: nowURL) == nil)
+        FixtureURLProtocol.streamMode = .networkFailure
+        #expect(FixtureURLProtocol.cannedStreams(for: nowURL) == nil)
+        FixtureURLProtocol.streamMode = .pipedError
+        #expect(FixtureURLProtocol.cannedStreams(for: nowURL) == .init(status: 200, body: FixtureURLProtocol.pipedErrorBody, contentType: "application/json"))
+        FixtureURLProtocol.streamMode = .instanceDown
+        #expect(FixtureURLProtocol.cannedStreams(for: nowURL)?.status == 502)
+    }
+
     @Test func isEnabledDetectsLaunchArgument() {
         #expect(MockMode.isEnabled([MockMode.launchArgument]) == true)
         #expect(MockMode.isEnabled(["other"]) == false)
