@@ -371,6 +371,10 @@ final class SearchFeatureTests: AcceptanceTests {
         runScenario(feature: "search.feature", scenario: "Tapping a suggestion runs a search")
     }
 
+    func test_A_premiere_that_has_not_aired_yet_offers_nothing_to_play() {
+        runScenario(feature: "search.feature", scenario: "A premiere that has not aired yet offers nothing to play")
+    }
+
 }
 
 

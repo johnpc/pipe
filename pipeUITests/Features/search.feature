@@ -18,3 +18,7 @@ Feature: Search Videos
     Given I am on the Search tab
     When I tap the "Scump" suggestion
     Then I should see a list of search results
+
+  Scenario: A premiere that has not aired yet offers nothing to play
+    Given I have searched for "MrBeast"
+    Then the premiere result should say when it premieres instead of offering a play button

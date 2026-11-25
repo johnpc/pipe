@@ -204,6 +204,16 @@ enum StepDefinitions {
                           "The Comments tab should render its content")
         }
 
+        r.define("the premiere result should say when it premieres instead of offering a play button") { w in
+            // The search fixture carries one unaired premiere (a 2099 start).
+            let caption = w.app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Premieres '")).firstMatch
+            XCTAssertTrue(caption.waitForExistence(timeout: long), "A premiere row should say when it premieres")
+            let row = w.app.cells.containing(.staticText, identifier: caption.label).firstMatch
+            XCTAssertTrue(row.exists, "The premiere caption should sit in a result row")
+            XCTAssertEqual(row.buttons.matching(identifier: "playButton").count, 0, "An unaired premiere has nothing to play")
+            XCTAssertEqual(row.buttons.matching(identifier: "queueButton").count, 0, "…and nothing to queue")
+        }
+
         // MARK: Queue
         r.define("I tap the queue button on the first result") { w in
             let queue = w.app.buttons["queueButton"].firstMatch

@@ -65,7 +65,7 @@ struct FeedView: View {
             videos = cached
         }
         loading = videos.isEmpty
-        if let fetched = await FeedLoader.fetch(channels: following.channels) {
+        if let fetched = await FeedLoader.fetch(channels: following.channels, known: videos) {
             videos = fetched
             cache.save(fetched)
         }

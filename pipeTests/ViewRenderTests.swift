@@ -472,6 +472,12 @@ final class ViewRenderTests: XCTestCase {
     func testRenderVideoRow() {
         render(VideoRow(v: relatedStream(), isCompleted: true, resumeTime: 30, onPlay: {}, onQueue: {}))
         render(VideoRow(v: relatedStream(), isCompleted: false, resumeTime: nil, onPlay: {}, onQueue: {}))
+        let live = RelatedStream(url: "/watch?v=live", title: "Live", thumbnail: "t", duration: -1, uploaderName: "U", uploadedDate: nil, uploaded: -1)
+        let premiere = RelatedStream(url: "/watch?v=soon", title: "Soon", thumbnail: "t", duration: -1, uploaderName: "U", uploadedDate: "2099-01-01 20:00", uploaded: nil)
+        render(VideoRow(v: live, onPlay: {}, onQueue: {}))
+        render(VideoRow(v: premiere, onPlay: {}, onQueue: {}))
+        render(ThumbnailBadge(status: .upcoming(Date()), duration: -1))
+        render(RowPlayButtons(onPlay: nil, onQueue: nil))
     }
 
     func testRenderTabPill() {
@@ -482,6 +488,10 @@ final class ViewRenderTests: XCTestCase {
     func testRenderAudioRow() {
         render(AudioRow(item: searchVideo(), isCompleted: true, resumeTime: 12, onPlay: {}, onQueue: {}))
         render(AudioRow(item: searchVideo()))
+        let live = SearchItem(url: "/watch?v=live", type: "stream", title: "Live", thumbnail: "t", uploaderName: "U", uploaderUrl: nil, duration: -1, name: nil, uploadedDate: nil, verified: nil, subscribers: nil, videos: nil)
+        let premiere = SearchItem(url: "/watch?v=soon", type: "stream", title: "Soon", thumbnail: "t", uploaderName: "U", uploaderUrl: nil, duration: -1, name: nil, uploadedDate: "2099-01-01 20:00", verified: nil, subscribers: nil, videos: nil)
+        render(AudioRow(item: live, onPlay: {}, onQueue: {}))
+        render(AudioRow(item: premiere, onPlay: {}, onQueue: {}))
     }
 
     func testRenderChannelRow() { render(ChannelRow(item: searchChannel())) }

@@ -118,17 +118,28 @@ dictionary, so a row asks one question.
 `hidden / loading(msg) / success(msg) / error(msg)` on `ToastManager.state`;
 `message`, `isLoading`, `isError` are derived.
 
-## 8. Mock stream behaviour — `FixtureURLProtocol.StreamMode` (explicit)
+## 8. Listed stream status — `StreamStatus` (explicit, decided per row)
+
+`StreamStatus.of(duration:uploadedDate:now:)` classifies a feed/search/channel
+row as `.video`, `.live`, or `.upcoming(Date)` from Piped's indirect signals
+(`duration == -1` and no date → live; a UTC `yyyy-MM-dd HH:mm` date in the
+future → upcoming). Rows render from it: LIVE badge and "Live now" caption,
+"Premieres Today at 3pm ET" with **no play/queue/context menu** for an unaired
+premiere (`isPlayable == false`), the duration pill and upload date otherwise.
+Related: `FeedPublication` + `PublicReleaseStore` move a members-early video's
+sort date to when it first became visible to this viewer.
+
+## 9. Mock stream behaviour — `FixtureURLProtocol.StreamMode` (explicit)
 
 `normal / networkFailure / pipedError / instanceDown`, chosen from the launch
 flags by `StreamMode.from(arguments:)`. Test-only.
 
-## 9. Sleep — implicit (`sleepMinutesRemaining` + `stopAfterCurrentEpisode`)
+## 10. Sleep — implicit (`sleepMinutesRemaining` + `stopAfterCurrentEpisode`)
 
 Two independent "stop later" modes: a countdown and an end-of-episode flag. They
 are genuinely independent (both can be armed), so two values is the honest model.
 
-## 10. Audio session — `wasPlayingBeforeInterruption` + `AudioSessionPolicy`
+## 11. Audio session — `wasPlayingBeforeInterruption` + `AudioSessionPolicy`
 
 Interruption began/ended and route changes are decided by the pure
 `AudioSessionPolicy`; the one remembered bit is whether to resume.
