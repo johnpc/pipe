@@ -20,4 +20,6 @@ struct ResolvedStream: Equatable {
     let duration: Int
     let uploadedDate: String?
     var chapters: [Chapter] = []
+    /// A stream in progress: no resume position, no completion, no download.
+    var isLive: Bool = false
 }

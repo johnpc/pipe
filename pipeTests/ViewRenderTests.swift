@@ -488,7 +488,7 @@ final class ViewRenderTests: XCTestCase {
         PipedAPI.session = MockURLProtocol.makeSession()
         defer { PipedAPI.session = .shared }
         MockURLProtocol.stub(json: """
-        {"id":"c1","name":"Chan","avatarUrl":"a","description":"d","relatedStreams":[{"url":"/watch?v=v1","title":"S1","thumbnail":"t","duration":61,"uploaderName":"U","uploadedDate":"1 day ago","uploaded":5}],"tabs":null}
+        {"id":"c1","name":"Chan","avatarUrl":"a","description":"d","relatedStreams":[{"url":"/watch?v=v1","title":"S1","thumbnail":"t","duration":61,"uploaderName":"U","uploadedDate":"1 day ago","uploaded":5},{"url":"/watch?v=live","title":"On air","thumbnail":"t","duration":-1,"uploaderName":"U","uploadedDate":null,"uploaded":-1},{"url":"/watch?v=soon","title":"Soon","thumbnail":"t","duration":-1,"uploaderName":"U","uploadedDate":"2099-01-01 20:00","uploaded":4070995200000}],"tabs":null}
         """)
         let (p, f, r) = makeStores()
         f.follow(FollowedChannel(id: "c1", name: "Chan", thumbnail: "t"))

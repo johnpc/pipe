@@ -26,7 +26,7 @@ extension PlayerState {
     /// Mark the finished item complete, drop it from the queue, and advance
     /// (honoring an "end of episode" sleep request).
     func advanceAfterFinish() {
-        if let vid = currentVideoId {
+        if let vid = currentVideoId, RecentsPolicy.recordsProgress(for: vid, in: queue) {
             recents?.updateTimestamp(videoId: vid, timestamp: 0)
         }
         let finishedIndex = currentIndex

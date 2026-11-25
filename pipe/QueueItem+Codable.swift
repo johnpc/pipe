@@ -18,6 +18,7 @@ extension QueueItem {
             hlsUrl: try c.decodeIfPresent(String.self, forKey: .hlsUrl) ?? "",
             duration: try c.decode(Int.self, forKey: .duration),
             uploadedDate: try c.decodeIfPresent(String.self, forKey: .uploadedDate),
+            isLive: try c.decodeIfPresent(Bool.self, forKey: .isLive) ?? false,
             resolvedAt: try c.decodeIfPresent(Date.self, forKey: .resolvedAt),
             audioLanguage: try c.decodeIfPresent(String.self, forKey: .audioLanguage)
         )

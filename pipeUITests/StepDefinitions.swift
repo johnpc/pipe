@@ -500,7 +500,11 @@ enum StepDefinitions {
             firstVideo.tap()
         }
         r.define("I should see a \"Chapters\" list") { w in
-            XCTAssertTrue(w.app.staticTexts["Chapters"].waitForExistence(timeout: long), "Chapters list should appear")
+            // Flaked once on CI (2026-11-25): the pill tap landed mid-scroll of the
+            // tab strip and selected nothing. One re-tap if the list is slow to show.
+            let list = w.app.staticTexts["Chapters"]
+            if !list.waitForExistence(timeout: short) { w.app.buttons["playerTab-Chapters"].firstMatch.tap() }
+            XCTAssertTrue(list.waitForExistence(timeout: long), "Chapters list should appear")
             XCTAssertTrue(w.app.staticTexts["Introduction"].exists, "A fixture chapter title should be listed")
         }
         r.define("I tap a chapter") { w in

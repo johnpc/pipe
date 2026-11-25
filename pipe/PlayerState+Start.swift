@@ -11,11 +11,13 @@ extension PlayerState {
         // Fetch + auto-skip SponsorBlock segments for this video.
         loadSponsorSegments(for: item.videoId)
 
-        // Resume from saved position
-        let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
+        // Resume from saved position; a live stream is neither resumed nor remembered.
+        let savedPos = RecentsPolicy.records(item) ? (recents?.getTimestamp(videoId: item.videoId) ?? 0) : 0
 
         // Add to recents
-        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
+        if RecentsPolicy.records(item) {
+            recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
+        }
 
         // A requested start position (chapter jump, recovery, mode switch) takes
         // precedence over the saved-resume position. `.playerStarted` consumes it.

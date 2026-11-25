@@ -20,7 +20,7 @@ struct VideoRow: View {
             content.contextMenu {
                 mediaContextMenu(videoId: v.videoId, onPlay: onPlay, onQueue: onQueue,
                                  onPlayNext: onPlayNext, onCast: onCast, isSaved: isSaved, onToggleSave: onToggleSave,
-                                 isDownloaded: isDownloaded, onToggleDownload: onToggleDownload)
+                                 isDownloaded: isDownloaded, onToggleDownload: status == .live ? nil : onToggleDownload)
             }
         } else {
             content  // an unaired premiere: nothing to play, queue, cast, or download yet

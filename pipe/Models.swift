@@ -26,6 +26,9 @@ struct QueueItem: Identifiable, Equatable, Codable {
     var hlsUrl: String = ""
     let duration: Int
     let uploadedDate: String?
+    /// A stream in progress. Live items keep no resume position and are never
+    /// marked completed or offered for download (see `RecentsPolicy`).
+    var isLive: Bool = false
     /// When the stream URLs were last resolved. Used to detect a stale (expired)
     /// URL and re-fetch before playback. `nil` for items persisted before this
     /// field existed — treated as stale so they're refreshed on next play.
@@ -51,7 +54,7 @@ struct QueueItem: Identifiable, Equatable, Codable {
     // `id` is generated, not part of the persisted payload.
     enum CodingKeys: String, CodingKey {
         case videoId, title, artist, thumbnail, url, audioUrl, castUrl, duration, uploadedDate, resolvedAt
-        case audioLanguage, videoOnlyUrl, hlsUrl
+        case audioLanguage, videoOnlyUrl, hlsUrl, isLive
     }
 
     /// URL to play for the given mode: audio-only when available and not in

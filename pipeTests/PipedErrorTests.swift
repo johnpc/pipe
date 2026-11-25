@@ -27,6 +27,14 @@ struct PipedErrorTests {
         #expect(PipedErrorEnvelope.error(from: data(#"{"error":"","message":""}"#)) == nil)
     }
 
+    @Test func envelopeCarriesAPremiereSchedule() {
+        let body = data(#"{"error":"ContentNotAvailableException","message":"This live event will begin in 5 hours.","title":"Late Edition","uploader":"GBNews","thumbnailUrl":"https://i/x.jpg","releaseTimestamp":1795647600000}"#)
+        let error = PipedErrorEnvelope.error(from: body)
+        #expect(error?.message == "This live event will begin in 5 hours.")
+        #expect(error?.schedule == PremiereSchedule(start: Date(timeIntervalSince1970: 1_795_647_600), title: "Late Edition", uploader: "GBNews", thumbnail: "https://i/x.jpg"))
+        #expect(PipedErrorEnvelope.error(from: data(#"{"error":"x","message":"gone"}"#))?.schedule == nil)
+    }
+
     @Test func nonJSONBodyIsNotAnError() {
         #expect(PipedErrorEnvelope.error(from: data("not json at all")) == nil)
     }

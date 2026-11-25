@@ -9,6 +9,9 @@ struct PipedError: LocalizedError, Equatable {
     let message: String
     /// Set when the failure was a non-2xx reply rather than an error envelope.
     var statusCode: Int? = nil
+    /// For a premiere/stream that has not started, what the instance knew
+    /// about it (the shim sends these alongside its refusal).
+    var schedule: PremiereSchedule? = nil
     var errorDescription: String? { message }
 
     /// A non-2xx reply with no Piped envelope — e.g. the 502 the proxy in front
@@ -37,12 +40,32 @@ struct PipedError: LocalizedError, Equatable {
     }
 }
 
+/// What the instance knows about a video it refused because it has not started:
+/// its scheduled start and identity, so a deep link still gets a proper page.
+struct PremiereSchedule: Equatable {
+    var start: Date? = nil
+    var title: String? = nil
+    var uploader: String? = nil
+    var thumbnail: String? = nil
+}
+
 /// The `{error, message}` envelope Piped returns on failure. All-optional so it
 /// only counts as an error when a message/error string is actually present —
-/// a normal success body simply yields nils.
+/// a normal success body simply yields nils. The shim adds `releaseTimestamp`
+/// (ms), `title`, `uploader`, and `thumbnailUrl` for an unaired premiere.
 struct PipedErrorEnvelope: Decodable {
     let error: String?
     let message: String?
+    var releaseTimestamp: Int64? = nil
+    var title: String? = nil
+    var uploader: String? = nil
+    var thumbnailUrl: String? = nil
+
+    var schedule: PremiereSchedule? {
+        guard releaseTimestamp != nil || title != nil else { return nil }
+        return PremiereSchedule(start: releaseTimestamp.map { Date(timeIntervalSince1970: Double($0) / 1000) },
+                                title: title, uploader: uploader, thumbnail: thumbnailUrl)
+    }
 
     /// The best human message, or nil when this isn't an error body.
     var reportedMessage: String? {
@@ -55,6 +78,6 @@ struct PipedErrorEnvelope: Decodable {
     static func error(from data: Data) -> PipedError? {
         guard let envelope = try? JSONDecoder().decode(PipedErrorEnvelope.self, from: data),
               let message = envelope.reportedMessage else { return nil }
-        return PipedError(message: message)
+        return PipedError(message: message, schedule: envelope.schedule)
     }
 }

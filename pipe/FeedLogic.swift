@@ -13,8 +13,37 @@ enum FeedSort: String, CaseIterable {
     }
 }
 
+/// The feed split by what each row is right now: streams on air, premieres
+/// and streams still to come (soonest first), and the uploads. Live rows carry
+/// `uploaded == -1` and upcoming ones a future time, so left in the main list
+/// they sink to the bottom or pin to the top; sections put them where they read.
+struct FeedSections: Equatable {
+    var live: [RelatedStream] = []
+    var upcoming: [RelatedStream] = []
+    var videos: [RelatedStream] = []
+
+    var isEmpty: Bool { live.isEmpty && upcoming.isEmpty && videos.isEmpty }
+}
+
 /// Pure feed ordering + filtering so it's unit-testable and keeps the view thin.
 enum FeedLogic {
+    static func sections(_ videos: [RelatedStream], sort: FeedSort, hideWatched: Bool, now: Date = Date(),
+                         isWatched: (RelatedStream) -> Bool) -> FeedSections {
+        var out = FeedSections()
+        var starts: [String: Date] = [:]
+        var uploads: [RelatedStream] = []
+        for video in videos {
+            switch StreamStatus.of(duration: video.duration, uploadedDate: video.uploadedDate, now: now) {
+            case .live: out.live.append(video)
+            case .upcoming(let start): starts[video.videoId] = start; out.upcoming.append(video)
+            case .video: uploads.append(video)
+            }
+        }
+        out.upcoming.sort { (starts[$0.videoId] ?? .distantFuture) < (starts[$1.videoId] ?? .distantFuture) }
+        out.videos = arrange(uploads, sort: sort, hideWatched: hideWatched, isWatched: isWatched)
+        return out
+    }
+
     /// Sort and optionally hide watched videos.
     /// `isWatched` is injected (backed by RecentsStore.isCompleted in the app).
     static func arrange(
