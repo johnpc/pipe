@@ -65,7 +65,7 @@ struct RecentsView: View {
         }
         .listStyle(.plain)
         .navigationTitle("Recents")
-        .navigationDestination(for: RecentItem.self) { DetailView(videoId: $0.videoId, player: player) }
+        .navigationDestination(for: RecentItem.self) { DetailView(videoId: $0.videoId, player: player, preview: DetailPreview($0)) }
         .overlay {
             if recents.items.isEmpty {
                 ContentUnavailableView("No History", systemImage: "clock", description: Text("Videos you watch will appear here"))

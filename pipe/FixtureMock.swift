@@ -68,23 +68,15 @@ final class FixtureURLProtocol: URLProtocol {
         }
     }
 
-    /// Body the 502 mode serves: what nginx returns when its upstream is gone.
-    static let downBody = Data("<html><body><h1>502 Bad Gateway</h1></body></html>".utf8)
-
     override func startLoading() {
         guard let url = request.url else { return }
         if url.path.hasPrefix("/streams/") {
-            switch FixtureURLProtocol.streamMode {
-            case .normal:
-                break
-            case .networkFailure:
+            if FixtureURLProtocol.streamMode == .networkFailure {
                 client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
                 return
-            case .pipedError:
-                let body = Data(#"{"error":"ParsingException","message":"JSON response is too short"}"#.utf8)
-                return respond(url: url, status: 200, body: body, contentType: "application/json")
-            case .instanceDown:
-                return respond(url: url, status: 502, body: FixtureURLProtocol.downBody, contentType: "text/html")
+            }
+            if let canned = FixtureURLProtocol.cannedStreams(for: url) {
+                return respond(url: url, status: canned.status, body: canned.body, contentType: canned.contentType)
             }
         }
         guard let name = FixtureRouter.fixtureName(for: url),
@@ -93,6 +85,38 @@ final class FixtureURLProtocol: URLProtocol {
             return
         }
         respond(url: url, status: 200, body: FixtureURLProtocol.personalized(data, for: url), contentType: "application/json")
+    }
+
+    struct Canned: Equatable {
+        let status: Int
+        let body: Data
+        let contentType: String
+    }
+
+    /// Body the 502 mode serves: what nginx returns when its upstream is gone.
+    static let downBody = Data("<html><body><h1>502 Bad Gateway</h1></body></html>".utf8)
+    /// A Piped error envelope on HTTP 200 (the extractor hiccup shape).
+    static let pipedErrorBody = Data(#"{"error":"ParsingException","message":"JSON response is too short"}"#.utf8)
+    /// What Piped answers for a premiere that has not started (HTTP 500 with
+    /// its error envelope), for catalog videos listed with a negative duration.
+    static let premiereBody = Data(#"{"error":"ContentNotAvailableException","message":"This live event will begin in 6 hours."}"#.utf8)
+
+    /// The `/streams/` answers that are not the fixture: the error modes, or
+    /// Piped's premiere envelope for an unaired catalog video. Nil = serve the
+    /// (personalized) fixture. Pure, so every branch is unit-tested.
+    static func cannedStreams(for url: URL) -> Canned? {
+        switch streamMode {
+        case .pipedError: return Canned(status: 200, body: pipedErrorBody, contentType: "application/json")
+        case .instanceDown: return Canned(status: 502, body: downBody, contentType: "text/html")
+        case .normal, .networkFailure:
+            return premiereEnvelope(for: url).map { Canned(status: 500, body: $0, contentType: "application/json") }
+        }
+    }
+
+    static func premiereEnvelope(for url: URL) -> Data? {
+        guard let id = FixtureCatalog.videoId(fromStreamsPath: url.path),
+              let video = FixtureCatalog.video(id, loader: loader), video.duration < 0 else { return nil }
+        return premiereBody
     }
 
     /// The streams template rewritten for the requested id when the catalog

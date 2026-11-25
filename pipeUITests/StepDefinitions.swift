@@ -214,6 +214,21 @@ enum StepDefinitions {
             XCTAssertEqual(row.buttons.matching(identifier: "queueButton").count, 0, "…and nothing to queue")
         }
 
+        r.define("I open the premiere result") { w in
+            let caption = w.app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Premieres '")).firstMatch
+            XCTAssertTrue(caption.waitForExistence(timeout: long), "A premiere row should be in the results")
+            caption.tap()
+        }
+        r.define("I should see when the premiere starts and no Play button") { w in
+            XCTAssertTrue(w.app.navigationBars["Details"].waitForExistence(timeout: long), "The detail page should open")
+            let headline = w.app.staticTexts["detailPremiere"]
+            XCTAssertTrue(headline.waitForExistence(timeout: long), "The page should say when the premiere starts")
+            XCTAssertTrue(headline.label.hasPrefix("Premieres "), "Headline was: \(headline.label)")
+            XCTAssertTrue(w.app.buttons["checkAgainButton"].exists, "A Check again control should be offered")
+            XCTAssertFalse(w.app.buttons["detailPlayButton"].exists, "An unaired premiere has nothing to play")
+            XCTAssertFalse(w.app.buttons["retryButton"].exists, "This is not a failure, so no Retry")
+        }
+
         // MARK: Queue
         r.define("I tap the queue button on the first result") { w in
             let queue = w.app.buttons["queueButton"].firstMatch

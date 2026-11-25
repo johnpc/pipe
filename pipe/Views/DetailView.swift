@@ -2,11 +2,14 @@ import SwiftUI
 
 /// A video's detail page: description, chapters, related videos, and comments —
 /// browsable WITHOUT starting playback. Reached by tapping a video row in
-/// Search, Feed, Recents, Trending, Channel, and Playlist lists.
+/// Search, Feed, Recents, Trending, Channel, and Playlist lists. `preview` is
+/// what that row already knew, so an unaired premiere or an unavailable video
+/// still gets a page with its title and thumbnail (see `DetailState`).
 struct DetailView: View {
     let videoId: String
     @ObservedObject var player: PlayerState
-    @State private var state: LoadState<StreamResponse> = .loading
+    var preview: DetailPreview? = nil
+    @State private var state: DetailState = .loading
 
     var body: some View {
         Group {
@@ -15,6 +18,10 @@ struct DetailView: View {
                 ProgressView().padding()
             case .failed:
                 RetryView { Task { await load() } }
+            case .upcoming(let start, let message):
+                UpcomingDetailView(preview: preview, start: start, message: message) { Task { await load() } }
+            case .unavailable(let message):
+                UnavailableDetailView(preview: preview, message: message, videoId: videoId)
             case .loaded(let s):
                 ScrollView { DetailContent(videoId: videoId, stream: s, player: player).padding() }
             }
@@ -42,6 +49,8 @@ struct DetailView: View {
 
     private func load() async {
         state = .loading
-        state = LoadState.from(try? await PipedAPI.streams(videoId))
+        let result: Result<StreamResponse, Error>
+        do { result = .success(try await PipedAPI.streams(videoId)) } catch { result = .failure(error) }
+        state = DetailLoadLogic.state(result, preview: preview)
     }
 }

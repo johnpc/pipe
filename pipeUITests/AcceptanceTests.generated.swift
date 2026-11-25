@@ -511,6 +511,10 @@ final class VideoDetailFeatureTests: AcceptanceTests {
         runScenario(feature: "video_detail.feature", scenario: "The detail page shows the description and comments")
     }
 
+    func test_An_unaired_premiere_s_page_says_when_it_starts_instead_of_offering_playback() {
+        runScenario(feature: "video_detail.feature", scenario: "An unaired premiere's page says when it starts instead of offering playback")
+    }
+
 }
 
 

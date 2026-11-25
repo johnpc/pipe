@@ -13,3 +13,8 @@ Feature: Video Detail Page
     Then I should see the video description
     When I open the comments
     Then I should see at least one comment
+
+  Scenario: An unaired premiere's page says when it starts instead of offering playback
+    Given I have searched for "MrBeast"
+    When I open the premiere result
+    Then I should see when the premiere starts and no Play button

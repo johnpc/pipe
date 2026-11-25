@@ -50,7 +50,7 @@ struct ChannelView: View {
                         .listStyle(.plain)
                     }
                 }
-                .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player) }
+                .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player, preview: DetailPreview($0)) }
                 .navigationTitle(ch.name)
                 .toolbar { followButton(ch) }
             } else if failed {

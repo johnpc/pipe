@@ -15,7 +15,7 @@ struct SearchDestination: View {
         } else if item.isPlaylist {
             PlaylistView(playlistId: item.playlistId, title: item.displayTitle, player: player, saved: .shared)
         } else {
-            DetailView(videoId: item.videoId, player: player)
+            DetailView(videoId: item.videoId, player: player, preview: DetailPreview(item))
         }
     }
 }
