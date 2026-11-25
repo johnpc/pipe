@@ -7,12 +7,13 @@ struct DetailContent: View {
     let videoId: String
     let stream: StreamResponse
     @ObservedObject var player: PlayerState
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             header
             if ChaptersLogic.hasChapters(stream.chapters), let chapters = stream.chapters {
-                ChaptersView(chapters: chapters) { seekToChapter($0) }
+                ChaptersView(chapters: chapters, current: player.currentVideoId == videoId ? player.currentChapterTitle : nil) { seekToChapter($0) }
             }
             if let d = stream.description {
                 Text(HTMLText.attributed(d)).font(.body).tint(.accentColor)
@@ -29,8 +30,9 @@ struct DetailContent: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            AsyncImage(url: URL(string: stream.thumbnailUrl)) { $0.resizable() } placeholder: { Color.gray }
-                .frame(width: 100, height: 100).cornerRadius(8)
+            AsyncImage(url: URL(string: stream.thumbnailUrl)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
+                .frame(width: RowMetrics.headerArt(sizeClass).width, height: RowMetrics.headerArt(sizeClass).height)
+                .clipped().cornerRadius(8)
             VStack(alignment: .leading, spacing: 8) {
                 Text(stream.title).font(.headline)
                 Text(stream.uploader).foregroundStyle(.secondary)
