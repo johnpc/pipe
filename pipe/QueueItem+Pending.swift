@@ -8,7 +8,8 @@ extension QueueItem {
     static func pending(videoId: String, title: String, artist: String, thumbnail: String,
                         duration: Int, uploadedDate: String?) -> QueueItem {
         QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail,
-                  url: "", audioUrl: "", duration: duration, uploadedDate: uploadedDate, resolvedAt: nil)
+                  url: "", audioUrl: "", duration: duration, uploadedDate: uploadedDate,
+                  isLive: StreamStatus.of(duration: duration, uploadedDate: uploadedDate) == .live, resolvedAt: nil)
     }
 
     /// A feed / channel / trending / related / playlist row.

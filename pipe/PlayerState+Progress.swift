@@ -9,7 +9,7 @@ extension PlayerState {
         self.currentTime = time
         if let d = itemDuration, d.isFinite, d > 0 { self.duration = d }
         if let vid = currentVideoId {
-            recents?.updateTimestamp(videoId: vid, timestamp: time)
+            if RecentsPolicy.recordsProgress(for: vid, in: queue) { recents?.updateTimestamp(videoId: vid, timestamp: time) }
             updateCurrentChapter(for: vid, at: time)
         }
         logProgressHeartbeat(at: time)

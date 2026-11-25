@@ -49,7 +49,7 @@ extension PlayerState {
         updateNowPlaying()
     }
 
-    func play(videoId: String, urlString: String, audioUrl: String = "", castUrl: String = "", videoOnlyUrl: String = "", hlsUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil) {
+    func play(videoId: String, urlString: String, audioUrl: String = "", castUrl: String = "", videoOnlyUrl: String = "", hlsUrl: String = "", title: String?, artist: String?, thumbnail: String?, duration: Int = 0, uploadedDate: String? = nil, isLive: Bool = false) {
         // Already queued: play it in place (with the fresh URLs) instead of
         // inserting a duplicate entry for the same video.
         if let existing = queue.firstIndex(where: { $0.videoId == videoId }) {
@@ -58,11 +58,12 @@ extension PlayerState {
             queue[existing].castUrl = castUrl
             queue[existing].videoOnlyUrl = videoOnlyUrl
             queue[existing].hlsUrl = hlsUrl
+            queue[existing].isLive = isLive
             queue[existing].resolvedAt = Date()
             playIndex(existing)
             return
         }
-        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, castUrl: castUrl, videoOnlyUrl: videoOnlyUrl, hlsUrl: hlsUrl, duration: duration, uploadedDate: uploadedDate)
+        let item = QueueItem(videoId: videoId, title: title ?? "", artist: artist ?? "", thumbnail: thumbnail ?? "", url: urlString, audioUrl: audioUrl, castUrl: castUrl, videoOnlyUrl: videoOnlyUrl, hlsUrl: hlsUrl, duration: duration, uploadedDate: uploadedDate, isLive: isLive)
         queue.insert(item, at: 0)
         playIndex(0)
     }

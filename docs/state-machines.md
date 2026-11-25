@@ -139,7 +139,11 @@ future → upcoming). Rows render from it: LIVE badge and "Live now" caption,
 "Premieres Today at 3pm ET" with **no play/queue/context menu** for an unaired
 premiere (`isPlayable == false`), the duration pill and upload date otherwise.
 Related: `FeedPublication` + `PublicReleaseStore` move a members-early video's
-sort date to when it first became visible to this viewer.
+sort date to when it first became visible to this viewer; `FeedLogic.sections`
+splits the feed into Live now / Upcoming (soonest first) / uploads so live rows
+(`uploaded == -1`) and future premieres do not sink or pin in the main list.
+`QueueItem.isLive` (from `StreamResponse.livestream`) drives `RecentsPolicy`:
+live items are never remembered, resumed, completed, or offered for download.
 
 ## 9. Mock stream behaviour — `FixtureURLProtocol.StreamMode` (explicit)
 

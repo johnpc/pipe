@@ -16,6 +16,15 @@ struct FeedPublicationTests {
         #expect(FeedPublication.latePublications(fresh: fresh, known: known) == ["a7"])
     }
 
+    @Test func channelsAreToldApartByUrlWhenPresent() {
+        // Two channels named "Andrei": only the one with the same URL counts as known.
+        let known = [RelatedStream(url: "/watch?v=k", title: "k", thumbnail: "", duration: 1, uploaderName: "Andrei", uploadedDate: nil, uploaded: 10 * day, uploaderUrl: "/channel/A")]
+        let sameName = RelatedStream(url: "/watch?v=o", title: "o", thumbnail: "", duration: 1, uploaderName: "Andrei", uploadedDate: nil, uploaded: 7 * day, uploaderUrl: "/channel/B")
+        let sameChannel = RelatedStream(url: "/watch?v=p", title: "p", thumbnail: "", duration: 1, uploaderName: "Andrei", uploadedDate: nil, uploaded: 7 * day, uploaderUrl: "/channel/A")
+        #expect(FeedPublication.latePublications(fresh: known + [sameName, sameChannel], known: known) == ["p"])
+        #expect(FeedPublication.applying(["p": 12 * day], to: [sameChannel]).first?.uploaderUrl == "/channel/A")
+    }
+
     @Test func genuinelyNewUploadIsNotLate() {
         let known = [video("a10", channel: "Andrei", uploaded: 10 * day)]
         let fresh = known + [video("a11", channel: "Andrei", uploaded: 11 * day), video("a10b", channel: "Andrei", uploaded: 10 * day)]

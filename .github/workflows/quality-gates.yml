@@ -157,7 +157,9 @@ jobs:
     # Mac mini's CI keychain, uploads to TestFlight, and on a version conflict bumps
     # the minor version and lands it as a PR (opened with DEPLOY_PAT, so its CI runs).
     needs: [unit-tests, crap-analysis, acceptance-tests]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Also on a manual run (Actions → Run workflow on main): GitHub dropped a
+    # push event on 2026-11-25 and the merge sat undeployed until a no-op commit.
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: write
       pull-requests: write

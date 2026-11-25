@@ -68,9 +68,11 @@ extension PlayerState {
         currentArtist = item.artist
         currentThumbnail = item.thumbnail
         duration = item.duration > 0 ? Double(item.duration) : 0
-        let savedPos = recents?.getTimestamp(videoId: item.videoId) ?? 0
+        let savedPos = RecentsPolicy.records(item) ? (recents?.getTimestamp(videoId: item.videoId) ?? 0) : 0
         currentTime = savedPos
-        recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
+        if RecentsPolicy.records(item) {
+            recents?.add(videoId: item.videoId, title: item.title, artist: item.artist, thumbnail: item.thumbnail, timestamp: savedPos, duration: item.duration, uploadedDate: item.uploadedDate)
+        }
 
         log.event("cast", "load", fields: ["videoId": item.videoId, "from": String(Int(savedPos))])
         cast.load(CastLogic.media(from: item, startTime: savedPos))
@@ -93,7 +95,9 @@ extension PlayerState {
         castTimeCancellable = cast.$currentTime.sink { [weak self] time in
             guard let self, self.isCasting else { return }
             self.currentTime = time
-            if let vid = self.currentVideoId { self.recents?.updateTimestamp(videoId: vid, timestamp: time) }
+            if let vid = self.currentVideoId, RecentsPolicy.recordsProgress(for: vid, in: self.queue) {
+                self.recents?.updateTimestamp(videoId: vid, timestamp: time)
+            }
         }
     }
 }

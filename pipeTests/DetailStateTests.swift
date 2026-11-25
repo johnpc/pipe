@@ -46,6 +46,18 @@ struct DetailStateTests {
                 == .unavailable("Join this channel to get access to members-only content"))
     }
 
+    @Test func deepLinkPremiereUsesTheInstanceSchedule() {
+        let start = Date(timeIntervalSince1970: 1_795_647_600)
+        let refused = PipedError(message: "This live event will begin in 5 hours.",
+                                 schedule: PremiereSchedule(start: start, title: "Late Edition", uploader: "GBNews", thumbnail: "th"))
+        #expect(DetailLoadLogic.state(.failure(refused), preview: nil, now: now) == .upcoming(start: start, message: "This live event will begin in 5 hours."))
+        #expect(DetailLoadLogic.preview(for: refused, fallback: nil) == DetailPreview(title: "Late Edition", uploader: "GBNews", thumbnail: "th", duration: -1, uploadedDate: nil))
+        #expect(DetailLoadLogic.preview(for: refused, fallback: video) == video)
+        #expect(DetailLoadLogic.preview(for: URLError(.timedOut), fallback: nil) == nil)
+        // The row's own schedule wins over the instance's when both exist.
+        #expect(DetailLoadLogic.state(.failure(refused), preview: premiere, now: now) == .upcoming(start: Date(timeIntervalSince1970: 1_795_636_800), message: "This live event will begin in 5 hours."))
+    }
+
     @Test func transientFailuresKeepTheRetryButton() {
         #expect(DetailLoadLogic.state(.failure(URLError(.timedOut)), preview: video, now: now) == .failed)
         #expect(DetailLoadLogic.state(.failure(PipedError(message: "JSON response is too short")), preview: nil, now: now) == .failed)

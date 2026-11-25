@@ -31,10 +31,12 @@ enum FeedPublication {
         videos.map { video in
             guard let at = publicAt[video.videoId], at > (video.uploaded ?? 0) else { return video }
             return RelatedStream(url: video.url, title: video.title, thumbnail: video.thumbnail, duration: video.duration,
-                                 uploaderName: video.uploaderName, uploadedDate: video.uploadedDate, uploaded: at)
+                                 uploaderName: video.uploaderName, uploadedDate: video.uploadedDate, uploaded: at,
+                                 uploaderUrl: video.uploaderUrl)
         }
     }
 
-    /// Feed rows carry only the uploader's name to tell channels apart.
-    static func channelKey(_ video: RelatedStream) -> String { video.uploaderName ?? "" }
+    /// The channel URL when Piped sent one (two channels can share a display
+    /// name), else the uploader's name.
+    static func channelKey(_ video: RelatedStream) -> String { video.uploaderUrl ?? video.uploaderName ?? "" }
 }

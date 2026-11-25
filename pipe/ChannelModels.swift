@@ -32,6 +32,8 @@ struct RelatedStream: Codable, Identifiable, Hashable {
     let uploaderName: String?
     let uploadedDate: String?
     let uploaded: Int64?
+    /// "/channel/<id>" — the stable way to tell channels apart (names can collide).
+    var uploaderUrl: String? = nil
 
     var id: String { url }
     var videoId: String { url.replacingOccurrences(of: "/watch?v=", with: "") }

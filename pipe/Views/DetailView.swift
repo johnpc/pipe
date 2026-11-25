@@ -10,6 +10,8 @@ struct DetailView: View {
     @ObservedObject var player: PlayerState
     var preview: DetailPreview? = nil
     @State private var state: DetailState = .loading
+    /// The row's preview, or what the instance told us about an unaired premiere.
+    @State private var shownPreview: DetailPreview? = nil
 
     var body: some View {
         Group {
@@ -19,16 +21,17 @@ struct DetailView: View {
             case .failed:
                 RetryView { Task { await load() } }
             case .upcoming(let start, let message):
-                UpcomingDetailView(preview: preview, start: start, message: message) { Task { await load() } }
+                UpcomingDetailView(preview: shownPreview ?? preview, start: start, message: message) { Task { await load() } }
             case .unavailable(let message):
-                UnavailableDetailView(preview: preview, message: message, videoId: videoId)
+                UnavailableDetailView(preview: shownPreview ?? preview, message: message, videoId: videoId)
             case .loaded(let s):
                 ScrollView { DetailContent(videoId: videoId, stream: s, player: player).padding() }
             }
         }
         .navigationTitle("Details")
         .toolbar {
-            if case .loaded(let s) = state, let downloads = player.downloads {
+            // A live stream has no file to download (its payload is HLS-only).
+            if case .loaded(let s) = state, s.livestream != true, let downloads = player.downloads {
                 DownloadButton(videoId: videoId, stream: s, downloads: downloads)
             }
             if let url = RowActions.youtubeURL(videoId: videoId) {
@@ -50,7 +53,10 @@ struct DetailView: View {
     private func load() async {
         state = .loading
         let result: Result<StreamResponse, Error>
-        do { result = .success(try await PipedAPI.streams(videoId)) } catch { result = .failure(error) }
+        do { result = .success(try await PipedAPI.streams(videoId)) } catch {
+            result = .failure(error)
+            shownPreview = DetailLoadLogic.preview(for: error, fallback: preview)
+        }
         state = DetailLoadLogic.state(result, preview: preview)
     }
 }

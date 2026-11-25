@@ -50,15 +50,24 @@ enum DetailLoadLogic {
         case .success(let stream):
             return .loaded(stream)
         case .failure(let error):
-            let message = (error as? PipedError).map { humanMessage($0.message) }
+            let piped = error as? PipedError
+            let message = piped.map { humanMessage($0.message) }
             if case .upcoming(let start)? = preview?.status(now: now) { return .upcoming(start: start, message: message) }
             guard let message else { return .failed }
             switch reason(message) {
-            case .upcoming: return .upcoming(start: nil, message: message)
+            case .upcoming: return .upcoming(start: piped?.schedule?.start, message: message)
             case .unavailable: return .unavailable(message)
             case nil: return .failed
             }
         }
+    }
+
+    /// The preview to show for a failed load: the row's own, else what the
+    /// instance sent with its refusal (a deep link has no row).
+    static func preview(for error: Error, fallback: DetailPreview?) -> DetailPreview? {
+        if let fallback { return fallback }
+        guard let schedule = (error as? PipedError)?.schedule, let title = schedule.title, !title.isEmpty else { return nil }
+        return DetailPreview(title: title, uploader: schedule.uploader ?? "", thumbnail: schedule.thumbnail ?? "", duration: -1, uploadedDate: nil)
     }
 
     enum Reason { case upcoming, unavailable }

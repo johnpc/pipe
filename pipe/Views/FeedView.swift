@@ -12,8 +12,8 @@ struct FeedView: View {
     @State private var hideWatched = false
     var cache = FeedCache()
 
-    private var arranged: [RelatedStream] {
-        FeedLogic.arrange(videos, sort: sort, hideWatched: hideWatched) {
+    private var sections: FeedSections {
+        FeedLogic.sections(videos, sort: sort, hideWatched: hideWatched) {
             recents.isCompleted(videoId: $0.videoId)
         }
     }
@@ -24,10 +24,16 @@ struct FeedView: View {
                 .listRowInsets(EdgeInsets()).listRowSeparator(.hidden)
             if loading {
                 ProgressView("Loading feed...").frame(maxWidth: .infinity)
-            } else if arranged.isEmpty {
+            } else if sections.isEmpty {
                 ContentUnavailableView("No Feed", systemImage: "rectangle.stack", description: Text("Follow channels to see their videos here"))
             } else {
-                ForEach(arranged) { row($0) }
+                if !sections.live.isEmpty {
+                    Section("Live now") { ForEach(sections.live) { row($0) } }
+                }
+                if !sections.upcoming.isEmpty {
+                    Section("Upcoming") { ForEach(sections.upcoming) { row($0) } }
+                }
+                Section { ForEach(sections.videos) { row($0) } }
             }
         }
         .listStyle(.plain)

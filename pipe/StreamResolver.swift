@@ -26,6 +26,7 @@ struct PipedStreamResolver: StreamResolving {
         copy.castUrl = getCastStreamUrl(response)
         copy.videoOnlyUrl = getVideoOnlyStreamUrl(response)
         copy.hlsUrl = response.hls ?? ""
+        copy.isLive = response.livestream == true
         copy.resolvedAt = now
         guard !copy.url.isEmpty || !copy.audioUrl.isEmpty || !copy.hlsUrl.isEmpty else { return nil }
         return copy
