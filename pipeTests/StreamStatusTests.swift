@@ -19,6 +19,14 @@ struct StreamStatusTests {
         #expect(StreamStatus.of(duration: -1, uploadedDate: nil, now: now) == .live)
     }
 
+    @Test func shortsLookLiveButAreNot() {
+        // Piped lists a Short exactly like a live stream (duration -1, no date)
+        // and flags it isShort; a Short must never get the LIVE badge.
+        #expect(StreamStatus.of(duration: -1, uploadedDate: nil, isShort: true, now: now) == .video)
+        #expect(StreamStatus.of(duration: -1, uploadedDate: nil, isShort: false, now: now) == .live)
+        #expect(StreamStatus.of(duration: -1, uploadedDate: nil, isShort: nil, now: now) == .live)
+    }
+
     @Test func scheduledInTheFutureIsUpcoming() {
         let start = Date(timeIntervalSince1970: 1_795_636_800)  // 20:00Z
         #expect(StreamStatus.of(duration: -1, uploadedDate: "2026-11-25 20:00", now: now) == .upcoming(start))

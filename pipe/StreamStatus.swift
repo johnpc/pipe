@@ -4,15 +4,17 @@ import Foundation
 /// or a premiere/stream that has not started. Piped signals these only
 /// indirectly: a live item has `duration == -1` and no upload date; a scheduled
 /// one carries a UTC wall clock in `uploadedDate` (see `UploadDateFormat`).
+/// A Short has the live shape too (`-1`, no date) but is flagged `isShort`.
 enum StreamStatus: Equatable {
     case video
     case live
     case upcoming(Date)
 
-    static func of(duration: Int?, uploadedDate: String?, now: Date = Date()) -> StreamStatus {
+    static func of(duration: Int?, uploadedDate: String?, isShort: Bool? = nil, now: Date = Date()) -> StreamStatus {
         if let raw = uploadedDate, let start = UploadDateFormat.scheduledDate(raw), start > now {
             return .upcoming(start)
         }
+        if isShort == true { return .video }
         return (duration ?? 0) < 0 ? .live : .video
     }
 

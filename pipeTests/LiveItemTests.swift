@@ -25,8 +25,10 @@ struct LiveItemTests {
     @Test func pendingItemFromALiveRowIsLive() {
         let live = RelatedStream(url: "/watch?v=l", title: "L", thumbnail: "", duration: -1, uploaderName: "U", uploadedDate: nil, uploaded: -1)
         let vod = RelatedStream(url: "/watch?v=v", title: "V", thumbnail: "", duration: 90, uploaderName: "U", uploadedDate: "1 day ago", uploaded: 1)
+        let short = RelatedStream(url: "/watch?v=s", title: "S", thumbnail: "", duration: -1, uploaderName: "U", uploadedDate: nil, uploaded: -1, isShort: true)
         #expect(QueueItem(pending: live).isLive)
         #expect(!QueueItem(pending: vod).isLive)
+        #expect(!QueueItem(pending: short).isLive)
     }
 
     @Test func liveFlagRoundTripsAndDefaultsToFalse() throws {

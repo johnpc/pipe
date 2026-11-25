@@ -32,7 +32,7 @@ enum FeedPublication {
             guard let at = publicAt[video.videoId], at > (video.uploaded ?? 0) else { return video }
             return RelatedStream(url: video.url, title: video.title, thumbnail: video.thumbnail, duration: video.duration,
                                  uploaderName: video.uploaderName, uploadedDate: video.uploadedDate, uploaded: at,
-                                 uploaderUrl: video.uploaderUrl)
+                                 uploaderUrl: video.uploaderUrl, isShort: video.isShort)
         }
     }
 

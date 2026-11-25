@@ -6,22 +6,22 @@ import Foundation
 /// hasn't landed by the time the item is up, it re-resolves right before play.
 extension QueueItem {
     static func pending(videoId: String, title: String, artist: String, thumbnail: String,
-                        duration: Int, uploadedDate: String?) -> QueueItem {
+                        duration: Int, uploadedDate: String?, isShort: Bool? = nil) -> QueueItem {
         QueueItem(videoId: videoId, title: title, artist: artist, thumbnail: thumbnail,
                   url: "", audioUrl: "", duration: duration, uploadedDate: uploadedDate,
-                  isLive: StreamStatus.of(duration: duration, uploadedDate: uploadedDate) == .live, resolvedAt: nil)
+                  isLive: StreamStatus.of(duration: duration, uploadedDate: uploadedDate, isShort: isShort) == .live, resolvedAt: nil)
     }
 
     /// A feed / channel / trending / related / playlist row.
     init(pending v: RelatedStream) {
         self = .pending(videoId: v.videoId, title: v.title, artist: v.uploaderName ?? "",
-                        thumbnail: v.thumbnail, duration: v.duration, uploadedDate: v.uploadedDate)
+                        thumbnail: v.thumbnail, duration: v.duration, uploadedDate: v.uploadedDate, isShort: v.isShort)
     }
 
     /// A search result row.
     init(pending item: SearchItem) {
         self = .pending(videoId: item.videoId, title: item.displayTitle, artist: item.displayUploader,
-                        thumbnail: item.displayThumbnail, duration: item.duration ?? 0, uploadedDate: item.uploadedDate)
+                        thumbnail: item.displayThumbnail, duration: item.duration ?? 0, uploadedDate: item.uploadedDate, isShort: item.isShort)
     }
 
     /// A watch-history row.

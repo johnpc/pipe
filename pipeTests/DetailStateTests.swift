@@ -20,6 +20,8 @@ struct DetailStateTests {
         let recent = RecentItem(videoId: "c", title: "C", artist: "Art", thumbnail: "tc", timestamp: 5, lastWatched: now, duration: 90, uploadedDate: "1 day ago")
         #expect(DetailPreview(recent) == DetailPreview(title: "C", uploader: "Art", thumbnail: "tc", duration: 90, uploadedDate: "1 day ago"))
         #expect(DetailPreview(related).status(now: now) == .upcoming(Date(timeIntervalSince1970: 4_070_980_800)))
+        let short = RelatedStream(url: "/watch?v=s", title: "S", thumbnail: "", duration: -1, uploaderName: "U", uploadedDate: nil, uploaded: -1, isShort: true)
+        #expect(DetailPreview(short).status(now: now) == .video)
     }
 
     @Test func successIsLoadedEvenForAStalePremierePreview() {

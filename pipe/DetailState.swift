@@ -9,19 +9,23 @@ struct DetailPreview: Equatable, Hashable {
     let thumbnail: String
     let duration: Int
     let uploadedDate: String?
+    var isShort: Bool? = nil
 
-    func status(now: Date = Date()) -> StreamStatus { StreamStatus.of(duration: duration, uploadedDate: uploadedDate, now: now) }
+    func status(now: Date = Date()) -> StreamStatus {
+        StreamStatus.of(duration: duration, uploadedDate: uploadedDate, isShort: isShort, now: now)
+    }
 
-    init(title: String, uploader: String, thumbnail: String, duration: Int, uploadedDate: String?) {
+    init(title: String, uploader: String, thumbnail: String, duration: Int, uploadedDate: String?, isShort: Bool? = nil) {
         self.title = title; self.uploader = uploader; self.thumbnail = thumbnail
-        self.duration = duration; self.uploadedDate = uploadedDate
+        self.duration = duration; self.uploadedDate = uploadedDate; self.isShort = isShort
     }
     init(_ v: RelatedStream) {
-        self.init(title: v.title, uploader: v.uploaderName ?? "", thumbnail: v.thumbnail, duration: v.duration, uploadedDate: v.uploadedDate)
+        self.init(title: v.title, uploader: v.uploaderName ?? "", thumbnail: v.thumbnail, duration: v.duration,
+                  uploadedDate: v.uploadedDate, isShort: v.isShort)
     }
     init(_ item: SearchItem) {
         self.init(title: item.displayTitle, uploader: item.displayUploader, thumbnail: item.displayThumbnail,
-                  duration: item.duration ?? 0, uploadedDate: item.uploadedDate)
+                  duration: item.duration ?? 0, uploadedDate: item.uploadedDate, isShort: item.isShort)
     }
     init(_ item: RecentItem) {
         self.init(title: item.title, uploader: item.artist, thumbnail: item.thumbnail, duration: item.duration, uploadedDate: item.uploadedDate)

@@ -34,6 +34,9 @@ struct RelatedStream: Codable, Identifiable, Hashable {
     let uploaded: Int64?
     /// "/channel/<id>" — the stable way to tell channels apart (names can collide).
     var uploaderUrl: String? = nil
+    /// A YouTube Short. Piped lists Shorts with `duration -1` and no date — the
+    /// same shape as a live stream — so this flag is what tells them apart.
+    var isShort: Bool? = nil
 
     var id: String { url }
     var videoId: String { url.replacingOccurrences(of: "/watch?v=", with: "") }
