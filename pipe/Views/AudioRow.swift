@@ -13,7 +13,7 @@ struct AudioRow: View {
     var isDownloaded: Bool = false
     var onToggleDownload: (() -> Void)? = nil
 
-    private var status: StreamStatus { StreamStatus.of(duration: item.duration, uploadedDate: item.uploadedDate) }
+    private var status: StreamStatus { StreamStatus.of(duration: item.duration, uploadedDate: item.uploadedDate, isShort: item.isShort) }
 
     var body: some View {
         if status.isPlayable {

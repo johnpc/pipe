@@ -6,7 +6,8 @@
     "duration": -1,
     "uploaderName": "Scump",
     "uploadedDate": null,
-    "uploaded": -1
+    "uploaded": -1,
+    "isShort": false
   },
   {
     "url": "/watch?v=B4-L2nfGcuE",
@@ -15,7 +16,8 @@
     "duration": -1,
     "uploaderName": "FOBBV CAM",
     "uploadedDate": null,
-    "uploaded": -1
+    "uploaded": -1,
+    "isShort": false
   },
   {
     "url": "/watch?v=1Eh1Ehul0Qo",
@@ -24,7 +26,8 @@
     "duration": -1,
     "uploaderName": "Call of Duty League",
     "uploadedDate": null,
-    "uploaded": -1
+    "uploaded": -1,
+    "isShort": false
   },
   {
     "url": "/watch?v=izAv7nqpNuc",
@@ -33,7 +36,8 @@
     "duration": -1,
     "uploaderName": "Keion Henderson TV",
     "uploadedDate": null,
-    "uploaded": -1
+    "uploaded": -1,
+    "isShort": false
   },
   {
     "url": "/watch?v=_lnOxnb2iqo",
@@ -42,6 +46,7 @@
     "duration": -1,
     "uploaderName": "Cricket Ireland Live",
     "uploadedDate": null,
-    "uploaded": -1
+    "uploaded": -1,
+    "isShort": false
   }
 ]

@@ -160,6 +160,9 @@ def streams_for(fixtures: Fixtures, video_id: str, base: str):
     if fixtures.demo:
         doc = demo_catalog.demoize_streams(doc, video_id)
     doc = rewrite_images(doc, f"{base}/media/thumb.jpg")
+    if fixtures.demo:
+        doc = demo_catalog.assign_art(doc, base)
+        doc["thumbnailUrl"] = base + demo_catalog.thumb_path(video_id)
     doc["duration"] = 30  # the synthetic clip's real length, so end-of-item is genuine
     doc["hls"] = f"{base}/media/hls/master.m3u8"
     doc["audioStreams"] = [{
@@ -184,7 +187,8 @@ def route(fixtures: Fixtures, path: str, query: str, base: str):
         loaded = fixtures.load(name)
         if fixtures.demo:
             loaded = transform(loaded) if transform else demo_catalog.demoize(loaded)
-        return rewrite_images(loaded, thumb)
+        loaded = rewrite_images(loaded, thumb)
+        return demo_catalog.assign_art(loaded, base) if fixtures.demo else loaded
 
     if path == "/healthz":
         return 200, {"ok": True}
@@ -376,6 +380,8 @@ def main(argv=None):
     ap.add_argument("--pidfile", type=Path, default=Path("/tmp/pipe-fake.pid"), help="pid file when daemonized")
     args = ap.parse_args(argv)
     fixtures = Fixtures(args.fixtures, catalog=args.catalog or ("demo" if args.export_static else "fixtures"))
+    if fixtures.demo:
+        demo_catalog.use_catalog(fixtures.all_video_ids())  # distinct titles across the catalogue
     if args.export_static:
         if not args.base_url:
             ap.error("--export-static needs --base-url (the URL the files will be served from)")

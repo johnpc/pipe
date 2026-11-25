@@ -13,7 +13,7 @@ struct VideoRow: View {
     var isDownloaded: Bool = false
     var onToggleDownload: (() -> Void)? = nil
 
-    private var status: StreamStatus { StreamStatus.of(duration: v.duration, uploadedDate: v.uploadedDate) }
+    private var status: StreamStatus { StreamStatus.of(duration: v.duration, uploadedDate: v.uploadedDate, isShort: v.isShort) }
 
     var body: some View {
         if status.isPlayable {

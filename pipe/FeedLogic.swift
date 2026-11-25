@@ -33,7 +33,7 @@ enum FeedLogic {
         var starts: [String: Date] = [:]
         var uploads: [RelatedStream] = []
         for video in videos {
-            switch StreamStatus.of(duration: video.duration, uploadedDate: video.uploadedDate, now: now) {
+            switch StreamStatus.of(duration: video.duration, uploadedDate: video.uploadedDate, isShort: video.isShort, now: now) {
             case .live: out.live.append(video)
             case .upcoming(let start): starts[video.videoId] = start; out.upcoming.append(video)
             case .video: uploads.append(video)

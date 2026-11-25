@@ -14,6 +14,8 @@ struct SearchItem: Codable, Identifiable, Hashable {
     let verified: Bool?
     let subscribers: Int?
     let videos: Int?
+    /// See `RelatedStream.isShort`.
+    var isShort: Bool? = nil
 
     var id: String { url }
     var isChannel: Bool { type == "channel" }
