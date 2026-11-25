@@ -50,17 +50,10 @@ func formatDuration(_ seconds: Int) -> String {
     return "\(s)s"  // "37s", not the awkward "0m37s"
 }
 
+/// See `UploadDateFormat` for the shapes handled. Kept as a free function
+/// because the rows call it directly.
 func formatUploadDate(_ dateString: String) -> String {
-    // Try ISO8601 format first
-    let iso = ISO8601DateFormatter()
-    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let date = iso.date(from: dateString) ?? ISO8601DateFormatter().date(from: dateString) {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: Date())
-    }
-    // Already human readable
-    return dateString
+    UploadDateFormat.string(dateString)
 }
 
 func formatTime(_ s: Double) -> String {
