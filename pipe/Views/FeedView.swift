@@ -39,6 +39,7 @@ struct FeedView: View {
         .listStyle(.plain)
         .refreshable { await loadFeed() }
         .navigationTitle("Feed")
+        .toolbarTitleDisplayMode(.large)
         .navigationDestination(for: String.self) { dest in
             FeedDestination(dest: dest, player: player, saved: saved, downloads: downloads)
         }

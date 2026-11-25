@@ -6,9 +6,28 @@ import SwiftUI
 struct PlayerTabsView: View {
     @ObservedObject var player: PlayerState
     @ObservedObject var detail: NowPlayingDetail
+    /// Regular width: a segmented picker instead of the scrolling chip strip,
+    /// which clipped its last tab inside the player sheet's right column.
+    var wide: Bool = false
     @State private var tab: PlayerTab = .queue
+    /// Wide layouts inset list-style sections to line up with the picker.
+    private var sideInset: CGFloat { wide ? 8 : 0 }
 
-    enum PlayerTab: String, CaseIterable { case queue = "Queue", upNext = "Up Next", chapters = "Chapters", info = "Info", comments = "Comments", transcript = "Transcript" }
+    enum PlayerTab: String, CaseIterable {
+        case queue = "Queue", upNext = "Up Next", chapters = "Chapters", info = "Info", comments = "Comments", transcript = "Transcript"
+
+        /// Glyph for the segmented picker on wide layouts, where six words don't fit.
+        var icon: String {
+            switch self {
+            case .queue: return "list.number"
+            case .upNext: return "forward.end"
+            case .chapters: return "list.bullet"
+            case .info: return "info.circle"
+            case .comments: return "text.bubble"
+            case .transcript: return "text.quote"
+            }
+        }
+    }
 
     /// Chapters tab only appears when the now-playing video actually has them.
     private var visibleTabs: [PlayerTab] {
@@ -17,13 +36,25 @@ struct PlayerTabsView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+            if wide {
+                // Each section names itself in its own header, so no caption here.
+                Picker("Section", selection: $tab) {
                     ForEach(visibleTabs, id: \.self) { t in
-                        TabPill(title: t == .comments ? "💬" : t.rawValue, isSelected: tab == t) { tab = t }
-                            .accessibilityIdentifier("playerTab-\(t.rawValue)")
+                        Image(systemName: t.icon).tag(t).accessibilityLabel(t.rawValue)
                     }
-                }.padding(.horizontal)
+                }
+                .pickerStyle(.segmented)
+                .accessibilityIdentifier("playerTabPicker")
+                .padding(.horizontal).padding(.trailing, 40)  // room for the close button
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(visibleTabs, id: \.self) { t in
+                            TabPill(title: t == .comments ? "💬" : t.rawValue, isSelected: tab == t) { tab = t }
+                                .accessibilityIdentifier("playerTab-\(t.rawValue)")
+                        }
+                    }.padding(.horizontal)
+                }
             }
             content
         }
@@ -34,9 +65,9 @@ struct PlayerTabsView: View {
     private var content: some View {
         switch tab {
         case .queue:
-            QueueSection(player: player)
+            QueueSection(player: player).padding(.horizontal, sideInset)
         case .upNext:
-            relatedContent
+            relatedContent.padding(.horizontal, sideInset)
         case .chapters:
             chaptersContent.padding(.horizontal)
         case .info:
@@ -66,7 +97,7 @@ struct PlayerTabsView: View {
         if let chapters = detail.state.value?.chapters, ChaptersLogic.hasChapters(chapters) {
             VStack(alignment: .leading) {
                 // Same video is playing; seek in place rather than reloading.
-                ChaptersView(chapters: chapters) { player.seek(to: Double($0.start)) }
+                ChaptersView(chapters: chapters, current: player.currentChapterTitle) { player.seek(to: Double($0.start)) }
                 Spacer()
             }
         } else if detail.state.isLoading {

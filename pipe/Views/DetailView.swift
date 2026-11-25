@@ -9,6 +9,7 @@ struct DetailView: View {
     let videoId: String
     @ObservedObject var player: PlayerState
     var preview: DetailPreview? = nil
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var state: DetailState = .loading
     /// The row's preview, or what the instance told us about an unaired premiere.
     @State private var shownPreview: DetailPreview? = nil
@@ -25,10 +26,15 @@ struct DetailView: View {
             case .unavailable(let message):
                 UnavailableDetailView(preview: shownPreview ?? preview, message: message, videoId: videoId)
             case .loaded(let s):
-                ScrollView { DetailContent(videoId: videoId, stream: s, player: player).padding() }
+                ScrollView {
+                    DetailContent(videoId: videoId, stream: s, player: player).padding()
+                        .frame(maxWidth: RowMetrics.readableWidth).frame(maxWidth: .infinity)  // centered on wide screens
+                }
             }
         }
         .navigationTitle("Details")
+        // On a wide screen the item title is the page heading; keep the bar title small.
+        .navigationBarTitleDisplayMode(sizeClass == .regular ? .inline : .automatic)
         .toolbar {
             // A live stream has no file to download (its payload is HLS-only).
             if case .loaded(let s) = state, s.livestream != true, let downloads = player.downloads {

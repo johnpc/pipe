@@ -91,6 +91,20 @@ final class ViewRenderTests: XCTestCase {
     // MARK: - Root + tab bar
 
     func testRenderContentView() { render(ContentView()) }
+
+    /// iPad: the sidebar shell, a regular-width row, and the two-column player.
+    func testRenderRegularWidthLayouts() {
+        render(ContentView().environment(\.horizontalSizeClass, .regular))
+        render(NavigationStack { SidebarView(selectedTab: .constant(1)) {} })
+        render(VideoRow(v: relatedStream(), onPlay: {}, onQueue: {}).environment(\.horizontalSizeClass, .regular))
+        render(AudioRow(item: searchVideo(), onPlay: {}, onQueue: {}).environment(\.horizontalSizeClass, .regular))
+        let (p, _, _) = makeStores()
+        p.play(videoId: "v1", urlString: "https://x/f.mp4", title: "T", artist: "A", thumbnail: "t", duration: 60)
+        render(FullPlayerSheet(player: p).environment(\.horizontalSizeClass, .regular))
+        render(MiniPlayerBar(player: p).environment(\.horizontalSizeClass, .regular))
+        render(PlayerTabsView(player: p, detail: NowPlayingDetail(), wide: true))
+        render(ChaptersView(chapters: [Chapter(title: "Intro", start: 0, image: nil), Chapter(title: "Main", start: 120, image: nil)], current: "Main") { _ in })
+    }
     func testRenderTabButton() { render(TabButton(icon: "clock", label: "Recents", isSelected: true) {}) }
 
     // MARK: - Offline mode

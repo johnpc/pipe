@@ -3,6 +3,7 @@ import SwiftUI
 struct MiniPlayerBar: View {
     @ObservedObject var player: PlayerState
     @State private var showFull = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
     
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +26,16 @@ struct MiniPlayerBar: View {
                         .accessibilityIdentifier("miniPlayerStatus")
                 }
                 Spacer()
+                if sizeClass == .regular {
+                    // A wide bar earns transport: time, skip back, skip forward.
+                    Text("\(formatTime(player.currentTime)) / \(formatTime(player.duration))")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                        .padding(.trailing, 8)
+                    Button { player.skip(-10) } label: {
+                        Image(systemName: "gobackward.10").font(.title3).frame(width: 44, height: 44)
+                    }
+                    .accessibilityIdentifier("miniSkipBackButton")
+                }
                 // While buffering, dim the control under a spinner but keep it
                 // tappable so the user can still pause a long buffer.
                 Button { player.togglePlayPause() } label: {
@@ -37,6 +48,12 @@ struct MiniPlayerBar: View {
                 .accessibilityIdentifier("miniPlayPauseButton")
                 .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
                 .accessibilityValue(player.phase.label)
+                if sizeClass == .regular {
+                    Button { player.skip(10) } label: {
+                        Image(systemName: "goforward.10").font(.title3).frame(width: 44, height: 44)
+                    }
+                    .accessibilityIdentifier("miniSkipForwardButton")
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

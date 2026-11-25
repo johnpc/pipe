@@ -11,21 +11,12 @@ struct ContentView: View {
     @StateObject private var toast = ToastManager.shared
     @State private var selectedTab = 0
     @State private var showSettings = false
+    @State private var columns: NavigationSplitViewVisibility = .all
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
-        VStack(spacing: 0) {
-            MainTabContent(selectedTab: selectedTab, player: player, following: following,
-                           recents: recents, settings: settings, saved: saved, downloads: downloads)
-
-            // Unified bottom bar
-            VStack(spacing: 0) {
-                if player.currentTitle != nil {
-                    MiniPlayerBar(player: player)
-                }
-
-                BottomTabBar(selectedTab: $selectedTab) { showSettings = true }
-            }
-            .background(.bar)
+        Group {
+            if sizeClass == .regular { splitLayout } else { compactLayout }
         }
         .toastOverlay()
         .onAppear {
@@ -57,6 +48,42 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             NavigationStack {
                 SettingsView(settings: settings, player: player, recents: recents) { showSettings = false }
+            }
+        }
+    }
+}
+
+private extension ContentView {
+    var content: MainTabContent {
+        MainTabContent(selectedTab: selectedTab, player: player, following: following,
+                       recents: recents, settings: settings, saved: saved, downloads: downloads)
+    }
+
+    /// Phone: content over a unified bottom bar (mini player + tabs).
+    var compactLayout: some View {
+        VStack(spacing: 0) {
+            content
+            VStack(spacing: 0) {
+                if player.currentTitle != nil {
+                    MiniPlayerBar(player: player)
+                }
+                BottomTabBar(selectedTab: $selectedTab) { showSettings = true }
+            }
+            .background(.bar)
+        }
+    }
+
+    /// iPad: sidebar navigation, content column with the mini player docked
+    /// beneath it — the phone bar stretched across 13 inches read as a toy.
+    var splitLayout: some View {
+        NavigationSplitView(columnVisibility: $columns) {
+            SidebarView(selectedTab: $selectedTab) { showSettings = true }
+        } detail: {
+            VStack(spacing: 0) {
+                content
+                if player.currentTitle != nil {
+                    MiniPlayerBar(player: player).background(.bar)
+                }
             }
         }
     }

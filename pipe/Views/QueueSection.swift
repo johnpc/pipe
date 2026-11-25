@@ -26,6 +26,7 @@ struct QueueSection: View {
                     .onDelete { player.removeFromQueue(at: $0) }
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
                 .frame(minHeight: CGFloat(player.queue.count * 60))
             }
             .padding(.top, 20)

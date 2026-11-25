@@ -13,6 +13,8 @@ struct VideoRow: View {
     var isDownloaded: Bool = false
     var onToggleDownload: (() -> Void)? = nil
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var m: RowMetrics { RowMetrics.forSizeClass(sizeClass) }
     private var status: StreamStatus { StreamStatus.of(duration: v.duration, uploadedDate: v.uploadedDate, isShort: v.isShort) }
 
     var body: some View {
@@ -32,17 +34,20 @@ struct VideoRow: View {
             HStack(spacing: 12) {
                 ZStack(alignment: .bottomTrailing) {
                     AsyncImage(url: URL(string: v.thumbnail)) { $0.resizable().scaledToFill() } placeholder: { Color.gray }
-                        .frame(width: 100, height: 56).clipped().cornerRadius(6)
+                        .frame(width: m.thumbWidth, height: m.thumbHeight).clipped().cornerRadius(6)
                         .overlay(isCompleted ? Color.black.opacity(0.4).cornerRadius(6) : nil)
                     ThumbnailBadge(status: status, duration: v.duration, isCompleted: isCompleted)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     if let uploader = v.uploaderName {
-                        Text(uploader).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                        Text(uploader).font(m.metaFont).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                    }
+                    if m.titleBesideArt {
+                        Text(v.title).font(m.titleFont).lineLimit(2)
                     }
                     if let caption = status.caption(uploadedDate: v.uploadedDate) {
-                        Text(caption).font(.caption2).foregroundStyle(status == .live ? AnyShapeStyle(.red) : AnyShapeStyle(.tertiary))
+                        Text(caption).font(m.captionFont).foregroundStyle(status == .live ? AnyShapeStyle(.red) : AnyShapeStyle(.tertiary))
                     }
                     if let time = resumeTime {
                         Label(formatTime(time), systemImage: "play.circle").font(.caption2).foregroundColor(.orange)
@@ -54,8 +59,10 @@ struct VideoRow: View {
                 RowPlayButtons(onPlay: status.isPlayable ? onPlay : nil, onQueue: status.isPlayable ? onQueue : nil)
             }
 
-            Text(v.title).font(.subheadline).lineLimit(3)
+            if !m.titleBesideArt {
+                Text(v.title).font(m.titleFont).lineLimit(3)
+            }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, m.rowPadding)
     }
 }
