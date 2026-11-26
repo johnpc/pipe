@@ -15,14 +15,20 @@ struct SearchResultRow: View {
 
     var body: some View {
         if item.isChannel {
-            HStack {
-                NavigationLink(value: item) { ChannelRow(item: item) }
-                    .accessibilityIdentifier("channelRow")
-                Button(action: onToggleFollow) {
-                    Image(systemName: following.isFollowing(item.channelId) ? "heart.fill" : "heart")
-                        .foregroundColor(following.isFollowing(item.channelId) ? .red : .gray)
-                }.buttonStyle(.plain).accessibilityIdentifier("followButton")
+            // The heart sits inside the link's label so the chevron stays the
+            // trailing-most element, like every other navigable row.
+            NavigationLink(value: item) {
+                HStack {
+                    ChannelRow(item: item)
+                    Spacer()
+                    Button(action: onToggleFollow) {
+                        Image(systemName: following.isFollowing(item.channelId) ? "heart.fill" : "heart")
+                            .foregroundColor(following.isFollowing(item.channelId) ? .red : .gray)
+                            .frame(width: 44, height: 44)
+                    }.buttonStyle(.plain).accessibilityIdentifier("followButton")
+                }
             }
+            .accessibilityIdentifier("channelRow")
         } else if item.isPlaylist {
             NavigationLink(value: item) { PlaylistRow(item: item.asPlaylistItem) }
                 .accessibilityIdentifier("playlistRow")

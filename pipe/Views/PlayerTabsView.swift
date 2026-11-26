@@ -65,7 +65,7 @@ struct PlayerTabsView: View {
     private var content: some View {
         switch tab {
         case .queue:
-            QueueSection(player: player).padding(.horizontal, sideInset)
+            queueContent
         case .upNext:
             relatedContent.padding(.horizontal, sideInset)
         case .chapters:
@@ -78,6 +78,16 @@ struct PlayerTabsView: View {
             if let id = player.currentVideoId {
                 CommentsList(videoId: id) { player.seek(to: $0) }.frame(minHeight: 300)
             } else { emptyTab("No Comments", "text.bubble") }
+        }
+    }
+
+    /// The queue; on a wide layout a short queue is followed by Up Next so the
+    /// column earns its height instead of ending in empty space.
+    @ViewBuilder
+    private var queueContent: some View {
+        QueueSection(player: player).padding(.horizontal, sideInset)
+        if wide && player.queue.count < 3 {
+            relatedContent.padding(.horizontal, sideInset).padding(.top, 12)
         }
     }
 
