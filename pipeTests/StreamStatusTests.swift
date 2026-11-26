@@ -32,6 +32,13 @@ struct StreamStatusTests {
         #expect(StreamStatus.of(duration: -1, uploadedDate: "2026-11-25 20:00", now: now) == .upcoming(start))
     }
 
+    @Test func channelListPremiereIsUpcomingNotLive() {
+        // The channel endpoint's form: duration -1 plus a day-first date. It
+        // used to fail to parse and fall through to "Live now".
+        let start = Date(timeIntervalSince1970: 1_795_788_000)  // 2026-11-27 14:00Z
+        #expect(StreamStatus.of(duration: -1, uploadedDate: "27/11/2026, 14:00", now: now) == .upcoming(start))
+    }
+
     @Test func scheduledInThePastIsLiveOrDone() {
         // Piped keeps the premiere string for a while after it starts.
         #expect(StreamStatus.of(duration: -1, uploadedDate: "2026-11-25 14:00", now: now) == .live)

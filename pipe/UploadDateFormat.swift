@@ -13,10 +13,8 @@ enum UploadDateFormat {
             return scheduled(date, now: now, timeZone: timeZone, locale: locale)
         }
         if let date = isoDate(raw) {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .full
-            formatter.locale = locale
-            return formatter.localizedString(for: date, relativeTo: now)
+            relative.locale = locale
+            return relative.localizedString(for: date, relativeTo: now)
         }
         return raw
     }
@@ -59,17 +57,34 @@ enum UploadDateFormat {
     }
 
     static func isoDate(_ raw: String) -> Date? {
-        let fractional = ISO8601DateFormatter()
-        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return fractional.date(from: raw) ?? ISO8601DateFormatter().date(from: raw)
+        isoFractional.date(from: raw) ?? isoPlain.date(from: raw)
     }
 
-    /// Piped's premiere/livestream `uploadedDate` is `yyyy-MM-dd HH:mm` in UTC.
+    /// Piped's premiere/livestream `uploadedDate` is a UTC wall clock: search
+    /// sends `yyyy-MM-dd HH:mm`, a channel's video list sends `dd/MM/yyyy, HH:mm`.
     static func scheduledDate(_ raw: String) -> Date? {
+        guard raw.count >= 16, raw.first?.isNumber == true else { return nil }  // cheap reject: "3 weeks ago"
+        return scheduledFormatters.lazy.compactMap { $0.date(from: raw) }.first
+    }
+
+    // Formatters are costly to build and rows call these on every render while
+    // scrolling, so each is built once. Only ever used from the main thread.
+    private static let isoFractional: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    private static let isoPlain = ISO8601DateFormatter()
+    private static let relative: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        return formatter
+    }()
+    private static let scheduledFormatters: [DateFormatter] = ["yyyy-MM-dd HH:mm", "dd/MM/yyyy, HH:mm"].map {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(identifier: "UTC")
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        return formatter.date(from: raw)
+        formatter.dateFormat = $0
+        return formatter
     }
 }

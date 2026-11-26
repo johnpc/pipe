@@ -19,6 +19,9 @@ struct FeedView: View {
     }
 
     var body: some View {
+        // Computed once per render: it classifies and sorts the whole feed, and
+        // this view re-renders every second while something is playing.
+        let sections = self.sections
         List {
             ContinueListeningShelf(recents: recents) { resume($0) }
                 .listRowInsets(EdgeInsets()).listRowSeparator(.hidden)

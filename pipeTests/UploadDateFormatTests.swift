@@ -33,6 +33,13 @@ struct UploadDateFormatTests {
         #expect(format("2026-12-04 20:00") == "Dec 4 at 3pm ET")
     }
 
+    @Test func channelListDayFirstScheduledForm() {
+        // A channel's video list sends the premiere time day-first (Money Guy, Nov 26).
+        #expect(format("25/11/2026, 20:00") == "Today at 3pm ET")
+        #expect(UploadDateFormat.scheduledDate("27/11/2026, 14:00") == Date(timeIntervalSince1970: 1_795_788_000))
+        #expect(UploadDateFormat.scheduledDate("3 weeks ago") == nil)
+    }
+
     @Test func isoDateStaysRelative() {
         #expect(format("2009-10-25T00:00:00.000Z") == "17 years ago")
         #expect(format("2026-11-25T00:00:00Z") == "15 hours ago")
