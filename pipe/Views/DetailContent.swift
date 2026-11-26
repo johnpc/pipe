@@ -19,7 +19,7 @@ struct DetailContent: View {
                 Text(HTMLText.attributed(d)).font(.body).tint(.accentColor)
             }
             if let related = stream.relatedStreams, !related.isEmpty {
-                RelatedVideosView(related: related, player: player)
+                RelatedVideosView(related: related, player: player, navigable: true)
             }
             Text("Comments").font(.headline)
             CommentsList(videoId: videoId)

@@ -32,6 +32,7 @@ struct DetailView: View {
                 }
             }
         }
+        .navigationDestination(for: RelatedStream.self) { DetailView(videoId: $0.videoId, player: player, preview: DetailPreview($0)) }
         .navigationTitle("Details")
         // On a wide screen the item title is the page heading; keep the bar title small.
         .navigationBarTitleDisplayMode(sizeClass == .regular ? .inline : .automatic)

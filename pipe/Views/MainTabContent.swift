@@ -18,7 +18,7 @@ struct MainTabContent: View {
         // detail view never bleeds across tab switches and each screen keeps its
         // own toolbar.
         NavigationStack {
-            screen
+            screen.navigationBarTitleDisplayMode(.large)  // every tab root reads the same, iPad included
         }
         .id(selectedTab)
     }

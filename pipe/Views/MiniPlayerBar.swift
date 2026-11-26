@@ -25,12 +25,15 @@ struct MiniPlayerBar: View {
                         .foregroundStyle(player.phase.isFailed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                         .accessibilityIdentifier("miniPlayerStatus")
                 }
-                Spacer()
                 if sizeClass == .regular {
-                    // A wide bar earns transport: time, skip back, skip forward.
+                    // A wide bar earns transport: time beside the title, skip
+                    // back / forward around the play control at the trailing edge.
                     Text("\(formatTime(player.currentTime)) / \(formatTime(player.duration))")
                         .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        .padding(.trailing, 8)
+                        .padding(.leading, 24)
+                }
+                Spacer()
+                if sizeClass == .regular {
                     Button { player.skip(-10) } label: {
                         Image(systemName: "gobackward.10").font(.title3).frame(width: 44, height: 44)
                     }
