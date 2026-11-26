@@ -107,6 +107,18 @@ the code, never the gate.
   (`scripts/generate_acceptance_tests.py --check`, in `quality.sh` and CI) fails
   if they drift, so regenerate after editing any `.feature` file.
 - **Build must pass** for the app, unit, and UI-test targets.
+- **Background CPU ≤ 20%** (`scripts/perf/background_cpu.sh`, CI job "Background
+  CPU budget"). iOS silently kills a background app averaging over 80% CPU for a
+  minute (`cpu_resource_fatal`); on 2026-11-26 that cut off playback because the
+  feed re-parsed every row's date on each one-second playback tick. The
+  `BackgroundCPUProbe` UI test stages a 600-video feed (fake server
+  `--feed-size 600`), plays, and backgrounds the app; the script samples the
+  process's CPU from the host. Mac cores are faster than a phone's, hence 20%,
+  not 80% (calibrated: the killed build 36.7%, its fix ~9%). Over budget → find
+  the work that runs per playback tick or per row and stop repeating it; never
+  raise the budget. On devices, every playback heartbeat logs `cpu` (% of one
+  core since the last heartbeat, `ProcessCPU`), so a climb shows in the logs
+  before iOS kills anything.
 
 ### Honest e2e: exercise the real behavior, not just navigation
 
@@ -169,7 +181,8 @@ A slice is done only when **all** of these hold:
 ## Commands
 
 ```bash
-bash scripts/quality.sh          # full local gate: file-lines + tests + coverage + CRAP + build
+bash scripts/quality.sh          # full local gate: file-lines + tests + coverage + CRAP + build + background CPU
+bash scripts/perf/background_cpu.sh --build   # just the background-CPU budget (~3 min)
 bash scripts/install-hooks.sh    # install the pre-commit hook
 # Run tests directly:
 xcodebuild test -scheme pipe -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \

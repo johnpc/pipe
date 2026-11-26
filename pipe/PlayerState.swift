@@ -9,8 +9,17 @@ class PlayerState: ObservableObject {
     /// The item state machine (see `PlaybackLifecycle`). Mutated only through
     /// `apply(_:)` so phase and retry bookkeeping always agree.
     @Published var lifecycle = PlaybackLifecycle()
-    @Published var currentTime: Double = 0
-    @Published var duration: Double = 0
+    /// Position and length, published separately (see `PlaybackClock`): a
+    /// per-second change here would re-render every screen observing the player.
+    let clock = PlaybackClock()
+    var currentTime: Double {
+        get { clock.currentTime }
+        set { clock.currentTime = newValue }
+    }
+    var duration: Double {
+        get { clock.duration }
+        set { clock.setDuration(newValue) }
+    }
     @Published var currentTitle: String?
     @Published var currentArtist: String?
     @Published var currentThumbnail: String?
@@ -90,6 +99,8 @@ class PlayerState: ObservableObject {
     /// Last 30s bucket for which a progress heartbeat was logged (dedupes the
     /// 5s time-observer ticks down to ~one heartbeat per 30s).
     var lastHeartbeatBucket = -1
+    /// CPU use between heartbeats, logged with each (see `ProcessCPU`).
+    var heartbeatCPU = ProcessCPU()
     /// Where the next player starts (chapter jump, mode/language switch, or a
     /// premature-end recovery). Owned by the lifecycle; set via `.startAt`.
     var pendingSeek: Double? { lifecycle.startAt }

@@ -7,9 +7,7 @@ struct MiniPlayerBar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            ProgressView(value: player.currentTime, total: max(player.duration, 1))
-                .tint(.accentColor)
-                .scaleEffect(x: 1, y: 0.5, anchor: .center)
+            ClockProgressBar(clock: player.clock)
             
             HStack {
                 AsyncImage(url: URL(string: player.currentThumbnail ?? "")) { $0.resizable() } placeholder: { Color.gray }
@@ -28,9 +26,7 @@ struct MiniPlayerBar: View {
                 if sizeClass == .regular {
                     // A wide bar earns transport: time beside the title, skip
                     // back / forward around the play control at the trailing edge.
-                    Text("\(formatTime(player.currentTime)) / \(formatTime(player.duration))")
-                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        .padding(.leading, 24)
+                    ClockTimeLabel(clock: player.clock).padding(.leading, 24)
                 }
                 Spacer()
                 if sizeClass == .regular {

@@ -152,11 +152,29 @@ jobs:
           path: AcceptanceResults.xcresult
           retention-days: 7
 
+  background-cpu:
+    name: Background CPU budget
+    # iOS kills a backgrounded app averaging >80% CPU for a minute, with no error
+    # (2026-11-26: the feed's per-second re-render did it mid-listen). This plays
+    # with a 600-video feed in the background and fails over 20% host CPU; see
+    # scripts/perf/background_cpu.sh for the calibration.
+    runs-on: [self-hosted, mac-mini]
+    needs: build
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache/restore@v5
+        with:
+          path: DerivedData
+          key: derived-data-${{ github.sha }}
+      - name: Measure background CPU while playing
+        run: bash scripts/perf/background_cpu.sh
+
   deploy:
     # Shared native iOS deploy (johnpc/ci-workflows): signs in the archive from the
     # Mac mini's CI keychain, uploads to TestFlight, and on a version conflict bumps
     # the minor version and lands it as a PR (opened with DEPLOY_PAT, so its CI runs).
-    needs: [unit-tests, crap-analysis, acceptance-tests]
+    needs: [unit-tests, crap-analysis, acceptance-tests, background-cpu]
     # Also on a manual run (Actions → Run workflow on main): GitHub dropped a
     # push event on 2026-11-25 and the merge sat undeployed until a no-op commit.
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')

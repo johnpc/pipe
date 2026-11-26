@@ -93,16 +93,7 @@ struct FullPlayerSheet: View {
         SponsorBlockToggle(player: player)
         
         VStack {
-            Slider(value: Binding(
-                get: { player.currentTime },
-                set: { player.seek(to: $0) }
-            ), in: 0...max(player.duration, 1))
-            .tint(.accentColor)
-            HStack {
-                Text(formatTime(player.currentTime)).font(.caption).accessibilityIdentifier("elapsedTime")
-                Spacer()
-                Text(formatTime(player.duration)).font(.caption).accessibilityIdentifier("totalTime")
-            }.foregroundStyle(.secondary)
+            PlayerScrubber(clock: player.clock) { player.seek(to: $0) }
             if let chapter = player.currentChapterTitle {
                 Label(chapter, systemImage: "list.bullet")
                     .font(.caption).foregroundStyle(.secondary)

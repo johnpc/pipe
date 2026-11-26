@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import Combine
 @testable import pipe
 
 @MainActor
@@ -69,6 +70,34 @@ struct RecentsStoreTests {
         store.add(videoId: "a", title: "A", artist: "x", thumbnail: "", timestamp: 0, duration: 100)
         store.updateTimestamp(videoId: "a", timestamp: 30)
         #expect(store.getTimestamp(videoId: "a") == 30)
+    }
+
+    @Test func smallPositionMovesAreNotWrittenEachTick() {
+        // Called every second while playing; each write re-renders history rows.
+        let store = makeStore()
+        store.add(videoId: "a", title: "A", artist: "x", thumbnail: "", timestamp: 0, duration: 600)
+        store.updateTimestamp(videoId: "a", timestamp: 30)
+        var writes = 0
+        let watch = store.objectWillChange.sink { _ in writes += 1 }
+        for second in 31...39 { store.updateTimestamp(videoId: "a", timestamp: Double(second)) }
+        #expect(writes == 0)
+        store.updateTimestamp(videoId: "a", timestamp: 40)
+        #expect(writes == 1)
+        watch.cancel()
+        #expect(store.getTimestamp(videoId: "a") == 40)
+    }
+
+    @Test func positionRuleResetsAndWatchedLine() {
+        let item = RecentItem(videoId: "a", title: "", artist: "", thumbnail: "", timestamp: 85,
+                              lastWatched: Date(), duration: 100, uploadedDate: nil)
+        #expect(RecentsPolicy.shouldRecordPosition(0, over: item))      // restart
+        #expect(RecentsPolicy.shouldRecordPosition(90, over: item))     // crosses 90%: watched now
+        #expect(!RecentsPolicy.shouldRecordPosition(89, over: item))    // small move
+        #expect(!RecentsPolicy.shouldRecordPosition(85, over: item))    // no move
+        #expect(RecentsPolicy.shouldRecordPosition(95, over: item))     // 10 s
+        let unknownLength = RecentItem(videoId: "b", title: "", artist: "", thumbnail: "", timestamp: 5,
+                                       lastWatched: Date(), duration: 0, uploadedDate: nil)
+        #expect(!RecentsPolicy.shouldRecordPosition(9, over: unknownLength))
     }
 
     @Test func updateTimestampNoOpForMissing() {

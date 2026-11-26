@@ -18,6 +18,7 @@ What it serves (mirrors the Piped API the app calls, see PipedAPI*.swift)
   /channel/<id>          → Fixtures/channel.json
   /channels/tabs?data=…  → channelTab.json, or channelPlaylistTab.json when
                             the data token contains "playlist"
+                            (padded to N videos with --feed-size N)
   /nextpage/channel/<id> → an empty page (ends pagination)
   /playlists/<id>        → Fixtures/playlist.json
   /comments/<id>         → Fixtures/comments.json
@@ -49,6 +50,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import demo_catalog  # noqa: E402  (sibling module; stdlib-only)
+import perf_feed  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -75,9 +77,10 @@ class Fixtures:
     or "demo" (plainly-labelled placeholders, what a reviewer or demo user sees;
     the static export always uses this)."""
 
-    def __init__(self, fixtures_dir: Path, catalog: str = "fixtures"):
+    def __init__(self, fixtures_dir: Path, catalog: str = "fixtures", feed_size: int = 0):
         self.dir = fixtures_dir
         self.catalog = catalog
+        self.feed_size = feed_size  # >0: every channel lists this many videos (perf gate)
 
     @property
     def demo(self) -> bool:
@@ -202,7 +205,8 @@ def route(fixtures: Fixtures, path: str, query: str, base: str):
     if path.startswith("/nextpage/"):
         return 200, {"content": [], "nextpage": None}
     if path.startswith("/channel/"):
-        return 200, doc("channel", demo_catalog.demoize_channel)
+        body = doc("channel", demo_catalog.demoize_channel)
+        return 200, perf_feed.pad(body, fixtures.feed_size) if fixtures.feed_size else body
     if path.startswith("/playlists/"):
         playlist_id = unquote(path[len("/playlists/"):])
         return 200, doc("playlist", lambda d: demo_catalog.demoize_playlist(d, playlist_id))
@@ -375,11 +379,14 @@ def main(argv=None):
                          "demo: labelled placeholders (the default for --export-static)")
     ap.add_argument("--export-static", type=Path, metavar="DIR", help="write the API as static files and exit")
     ap.add_argument("--base-url", default="", help="public base URL baked into exported stream/media links")
+    ap.add_argument("--feed-size", type=int, default=0,
+                    help="pad every channel to N videos (the background-CPU gate's realistic feed)")
     ap.add_argument("--daemon", action="store_true", help="detach and keep serving after this shell exits")
     ap.add_argument("--log", type=Path, default=Path("/tmp/pipe-fake.log"), help="request log when daemonized")
     ap.add_argument("--pidfile", type=Path, default=Path("/tmp/pipe-fake.pid"), help="pid file when daemonized")
     args = ap.parse_args(argv)
-    fixtures = Fixtures(args.fixtures, catalog=args.catalog or ("demo" if args.export_static else "fixtures"))
+    fixtures = Fixtures(args.fixtures, catalog=args.catalog or ("demo" if args.export_static else "fixtures"),
+                        feed_size=args.feed_size)
     if fixtures.demo:
         demo_catalog.use_catalog(fixtures.all_video_ids())  # distinct titles across the catalogue
     if args.export_static:

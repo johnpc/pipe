@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Full local quality gate for pipe — the same checks CI enforces, in one command.
 # Mirrors the non-negotiable gates in CLAUDE.md: file-line limit, unit tests +
-# coverage >= 80%, CRAP <= 15, and a clean build.
+# coverage >= 80%, CRAP <= 15, a clean build, and the background-CPU budget.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
@@ -39,5 +39,8 @@ xcodebuild build \
   -destination "$DESTINATION" \
   -derivedDataPath DerivedData \
   -quiet
+
+echo "▶ [5/5] Background CPU budget (≤20% with a 600-video feed, playing, backgrounded)"
+bash scripts/perf/background_cpu.sh --build
 
 echo "✅ Quality gate passed"

@@ -38,9 +38,10 @@ extension PlayerState {
         let bucket = Int(time / 30)
         guard bucket != lastHeartbeatBucket else { return }
         lastHeartbeatBucket = bucket
-        log.event("progress", "heartbeat", fields: [
-            "at": String(Int(time)),
-            "duration": String(Int(duration)),
-        ])
+        var fields = ["at": String(Int(time)), "duration": String(Int(duration))]
+        // Percent of one core since the last heartbeat; iOS kills a background
+        // app averaging over 80% for a minute, silently, so this is the warning.
+        if let cpu = heartbeatCPU.sample() { fields["cpu"] = String(cpu) }
+        log.event("progress", "heartbeat", fields: fields)
     }
 }

@@ -58,12 +58,18 @@ class RecentsStore: ObservableObject {
         save()
     }
     
+    /// Record the playback position. Called every second while playing, so
+    /// it only writes (publish + persist) when the position moved by
+    /// `RecentsPolicy.positionGranularity`, was reset to 0, or crossed the watched line;
+    /// every write re-renders all history-aware rows and re-encodes the history.
     func updateTimestamp(videoId: String, timestamp: Double) {
-        if let idx = items.firstIndex(where: { $0.videoId == videoId }) {
-            items[idx].timestamp = timestamp
-            items[idx].lastWatched = Date()
-            save()
-        }
+        guard let idx = items.firstIndex(where: { $0.videoId == videoId }) else { return }
+        guard RecentsPolicy.shouldRecordPosition(timestamp, over: items[idx]) else { return }
+        var item = items[idx]  // one assignment = one publish, not one per field
+        item.timestamp = timestamp
+        item.lastWatched = Date()
+        items[idx] = item
+        save()
     }
     
     func getTimestamp(videoId: String) -> Double? {

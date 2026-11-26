@@ -12,10 +12,12 @@ extension PlayerState {
     /// Update `currentChapterTitle` from the active chapter at `time`, or clear it
     /// when the video has no (usable) chapters.
     func updateCurrentChapter(for videoId: String, at time: Double) {
-        guard let chapters = chaptersByVideo[videoId], ChaptersLogic.hasChapters(chapters) else {
-            currentChapterTitle = nil
-            return
+        // Runs every playback tick; assign only on a change, since every
+        // assignment to a @Published property re-renders the player's observers.
+        var title: String?
+        if let chapters = chaptersByVideo[videoId], ChaptersLogic.hasChapters(chapters) {
+            title = ChaptersLogic.current(at: time, in: chapters)?.title
         }
-        currentChapterTitle = ChaptersLogic.current(at: time, in: chapters)?.title
+        if title != currentChapterTitle { currentChapterTitle = title }
     }
 }
