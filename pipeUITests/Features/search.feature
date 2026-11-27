@@ -22,3 +22,13 @@ Feature: Search Videos
   Scenario: A premiere that has not aired yet offers nothing to play
     Given I have searched for "MrBeast"
     Then the premiere result should say when it premieres instead of offering a play button
+
+  Scenario: Filtering to channels hides videos
+    Given I have searched for "MrBeast"
+    When I choose the "Channels" search filter
+    Then I should see only channel results
+
+  Scenario: Filtering to videos hides channels
+    Given I have searched for "MrBeast"
+    When I choose the "Videos" search filter
+    Then I should see only video results

@@ -8,14 +8,18 @@ struct SearchView: View {
     @ObservedObject var downloads: DownloadStore
     @State private var query = ""
     @State private var results: [SearchItem] = []
+    @State private var filter: SearchFilter = .all
     @State private var loading = false
     @State private var suggestions: [String] = []
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            if SearchLogic.isSubmittable(query) {
+                SearchFilterBar(filter: $filter)
+            }
             if results.isEmpty && !loading {
                 SearchSuggestionsView(query: $query, suggestions: suggestions, history: settings.searchHistory, onSearch: search)
             } else {
-                List(results) { item in
+                List(filter.apply(results)) { item in
                     SearchResultRow(item: item, player: player, following: following, recents: recents,
                                     saved: saved, downloads: downloads,
                                     onToggleFollow: { toggleFollow(item) }, actions: rowActions)
@@ -32,6 +36,7 @@ struct SearchView: View {
         .task(id: query) { await autoSearch(query) }
         .task(id: settings.instanceURL) { suggestions = await SearchLogic.loadChannelSuggestions() }
         .onChange(of: query) { _, q in if q.isEmpty { results = [] } }
+        .onChange(of: filter) { _, _ in Task { await refetch() } }  // the instance filters server-side too
         .overlay { if loading { ProgressView() } }
     }
     /// Debounced search-as-you-type (history is recorded only on explicit submit).
@@ -39,16 +44,20 @@ struct SearchView: View {
         guard SearchLogic.shouldAutoSearch(term) else { return }
         try? await Task.sleep(nanoseconds: SearchLogic.autoSearchDebounceNanos)
         guard !Task.isCancelled else { return }  // superseded by a newer keystroke
+        await refetch(term)
+    }
+    private func refetch(_ term: String? = nil) async {
+        let term = term ?? query
+        guard SearchLogic.isSubmittable(term) else { return }
         loading = true
-        results = (try? await PipedAPI.search(term)) ?? []
+        results = (try? await PipedAPI.search(term, filter: filter)) ?? []
         loading = false
     }
     private func search(_ term: String) {
         guard SearchLogic.isSubmittable(term) else { return }
         query = term
         settings.recordSearch(term)
-        loading = true
-        Task { results = (try? await PipedAPI.search(term)) ?? []; loading = false }
+        Task { await refetch(term) }
     }
     private var rowActions: SearchRowActions {
         SearchRowActions(play: playItem, queue: queueItem, playNext: playNextItem,

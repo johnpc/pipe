@@ -75,9 +75,9 @@ enum PipedAPI {
     }
 
     /// Builds the search request URL. Pure, so URL construction is unit-testable.
-    static func searchURL(_ query: String) -> URL {
+    static func searchURL(_ query: String, filter: SearchFilter = .all) -> URL {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
-        return URL(string: "\(pipedBase)/search?q=\(encoded)&filter=all")!
+        return URL(string: "\(pipedBase)/search?q=\(encoded)&filter=\(filter.pipedValue)")!
     }
 
     static func channelTabURL(_ tabData: String) -> URL {
@@ -85,8 +85,8 @@ enum PipedAPI {
         return URL(string: "\(pipedBase)/channels/tabs?data=\(encoded)")!
     }
 
-    static func search(_ query: String) async throws -> [SearchItem] {
-        try await fetch(SearchResponse.self, from: searchURL(query)).items
+    static func search(_ query: String, filter: SearchFilter = .all) async throws -> [SearchItem] {
+        try await fetch(SearchResponse.self, from: searchURL(query, filter: filter)).items
     }
 
     static func channel(_ id: String) async throws -> ChannelResponse {
