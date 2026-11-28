@@ -73,6 +73,21 @@ enum StepDefinitions {
             XCTAssertTrue(w.app.staticTexts[searchStreamTitle].waitForExistence(timeout: long),
                           "Real fixture search result should render")
         }
+        r.define("I choose the \"(.+)\" search filter") { w in
+            let segment = w.app.segmentedControls.firstMatch.buttons[w.capture()]
+            XCTAssertTrue(segment.waitForExistence(timeout: medium), "The \(w.capture()) filter should be offered")
+            segment.tap()
+        }
+        r.define("I should see only channel results") { w in
+            let channel = w.app.descendants(matching: .any).matching(identifier: "channelRow").firstMatch
+            XCTAssertTrue(channel.waitForExistence(timeout: long), "A channel result should remain")
+            XCTAssertEqual(w.app.buttons.matching(identifier: "playButton").count, 0, "Video rows should be filtered out")
+            XCTAssertEqual(w.app.descendants(matching: .any).matching(identifier: "playlistRow").count, 0, "Playlist rows should be filtered out")
+        }
+        r.define("I should see only video results") { w in
+            XCTAssertTrue(w.app.buttons["playButton"].firstMatch.waitForExistence(timeout: long), "Video results should remain")
+            XCTAssertEqual(w.app.descendants(matching: .any).matching(identifier: "channelRow").count, 0, "Channel rows should be filtered out")
+        }
         r.define("I tap the \"(.+)\" suggestion") { w in
             let s = w.app.buttons[w.capture()]
             XCTAssertTrue(s.waitForExistence(timeout: medium))

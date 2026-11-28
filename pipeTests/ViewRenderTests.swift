@@ -93,6 +93,10 @@ final class ViewRenderTests: XCTestCase {
     func testRenderContentView() { render(ContentView()) }
 
     /// iPad: the sidebar shell, a regular-width row, and the two-column player.
+    func testRenderSearchFilterBar() {
+        render(SearchFilterBar(filter: .constant(.channels)))
+    }
+
     func testRenderRegularWidthLayouts() {
         render(ContentView().environment(\.horizontalSizeClass, .regular))
         render(NavigationStack { SidebarView(selectedTab: .constant(1)) {} })

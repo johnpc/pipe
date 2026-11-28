@@ -375,6 +375,14 @@ final class SearchFeatureTests: AcceptanceTests {
         runScenario(feature: "search.feature", scenario: "A premiere that has not aired yet offers nothing to play")
     }
 
+    func test_Filtering_to_channels_hides_videos() {
+        runScenario(feature: "search.feature", scenario: "Filtering to channels hides videos")
+    }
+
+    func test_Filtering_to_videos_hides_channels() {
+        runScenario(feature: "search.feature", scenario: "Filtering to videos hides channels")
+    }
+
 }
 
 
